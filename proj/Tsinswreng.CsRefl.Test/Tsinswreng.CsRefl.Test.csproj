@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+	</PropertyGroup>
+	
+	<ItemGroup>
+		<PackageReference Include="Tsinswreng.CsTreeTest" Version="0.1.1-alpha" />
+		<ProjectReference Include="..\Tsinswreng.CsRefl\Tsinswreng.CsRefl.csproj" />
+	</ItemGroup>
+
+</Project>

@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<PackageId>Tsinswreng.CsRefl</PackageId>
+		<Version>0.0.1-alpha</Version>
+		<Description>反射式的型別與成員元資料門面：兼容 AOT 的反射來源、System.Text.Json JsonTypeInfo 來源，按名讀寫成員、物件與淺字典互轉。</Description>
+	</PropertyGroup>
+
+</Project>

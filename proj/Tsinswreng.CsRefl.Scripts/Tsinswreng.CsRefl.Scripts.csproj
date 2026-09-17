@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<!-- 各具名腳本的 Main(Root, CancellationToken) 由 Program dispatcher 呼叫；只有 Program.Main 是 CLR entry point。 -->
+		<NoWarn>$(NoWarn);CS0028</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- 模板倉庫不含 CsSh 源碼，固定從 NuGet 引用與現有 Ngan.Dict/CsSql 的 Scripts 一致 -->
+		<PackageReference Include="Tsinswreng.CsSh" Version="0.3.0-alpha" />
+	</ItemGroup>
+
+</Project>
