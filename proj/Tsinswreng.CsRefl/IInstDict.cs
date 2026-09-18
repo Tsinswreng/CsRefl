@@ -35,6 +35,11 @@ using Tsinswreng.CsCore;
 + `Values` 不排序（舊實現把異質值塞進排序集合，值型別不可互比時會拋）
 ]
 """)]
+//TswgTodo 是不是有點違反里氏替換了?
+//我拿到一個IDict 我不知道裏面是甚麼實現, 我對他增減鍵 卻會報錯。
+//能不能仿照JsonNodeDict的思路? 或者分兩種InstDict ,
+//一種是 不讓增減鍵的,
+//一種是能增減鍵的。不讓增減鍵的容易做就先留做好的一版。
 public interface IInstDict:IDictionary<str,obj?>{
 	[Doc("""
 #Sum[視圖背後的物件。]

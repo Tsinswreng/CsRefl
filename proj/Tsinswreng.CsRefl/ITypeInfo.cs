@@ -59,6 +59,8 @@ public interface ITypeInfo{
 故本門面取 `Members` 作為統一出口（自研的那層）。
 ]
 """)]
+	//TswgTodo 爲甚麼用 IReadOnlyList? 這個查詢是O(n)。
+	//你上面Doc 也沒用nameof語法我想f12跳轉都跳不了
 	IReadOnlyList<IMemberInfo> Members{get;}
 
 	[Doc("""
@@ -68,6 +70,7 @@ public interface ITypeInfo{
 
 #Rtn[未知返回 false；命中時 `M` 為成員元資料，未命中為 null]
 """)]
+//TswgTodo你媽的 能不能好好寫示例??? 說了多少次了 註釋就放一堆乾巴巴的文字?
 	bool TryGetMember(str Name, [NotNullWhen(true)] out IMemberInfo? M);
 
 	[Doc("""
