@@ -2,12 +2,21 @@ namespace Tsinswreng.CsRefl;
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Tsinswreng.CsCore;
 
-/// JsonTypeInfoSrc 的函數實現。
-/// 只放函數實現：字段與訪問器在 JsonTypeInfoSrc.cs。
-/// 參數特性（DAM/NotNullWhen）只寫在聲明側，partial 合併時兩邊都標會報 CS0579。
+[Doc("""
+#Sum[`JsonTypeInfoSrc` 的函數實現。]
+
+#Descr[
+只放函數實現：字段與訪問器在 `JsonTypeInfoSrc.cs`。
+]
+""")]
 public partial class JsonTypeInfoSrc{
-	/// 用一個源生成 context 建來源（最常見：AppJsonCtx.Default）。
+	[Doc("""
+#Sum[用一個源生成 context 建來源。]
+
+#See[{nameof(JsonTypeInfoSrc)}]
+""")]
 	public partial JsonTypeInfoSrc(JsonSerializerContext Ctx){
 		ArgumentNullException.ThrowIfNull(Ctx);
 		// JsonSerializerContext 顯式實現 IJsonTypeInfoResolver，轉介面調用。
@@ -15,7 +24,11 @@ public partial class JsonTypeInfoSrc{
 		_options = Ctx.Options;
 	}
 
-	/// 用一份配好的 options 建來源（其 TypeInfoResolver 鏈裏含源生成 context 即可）。
+	[Doc("""
+#Sum[用一份配好的 options 建來源。]
+
+#See[{nameof(JsonTypeInfoSrc)}]
+""")]
 	public partial JsonTypeInfoSrc(JsonSerializerOptions Options){
 		ArgumentNullException.ThrowIfNull(Options);
 		_resolver = Options.TypeInfoResolver
@@ -26,18 +39,25 @@ public partial class JsonTypeInfoSrc{
 		_options = Options;
 	}
 
-	/// 取已註冊型別的元資料；未註冊返回 false。
-	/// 命中與未命中都進緩存：resolver 鏈的解析不是免費操作，
-	/// 未註冊型別在批量場景裏會被反復查到。
+	[Doc("""
+#Sum[取已註冊型別的元資料；未註冊返回 false。]
+
+#See[{nameof(ITypeInfoSrc.TryGetInfo)}]
+""")]
 	public partial bool TryGetInfo(Type Type, out ITypeInfo? Info){
 		ArgumentNullException.ThrowIfNull(Type);
+		// step 1: 命中緩存直接返回。
 		if(_cache.TryGetValue(Type, out Info)){
 			return true;
 		}
+		// step 2: 未命中且已知是未註冊型別，直接返回 false，不再走 resolver 鏈。
+		// 命中與未命中都進緩存：resolver 鏈的解析不是免費操作，
+		// 未註冊型別在批量場景裏會被反復查到。
 		if(_misses.ContainsKey(Type)){
 			Info = null;
 			return false;
 		}
+		// step 3: 真正去解析並包裝。
 		Info = Build(Type);
 		if(Info is null){
 			// 並行下重複標記無害：同一個型別的答案恆定。
@@ -49,7 +69,17 @@ public partial class JsonTypeInfoSrc{
 		return true;
 	}
 
-	/// 解析並包裝；resolver 返回 null（未註冊）時返回 null，由調用方記入負面緩存。
+	[Doc("""
+#Sum[解析並包裝。]
+
+#Params([[要解析的型別]])
+
+#Rtn[包好的元資料；resolver 返回 null（未註冊）時為 null]
+
+#Descr[
+返回 null 由調用方記入負面緩存。
+]
+""")]
 	private ITypeInfo? Build(Type Type){
 		var JsonInfo = _resolver.GetTypeInfo(Type, _options);
 		if(JsonInfo is null){

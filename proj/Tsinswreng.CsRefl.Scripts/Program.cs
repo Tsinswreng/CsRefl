@@ -1,29 +1,55 @@
 namespace Tsinswreng.CsRefl.Scripts;
 
 using System.Runtime.CompilerServices;
+using Tsinswreng.CsCore;
 using Tsinswreng.CsSh;
 using static Tsinswreng.CsSh.ShGlobal;
 
-/// 子命令共用的執行上下文。
-/// dispatcher 統一建立並填入項目固定事實，子命令直接取用，不各自解析路徑。
+[Doc("""
+#Sum[子命令共用的執行上下文。]
+
+#Descr[
+dispatcher 統一建立並填入項目固定事實，子命令直接取用，不各自解析路徑。
+]
+""")]
 public interface ISCtx{
-	/// 模板倉庫根目錄，各命令以此定位 proj/ 下專案。
+	[Doc("""
+#Sum[模板倉庫根目錄，各命令以此定位 `proj/` 下專案。]
+""")]
 	public Pth RootDir{get;set;}
-	/// 目標框架（TFM），與 proj/Directory.Build.props 的 TargetFramework 同步；
-	/// 決定構建/發布輸出目錄名（如 net10.0），升級 TFM 時此處需同步更新。
+
+	[Doc("""
+#Sum[目標框架（TFM），與 `proj/Directory.Build.props` 的 `TargetFramework` 同步。]
+
+#Descr[
+決定構建/發布輸出目錄名（如 `net10.0`），升級 TFM 時此處需同步更新。
+]
+""")]
 	public str Tfm{get;set;}
 }
 
 public class SCtx:ISCtx{
 	public Pth RootDir{get;set;}
-	/// 默認空串，dispatcher 建立時必定覆蓋，故不允許為 null。
+
+	[Doc("""
+#Sum[默認空串，dispatcher 建立時必定覆蓋，故不允許為 null。]
+""")]
 	public str Tfm{get;set;} = "";
 }
 
-/// 模板維護腳本的命令列入口。
-/// 第一個引數選擇具體腳本；腳本本身負責完整的一次性流程。
+[Doc("""
+#Sum[模板維護腳本的命令列入口。]
+
+#Descr[
+第一個引數選擇具體腳本；腳本本身負責完整的一次性流程。
+]
+""")]
 internal static partial class Program{
-	/// 將命令列入口分派至具名腳本。
+	[Doc("""
+#Sum[將命令列入口分派至具名腳本。]
+
+#Params([[命令列引數；首個引數是要執行的腳本名]])
+""")]
 	internal static async Task Main(str[] Args){
 		var Ct = default(CT);
 		// Program.cs 位於 <根>/proj/Tsinswreng.CsRefl.Scripts；上推兩級得到倉庫根。
@@ -54,13 +80,19 @@ internal static partial class Program{
 		}
 	}
 
-	/// 列出可由 dotnet run -- <entry> 呼叫的腳本名稱。
+	[Doc("""
+#Sum[列出可由 `dotnet run -- <entry>` 呼叫的腳本名稱。]
+""")]
 	private static void PrintUsage(){
 		Console.Error.WriteLine("Usage: dotnet run --project proj/Tsinswreng.CsRefl.Scripts -- <entry>");
 		Console.Error.WriteLine("Entries: Test, TestAotWin");
 	}
 
-	/// 讓編譯器提供腳本源文件路徑，故腳本不依賴啟動時的當前目錄。
+	[Doc("""
+#Sum[讓編譯器提供腳本源文件路徑，故腳本不依賴啟動時的當前目錄。]
+
+#Params([[本腳本源文件路徑；由編譯器以 `CallerFilePath` 自動填入，調用方無需傳入]])
+""")]
 	private static str OwnPath([CallerFilePath] str CallerPath = ""){
 		return CallerPath;
 	}

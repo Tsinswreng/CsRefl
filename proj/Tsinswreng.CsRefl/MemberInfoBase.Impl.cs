@@ -2,11 +2,21 @@ namespace Tsinswreng.CsRefl;
 
 using System.Reflection;
 using System.Text.Json.Serialization.Metadata;
+using Tsinswreng.CsCore;
 
-/// MemberInfoBase 的函數實現。
-/// 只放函數實現：成員事實字段與訪問器在 MemberInfoBase.cs。
+[Doc("""
+#Sum[`MemberInfoBase` 的函數實現。]
+
+#Descr[
+只放函數實現：成員事實字段與訪問器在 `MemberInfoBase.cs`。
+]
+""")]
 public abstract partial class MemberInfoBase{
-	/// 把派生類交出的官方成員對象與讀寫委託落地；事實一律在此一次性賦值。
+	[Doc("""
+#Sum[把派生類交出的官方成員對象與讀寫委託落地；事實一律在此一次性賦值。]
+
+#See[{nameof(MemberInfoBase)}]
+""")]
 	protected partial MemberInfoBase(
 		global::System.Reflection.MemberInfo? Member,
 		JsonPropertyInfo? Json,
@@ -33,21 +43,36 @@ public abstract partial class MemberInfoBase{
 		_attrProvider = AttributeProvider;
 	}
 
-	/// 實例型別是否合格：DeclaringType 已知時按它判定。
-	/// 官方成員對象都不在（畸形手工元資料）時不阻擋，把判斷留給委託本身。
+	[Doc("""
+#Sum[實例型別是否合格。]
+
+#Params([[待檢查的實例]])
+
+#Rtn[合格返回 true]
+
+#Descr[
+`DeclaringType` 已知時按它判定。
+官方成員對象都不在（畸形手工元資料）時不阻擋，把判斷留給委託本身。
+]
+""")]
 	private bool IsInstanceOk(obj O){
 		var D = _declaringType;
 		return D is null || D.IsInstanceOfType(O);
 	}
 
-	/// 前置檢查：實例為 null、不是 DeclaringType 的實例、或不可讀 → false。
-	/// 動作本身失敗（極少見）包成 InvalidOperationException。
+	[Doc("""
+#Sum[讀取實例上的本成員。]
+
+#See[{nameof(IMemberInfo.TryGet)}]
+""")]
 	public partial bool TryGet(obj? O, out obj? R){
+		// 前置檢查：實例為 null、不是 DeclaringType 的實例、或不可讀 → false。
 		R = default;
 		var GetFn = _get;
 		if(GetFn is null || O is null || !IsInstanceOk(O)){
 			return false;
 		}
+		// 動作本身失敗（極少見）包成 InvalidOperationException，不讓低層異常裸奔。
 		try{
 			R = GetFn(O);
 			return true;
@@ -60,14 +85,19 @@ public abstract partial class MemberInfoBase{
 		}
 	}
 
-	/// 前置檢查：實例為 null、不是 DeclaringType 的實例、或不可寫 → false。
-	/// 動作本身失敗（值型別不符、格式不符）統一包成 InvalidOperationException：
-	/// 低層的 InvalidCastException/FormatException 對調用方不友好，也無法表達「哪個成員」。
+	[Doc("""
+#Sum[寫入實例上的本成員。]
+
+#See[{nameof(IMemberInfo.TrySet)}]
+""")]
 	public partial bool TrySet(obj? O, obj? V){
+		// 前置檢查：實例為 null、不是 DeclaringType 的實例、或不可寫 → false。
 		var SetFn = _set;
 		if(SetFn is null || O is null || !IsInstanceOk(O)){
 			return false;
 		}
+		// 動作本身失敗（值型別不符、格式不符）統一包成 InvalidOperationException：
+		// 低層的 InvalidCastException/FormatException 對調用方不友好，也無法表達「哪個成員」。
 		try{
 			SetFn(O, V);
 			return true;

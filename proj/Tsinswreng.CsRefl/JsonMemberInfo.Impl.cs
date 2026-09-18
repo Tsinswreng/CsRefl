@@ -1,13 +1,21 @@
 namespace Tsinswreng.CsRefl;
 
 using System.Text.Json.Serialization.Metadata;
+using Tsinswreng.CsCore;
 
-/// JsonMemberInfo 的函數實現。
-/// 只放函數實現：成員事實字段與訪問器在 JsonMemberInfo.cs。
+[Doc("""
+#Sum[`JsonMemberInfo` 的函數實現。]
+
+#Descr[
+只放函數實現：成員事實字段與訪問器在 `JsonMemberInfo.cs`。
+]
+""")]
 public partial class JsonMemberInfo{
-	/// 包一個 JsonPropertyInfo。讀寫委託直接取官方 JsonPropertyInfo.Get/Set，
-	/// 是 AOT 下最優路徑（源生成的委託，零反射），型別與門面宣告完全一致。
-	/// 可讀/可寫與委託同一判據（官方就是用 Get/Set 是否為 null 表示可讀可寫）。
+	[Doc("""
+#Sum[包一個 `JsonPropertyInfo`。]
+
+#See[{nameof(JsonMemberInfo)}]
+""")]
 	public partial JsonMemberInfo(JsonPropertyInfo Prop)
 		: base(
 			// 反射成員出口為 null：JsonPropertyInfo 不是 MemberInfo 的子類
@@ -23,6 +31,9 @@ public partial class JsonMemberInfo{
 			// （[JsonInclude] 的字段在實測中連 AttrProvider 都給 RtFieldInfo），
 			// 故這裡統一報 Property——這是兩套來源記錄在案的能力差別。
 			MemberType: System.Reflection.MemberTypes.Property,
+			// 讀寫委託直接取官方 JsonPropertyInfo.Get/Set，
+			// 是 AOT 下最優路徑（源生成的委託，零反射），型別與門面宣告完全一致。
+			// 可讀/可寫與委託同一判據（官方就是用 Get/Set 是否為 null 表示可讀可寫）。
 			CanRead: Prop.Get is not null,
 			CanWrite: Prop.Set is not null,
 			Get: Prop.Get,

@@ -1,9 +1,16 @@
+using Tsinswreng.CsCore;
 using Tsinswreng.CsSh;
 using static Tsinswreng.CsSh.ShGlobal;
 
 namespace Tsinswreng.CsRefl.Scripts;
 
-/// TestAotWin 命令的流程實現；NativeAOT 開關由模板的 Directory.Build.props 統一提供。
+[Doc("""
+#Sum[`TestAotWin` 命令的流程實現。]
+
+#Descr[
+NativeAOT 開關由模板的 `Directory.Build.props` 統一提供。
+]
+""")]
 internal static partial class TestAotWin{
 	internal static async partial Task Main(ISCtx Ctx, CT Ct){
 		var TestProject = Ctx.RootDir/"proj/Tsinswreng.CsRefl.Test/Tsinswreng.CsRefl.Test.csproj";

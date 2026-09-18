@@ -1,12 +1,21 @@
 namespace Tsinswreng.CsRefl;
 
 using System.Diagnostics.CodeAnalysis;
+using Tsinswreng.CsCore;
 
-/// ReflTypeInfoSrc 的函數實現。
-/// 只放函數實現：字段與訪問器在 ReflTypeInfoSrc.cs。
-/// 參數特性（DAM/NotNullWhen）只寫在聲明側，partial 合併時兩邊都標會報 CS0579。
+[Doc("""
+#Sum[`ReflTypeInfoSrc` 的函數實現。]
+
+#Descr[
+只放函數實現：字段與訪問器在 `ReflTypeInfoSrc.cs`。
+]
+""")]
 public partial class ReflTypeInfoSrc{
-	/// 取任意型別的元資料；反射來源總是「可知」。
+	[Doc("""
+#Sum[取任意型別的元資料；反射來源總是「可知」。]
+
+#See[{nameof(ITypeInfoSrc.TryGetInfo)}]
+""")]
 	public partial bool TryGetInfo(Type Type, out ITypeInfo? Info){
 		ArgumentNullException.ThrowIfNull(Type);
 		if(_cache.TryGetValue(Type, out Info)){
