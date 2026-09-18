@@ -5,13 +5,14 @@ using Tsinswreng.CsRefl.Test.Domains.Models;
 namespace Tsinswreng.CsRefl.Test.Domains.TypeInfo;
 
 /// Lookup 契約：TryGetMember/GetMember 的命中與異常行為。
+/// 函數實現文件；聲明在 _TestTypeInfo.cs。
 public partial class TestTypeInfo{
-	/// 對一個來源驗證按名查詢。
-	private static void CheckLookup(ITypeInfo Info){
+	/// 見聲明處的說明。
+	private static partial void CheckLookup(ITypeInfo Info){
 		var T = Assert.IsTrue;
 
 		T(Info.TryGetMember("Age", out var Age), "TryGetMember 應命中 Age");
-		T(Age!.DeclaredType == typeof(i32), "命中成員的型別應正確");
+		T(Age!.PropertyType == typeof(i32), "命中成員的型別應正確");
 
 		T(!Info.TryGetMember("NoSuch", out var Miss), "TryGetMember 對未知成員應返回 false");
 		T(Miss is null, "未命中時 out 應為 null");
@@ -30,7 +31,8 @@ public partial class TestTypeInfo{
 		T(Threw, "GetMember 對未知成員應拋 KeyNotFoundException");
 	}
 
-	public void RegisterLookup(ITestNode Node){
+	/// 見聲明處的說明。
+	public partial void RegisterLookup(ITestNode Node){
 		var reg = Node.MkTestFnRegister(
 			typeof(TestTypeInfo), [typeof(PoUser)], [nameof(PoUser.Age)], "按名查詢:"
 		);

@@ -4,8 +4,10 @@ using Tsinswreng.CsRefl.Test.Domains.Models;
 namespace Tsinswreng.CsRefl.Test.Domains.InstDict;
 
 /// 視圖讀寫：索引器、ContainsKey、TryGetValue 都直接作用在背後的物件上。
+/// 函數實現文件；聲明在 _TestInstDict.cs。
 public partial class TestInstDict{
-	public void RegisterReadWrite(ITestNode Node){
+	/// 見聲明處的說明。
+	public partial void RegisterReadWrite(ITestNode Node){
 		var reg = Node.MkTestFnRegister(
 			typeof(TestInstDict), [typeof(PoUser)], [nameof(PoUser.Age)], "視圖讀寫:"
 		);
@@ -45,9 +47,38 @@ public partial class TestInstDict{
 			var T = Assert.IsTrue;
 			var Dict = MakeDict(MakeUser());
 			var Pairs = Dict.ToList();
-			T(Pairs.Count == 9, "枚舉應有 9 對");
+			T(Pairs.Count == InstDictShape.ExpectedCount, $"枚舉應有 {InstDictShape.ExpectedCount} 對");
 			T(Pairs[0].Key == "Id" && (i64)Pairs[0].Value! == 1, "第一對應是 Id=1");
 			T(Pairs[6].Key == "Extra", "第七對應是 Extra");
+			return null;
+		});
+
+		R("CopyTo 按鍵序拷貝", async _ => {
+			var T = Assert.IsTrue;
+			var Dict = MakeDict(MakeUser());
+			// 留兩個空位，順帶驗證「自 ArrayIndex 起」寫入。
+			var Array = new KeyValuePair<str, obj?>[InstDictShape.ExpectedCount + 2];
+			// 下標 0/1 放哨兵，驗證 CopyTo 不會動它們。
+			Array[0] = new KeyValuePair<str, obj?>("Before0", null);
+			Array[1] = new KeyValuePair<str, obj?>("Before1", null);
+			Dict.CopyTo(Array, 2);
+			T(Array[0].Key == "Before0" && Array[1].Key == "Before1", "下標 0/1 應保持原樣");
+			T(Array[2].Key == "Id" && (i64)Array[2].Value! == 1, "拷貝應自 ArrayIndex 起按鍵序寫入");
+			T(Array[InstDictShape.ExpectedCount + 1].Key == "Note", "最後一項應是 Note");
+			return null;
+		});
+
+		R("CopyTo 容量不足拋 ArgumentException", async _ => {
+			var T = Assert.IsTrue;
+			var Dict = MakeDict(MakeUser());
+			var Threw = false;
+			try{
+				Dict.CopyTo(new KeyValuePair<str, obj?>[3], 0);
+			}
+			catch(ArgumentException){
+				Threw = true;
+			}
+			T(Threw, "容量不足應拋 ArgumentException（修前裸拋 IndexOutOfRange）");
 			return null;
 		});
 	}

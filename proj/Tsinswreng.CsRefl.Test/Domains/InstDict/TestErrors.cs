@@ -4,8 +4,10 @@ using Tsinswreng.CsRefl.Test.Domains.Models;
 namespace Tsinswreng.CsRefl.Test.Domains.InstDict;
 
 /// 視圖異常路徑：形狀固定（增刪清空不允許）、未知鍵、寫只讀成員。
+/// 函數實現文件；聲明在 _TestInstDict.cs。
 public partial class TestInstDict{
-	public void RegisterErrors(ITestNode Node){
+	/// 見聲明處的說明。
+	public partial void RegisterErrors(ITestNode Node){
 		var reg = Node.MkTestFnRegister(
 			typeof(TestInstDict), [typeof(PoUser)], [nameof(PoUser.Age)], "視圖異常:"
 		);
@@ -60,10 +62,10 @@ public partial class TestInstDict{
 			return null;
 		});
 
-		R("寫鍵表外的只讀成員拋異常", async _ => {
+		R("寫只讀成員拋異常", async _ => {
 			var T = Assert.IsTrue;
 			var Dict = MakeDict(MakeUser());
-			// Secret 是成員但可讀不可寫、不在鍵表：寫它應拋 InvalidOperationException。
+			// Secret 是成員但可讀不可寫：寫它應拋 InvalidOperationException。
 			var Threw = false;
 			try{
 				Dict["Secret"] = "x";
@@ -81,6 +83,26 @@ public partial class TestInstDict{
 			var Dict = MakeDict(MakeUser());
 			// 設計記録：索引器讀只查成員表不查鍵表，只讀成員也能按名讀。
 			T((str)Dict["Secret"]! == "s", "Dict[Secret] 應能讀到 s");
+			return null;
+		});
+
+		R("只寫成員寫得進但不在鍵表", async _ => {
+			var T = Assert.IsTrue;
+			var User = MakeUser();
+			var Dict = MakeDict(User);
+			// Token 可寫不可讀：寫回物件有效，但不是視圖的鍵（讀不到、ContainsKey false）。
+			Dict["Token"] = "t1";
+			T(User.TokenEcho == "t1", "寫只寫成員應寫回物件");
+			T(!Dict.ContainsKey("Token"), "只寫成員不應出現在鍵表");
+			T(!Dict.TryGetValue("Token", out _), "只寫成員取不到值");
+			var Threw = false;
+			try{
+				_ = Dict["Token"];
+			}
+			catch(KeyNotFoundException){
+				Threw = true;
+			}
+			T(Threw, "讀只寫成員應拋 KeyNotFoundException");
 			return null;
 		});
 	}

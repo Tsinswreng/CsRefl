@@ -6,6 +6,9 @@
 	
 	<ItemGroup>
 		<PackageReference Include="Tsinswreng.CsTreeTest" Version="0.1.1-alpha" />
+		<!-- 只有測試項目要 DI：測試管理器 InitSvc 要 ServiceCollection/BuildServiceProvider，
+		     而 CsTreeTest 只傳遞 DependencyInjection.Abstractions（沒有實現類）。 -->
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.8" />
 		<ProjectReference Include="..\Tsinswreng.CsRefl\Tsinswreng.CsRefl.csproj" />
 	</ItemGroup>
 

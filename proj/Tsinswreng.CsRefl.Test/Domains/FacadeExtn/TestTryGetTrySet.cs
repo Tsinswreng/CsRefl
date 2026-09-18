@@ -5,8 +5,10 @@ using Tsinswreng.CsRefl.Test.Domains.Models;
 namespace Tsinswreng.CsRefl.Test.Domains.FacadeExtn;
 
 /// TryGet/TrySet 擴展：按名讀寫的命中與各種 false 分叉。
+/// 函數實現文件；聲明在 _TestFacadeExtn.cs。
 public partial class TestFacadeExtn{
-	public void RegisterTryGetTrySet(ITestNode Node){
+	/// 見聲明處的說明。
+	public partial void RegisterTryGetTrySet(ITestNode Node){
 		var reg = Node.MkTestFnRegister(
 			typeof(TestFacadeExtn), [typeof(PoUser)], [nameof(PoUser.Age)], "TryGet/TrySet:"
 		);

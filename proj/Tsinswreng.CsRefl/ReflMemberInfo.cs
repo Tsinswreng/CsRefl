@@ -10,27 +10,10 @@ using System.Reflection;
 /// 或經 ILLink 模式匹配保留了成員），否則運行期會因缺元數據拋錯——這是
 /// 「兼容 AOT 的反射」的固有前提，由調用方負責，本類不隱藏它。
 ///
-/// Order 用收集序而非 MetadataToken：NativeAOT 的反射元數據（NativeFormat）
-/// 不提供 MetadataToken，取它會拋 InvalidOperationException。
-/// 建構子內部使用（見 ReflTypeInfo.CollectMembers）。
+/// 建構子實現見 ReflMemberInfo.Impl.cs。
 public partial class ReflMemberInfo:MemberInfoBase{
-	private readonly str _codeName;
-	private readonly str? _jsonName;
-	private readonly EMemberKind _kind;
-	private readonly Type _declaredType;
-	private readonly Type _declaringType;
-	private readonly bool _canRead;
-	private readonly bool _canWrite;
-	private readonly i32 _order;
-	private readonly IReadOnlyList<Attribute> _attrs;
-
-	public override str CodeName => _codeName;
-	public override str? JsonName => _jsonName;
-	public override EMemberKind Kind => _kind;
-	public override Type DeclaredType => _declaredType;
-	public override Type DeclaringType => _declaringType;
-	public override bool CanRead => _canRead;
-	public override bool CanWrite => _canWrite;
-	public override i32 Order => _order;
-	public override IReadOnlyList<Attribute> Attrs => _attrs;
+	/// 包一個公開實例屬性。
+	internal partial ReflMemberInfo(PropertyInfo Prop);
+	/// 包一個公開實例字段。
+	internal partial ReflMemberInfo(FieldInfo Fld);
 }

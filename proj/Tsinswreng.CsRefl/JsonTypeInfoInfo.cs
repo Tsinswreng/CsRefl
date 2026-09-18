@@ -3,22 +3,32 @@ namespace Tsinswreng.CsRefl;
 using System.Text.Json.Serialization.Metadata;
 
 /// JsonTypeInfo 來源的型別元資料：包一個非泛型 JsonTypeInfo。
-/// Kind 直接映射 JsonTypeInfoKind（None→標量）；成員沿用 JsonTypeInfo.Properties
-/// 的既有序（Order 屬性升序，同序按宣告序）。
+/// 官方本體直接對外暴露（Json），需要甚麼官方能力直接從那裡拿；
+/// Kind 直接就是官方 JsonTypeInfoKind，無需映射。
+/// 成員沿用 JsonTypeInfo.Properties 的既有序。
 /// 建構子與 MkInst 實現見 JsonTypeInfoInfo.Impl.cs。
 public partial class JsonTypeInfoInfo:TypeInfoBase{
+	/// 被包的官方 JsonTypeInfo。
 	private readonly JsonTypeInfo _json;
-	private readonly Type _type;
-	private readonly ETypeKind _kind;
-	private readonly IReadOnlyList<IMemberInfo> _members;
-	private readonly Type? _elemType;
-	private readonly Type? _keyType;
 
-	public override Type Type => _type;
-	public override ETypeKind Kind => _kind;
-	public override IReadOnlyList<IMemberInfo> Members => _members;
-	public override Type? ElemType => _elemType;
-	public override Type? KeyType => _keyType;
-	/// 是否可建實例：Kind 為 Object 且存在無參工廠（CreateObject 不為 null）。
-	public override bool CanMkInst => _json.Kind == JsonTypeInfoKind.Object && _json.CreateObject is not null;
+	/// 包一個 JsonTypeInfo。
+	public partial JsonTypeInfoInfo(JsonTypeInfo Json);
+
+	/// 無參實例工廠，直接轉官方 JsonTypeInfo.CreateObject；
+	/// 官方就是用它表示「可不可以建實例」（標量等型別官方給 null）。
+	public override Func<obj>? CreateObject{
+		get{
+			return _json.CreateObject;
+		}
+	}
+
+	/// 被包的官方 JsonTypeInfo 本體。
+	public override JsonTypeInfo Json{
+		get{
+			return _json;
+		}
+	}
+
+	/// 建立實例，轉調 CreateObject 工廠；無無參工廠時拋 NotSupportedException。
+	public override partial obj? MkInst();
 }

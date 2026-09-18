@@ -5,8 +5,10 @@ using Tsinswreng.CsRefl.Test.Domains.Models;
 namespace Tsinswreng.CsRefl.Test.Domains.Src;
 
 /// RegisteredTypes 語義：全部來源可列舉才返回並集，任一來源不支持列舉則返回 null。
+/// 函數實現文件；聲明在 TestMergedTypeInfoSrc.cs。
 public partial class TestMergedTypeInfoSrc{
-	public void RegisterRegistered(ITestNode Node){
+	/// 見聲明處的說明。
+	public partial void RegisterRegistered(ITestNode Node){
 		var reg = Node.MkTestFnRegister(
 			typeof(TestMergedTypeInfoSrc), [typeof(MergedTypeInfoSrc)], [nameof(MergedTypeInfoSrc.RegisteredTypes)], "列舉語義:"
 		);

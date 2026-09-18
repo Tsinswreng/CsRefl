@@ -5,8 +5,10 @@ using Tsinswreng.CsRefl.Test.Domains.Models;
 namespace Tsinswreng.CsRefl.Test.Domains.FacadeExtn;
 
 /// AssignFromDict 擴展：字典寫回物件的各種路徑。
+/// 函數實現文件；聲明在 _TestFacadeExtn.cs。
 public partial class TestFacadeExtn{
-	public void RegisterAssignFromDict(ITestNode Node){
+	/// 見聲明處的說明。
+	public partial void RegisterAssignFromDict(ITestNode Node){
 		var reg = Node.MkTestFnRegister(
 			typeof(TestFacadeExtn), [typeof(PoUser)], [nameof(PoUser.Age)], "AssignFromDict:"
 		);

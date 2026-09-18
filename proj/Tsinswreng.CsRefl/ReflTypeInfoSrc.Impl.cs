@@ -3,17 +3,11 @@ namespace Tsinswreng.CsRefl;
 using System.Diagnostics.CodeAnalysis;
 
 /// ReflTypeInfoSrc 的函數實現。
+/// 只放函數實現：字段與訪問器在 ReflTypeInfoSrc.cs。
+/// 參數特性（DAM/NotNullWhen）只寫在聲明側，partial 合併時兩邊都標會報 CS0579。
 public partial class ReflTypeInfoSrc{
-	/// 取任意型別的元資料；反射來源總是「可知」（元數據丟失時是否拋錯由運行期決定）。
-	public bool TryGetInfo(
-		[DynamicallyAccessedMembers(
-			DynamicallyAccessedMemberTypes.Interfaces
-			| DynamicallyAccessedMemberTypes.PublicProperties
-			| DynamicallyAccessedMemberTypes.PublicFields
-			| DynamicallyAccessedMemberTypes.PublicParameterlessConstructor
-		)] Type Type,
-		[NotNullWhen(true)] out ITypeInfo? Info
-	){
+	/// 取任意型別的元資料；反射來源總是「可知」。
+	public partial bool TryGetInfo(Type Type, out ITypeInfo? Info){
 		ArgumentNullException.ThrowIfNull(Type);
 		if(_cache.TryGetValue(Type, out Info)){
 			return true;

@@ -3,18 +3,22 @@ namespace Tsinswreng.CsRefl;
 using System.Reflection;
 
 /// ReflMemberInfo 的函數實現。
+/// 只放函數實現：成員事實字段與訪問器在 ReflMemberInfo.cs。
 public partial class ReflMemberInfo{
 	/// 按屬性可讀性建讀值委託；不可讀返回 null。
+	/// 判據是「有沒有公開 get」（GetGetMethod() 默認只認公開訪問器），
+	/// 不是 PropertyInfo.CanRead：屬性帶私有 get 時 CanRead 仍為 true，
+	/// 用它會把只寫屬性誤判成可讀（門面承諾的是公開成員的讀寫能力）。
 	private static Func<obj, obj?>? BuildGet(PropertyInfo Prop){
-		if(!Prop.CanRead){
+		if(Prop.GetGetMethod() is null){
 			return null;
 		}
 		return O => Prop.GetValue(O);
 	}
 
-	/// 按屬性可寫性建寫值委託；不可寫返回 null。
+	/// 按屬性可寫性建寫值委託；不可寫返回 null。判據同 BuildGet 的說明。
 	private static Action<obj, obj?>? BuildSet(PropertyInfo Prop){
-		if(!Prop.CanWrite){
+		if(Prop.GetSetMethod() is null){
 			return null;
 		}
 		return (O, V) => Prop.SetValue(O, V);
@@ -33,34 +37,46 @@ public partial class ReflMemberInfo{
 		return (O, V) => Fld.SetValue(O, V);
 	}
 
-	/// 包一個公開實例屬性。Order 為收集序（見 ReflTypeInfo.CollectMembers）。
-	internal ReflMemberInfo(PropertyInfo Prop, i32 Order)
-		: base(BuildGet(Prop), BuildSet(Prop))
+	/// 包一個公開實例屬性。
+	/// 特性提供者與官方成員對象都由 PropertyInfo 本身承擔（官方 MemberInfo 就是
+	/// ICustomAttributeProvider）。成員種類轉發官方 MemberTypes.Property。
+	internal partial ReflMemberInfo(PropertyInfo Prop)
+		: base(
+			Member: Prop,
+			Json: null,
+			Name: Prop.Name,
+			PropertyType: Prop.PropertyType,
+			DeclaringType: Prop.DeclaringType,
+			MemberType: MemberTypes.Property,
+			// 可讀/可寫與委託同一判據（委託非 null 即可讀/可寫），
+			// 兩套來源統一如此，免得 CanRead 與 Get 兩處口徑打架。
+			CanRead: BuildGet(Prop) is not null,
+			CanWrite: BuildSet(Prop) is not null,
+			Get: BuildGet(Prop),
+			Set: BuildSet(Prop),
+			// 特性提供者直接用 PropertyInfo 本身（官方 MemberInfo 就是
+			// ICustomAttributeProvider），調用方拿官方 GetCustomAttribute<T>() 即可。
+			AttributeProvider: Prop
+		)
 	{
-		_codeName = Prop.Name;
-		_jsonName = null;
-		_kind = EMemberKind.Property;
-		_declaredType = Prop.PropertyType;
-		_declaringType = Prop.DeclaringType!;
-		_canRead = Prop.CanRead;
-		_canWrite = Prop.CanWrite;
-		_order = Order;
-		_attrs = Prop.GetCustomAttributes().Cast<Attribute>().ToList();
 	}
 
 	/// 包一個公開實例字段。
-	internal ReflMemberInfo(FieldInfo Fld, i32 Order)
-		: base(BuildFieldGet(Fld), BuildFieldSet(Fld))
+	/// 字段的讀寫能力：常量不可讀（無從取值）、initonly/常量不可寫。
+	internal partial ReflMemberInfo(FieldInfo Fld)
+		: base(
+			Member: Fld,
+			Json: null,
+			Name: Fld.Name,
+			PropertyType: Fld.FieldType,
+			DeclaringType: Fld.DeclaringType,
+			MemberType: MemberTypes.Field,
+			CanRead: BuildFieldGet(Fld) is not null,
+			CanWrite: !Fld.IsLiteral && !Fld.IsInitOnly,
+			Get: BuildFieldGet(Fld),
+			Set: BuildFieldSet(Fld),
+			AttributeProvider: Fld
+		)
 	{
-		_codeName = Fld.Name;
-		_jsonName = null;
-		_kind = EMemberKind.Field;
-		_declaredType = Fld.FieldType;
-		_declaringType = Fld.DeclaringType!;
-		// 字段的讀寫能力：常量不可讀（無從取值）、initonly/常量不可寫。
-		_canRead = !Fld.IsLiteral;
-		_canWrite = !Fld.IsLiteral && !Fld.IsInitOnly;
-		_order = Order;
-		_attrs = Fld.GetCustomAttributes().Cast<Attribute>().ToList();
 	}
 }

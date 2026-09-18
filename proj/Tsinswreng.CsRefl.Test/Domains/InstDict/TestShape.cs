@@ -5,8 +5,10 @@ namespace Tsinswreng.CsRefl.Test.Domains.InstDict;
 
 /// 視圖形狀：鍵序 = 可讀可寫成員的宣告序（修「舊 PropDict 鍵排序變字母序」），
 /// Values 與鍵一一對應且不排序（修「異質值排序拋錯」），IsReadOnly=false。
+/// 函數實現文件；聲明在 _TestInstDict.cs。
 public partial class TestInstDict{
-	public void RegisterShape(ITestNode Node){
+	/// 見聲明處的說明。
+	public partial void RegisterShape(ITestNode Node){
 		var reg = Node.MkTestFnRegister(
 			typeof(TestInstDict), [typeof(PoUser)], [nameof(PoUser.Age)], "視圖形狀:"
 		);
@@ -15,10 +17,9 @@ public partial class TestInstDict{
 		R("鍵序等於成員序", async _ => {
 			var T = Assert.IsTrue;
 			var Dict = MakeDict(MakeUser());
-			T(Dict.Keys.SequenceEqual([
-				"Id", "Name", "Age", "Email", "Married", "Tags", "Extra", "Level", "Note",
-			]), $"鍵序應是宣告序且排除只讀 Secret，實際 {string.Join(",", Dict.Keys)}");
-			T(Dict.Count == 9, "鍵數應是 9");
+			T(Dict.Keys.SequenceEqual(InstDictShape.ExpectedKeys),
+				$"鍵序應是宣告序且排除只讀 Secret / 只寫 Token，實際 {string.Join(",", Dict.Keys)}");
+			T(Dict.Count == InstDictShape.ExpectedCount, $"鍵數應是 {InstDictShape.ExpectedCount}");
 			return null;
 		});
 
@@ -46,6 +47,14 @@ public partial class TestInstDict{
 			var Dict = MakeDict(MakeUser());
 			T(Dict.Keys.Contains("Level") && !Dict.Keys.Contains("Secret"), "Keys 集合應含 Level 不含 Secret");
 			T(Dict.Keys.Count == Dict.Count, "Keys.Count 應等於 Count");
+			return null;
+		});
+
+		R("Keys 不提供改形狀的入口", async _ => {
+			var T = Assert.IsTrue;
+			var Dict = MakeDict(MakeUser());
+			// 修前 Keys 直接暴露內部 List，調用方能 Add 出一個鍵、繞過 NotSupportedException。
+			T(Dict.Keys is not List<str>, $"Keys 不應是內部可變列表，實際型別 {Dict.Keys.GetType().Name}");
 			return null;
 		});
 	}

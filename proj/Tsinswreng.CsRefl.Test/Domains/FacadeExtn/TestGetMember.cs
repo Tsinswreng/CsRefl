@@ -5,8 +5,10 @@ using Tsinswreng.CsRefl.Test.Domains.Models;
 namespace Tsinswreng.CsRefl.Test.Domains.FacadeExtn;
 
 /// GetMember 擴展：命中、未知成員、未註冊型別三種結局。
+/// 函數實現文件；聲明在 _TestFacadeExtn.cs。
 public partial class TestFacadeExtn{
-	public void RegisterGetMember(ITestNode Node){
+	/// 見聲明處的說明。
+	public partial void RegisterGetMember(ITestNode Node){
 		var reg = Node.MkTestFnRegister(
 			typeof(TestFacadeExtn), [typeof(PoUser)], [nameof(PoUser.Age)], "GetMember:"
 		);
@@ -15,7 +17,7 @@ public partial class TestFacadeExtn{
 		R("合成來源 取成員命中", async _ => {
 			var T = Assert.IsTrue;
 			var M = _merged.GetMember(typeof(PoUser), "Age");
-			T(M.CodeName == "Age" && M.DeclaredType == typeof(i32), "應取到 Age 且型別正確");
+			T(M.Name == "Age" && M.PropertyType == typeof(i32), "應取到 Age 且型別正確");
 			return null;
 		});
 

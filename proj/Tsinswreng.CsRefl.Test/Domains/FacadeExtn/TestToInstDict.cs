@@ -5,8 +5,10 @@ using Tsinswreng.CsRefl.Test.Domains.Models;
 namespace Tsinswreng.CsRefl.Test.Domains.FacadeExtn;
 
 /// ToInstDict 擴展：預設執行期型別、顯式型別、null 實例、邊界型別。
+/// 函數實現文件；聲明在 _TestFacadeExtn.cs。
 public partial class TestFacadeExtn{
-	public void RegisterToInstDict(ITestNode Node){
+	/// 見聲明處的說明。
+	public partial void RegisterToInstDict(ITestNode Node){
 		var reg = Node.MkTestFnRegister(
 			typeof(TestFacadeExtn), [typeof(PoUser)], [nameof(PoUser.Age)], "ToInstDict:"
 		);

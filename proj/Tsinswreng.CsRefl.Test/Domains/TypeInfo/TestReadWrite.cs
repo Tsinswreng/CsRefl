@@ -4,25 +4,27 @@ using Tsinswreng.CsRefl.Test.Domains.Models;
 
 namespace Tsinswreng.CsRefl.Test.Domains.TypeInfo;
 
-/// ReadWrite 契約：ReadableNames/WritableNames 清單與順序。
+/// ReadWrite 契約：ReadableNames/WritableNames 清單與順序、TryGet/TrySet 端到端。
+/// 函數實現文件；聲明在 _TestTypeInfo.cs。
 public partial class TestTypeInfo{
-	/// 對一個來源驗證名字清單。
-	private static void CheckReadWriteNames(ITypeInfo Info){
+	/// 見聲明處的說明。
+	private static partial void CheckReadWriteNames(ITypeInfo Info){
 		var T = Assert.IsTrue;
 
 		var Readable = Info.ReadableNames.ToList();
-		T(Readable.Count == 10, $"可讀名應有 10 個，實際 {Readable.Count}");
+		T(Readable.Count == 10, $"可讀名應有 10 個（Token 只寫），實際 {Readable.Count}");
 		T(Readable[0] == "Id" && Readable[1] == "Name" && Readable[7] == "Secret" && Readable[9] == "Note",
 			"可讀名順序應與成員序一致");
 
 		var Writable = Info.WritableNames.ToList();
-		T(Writable.Count == 9, $"可寫名應有 9 個（Secret 只讀），實際 {Writable.Count}");
+		T(Writable.Count == 10, $"可寫名應有 10 個（Secret 只讀），實際 {Writable.Count}");
 		T(!Writable.Contains("Secret"), "可寫名不得含 Secret");
-		T(Writable[0] == "Id" && Writable[8] == "Note", "可寫名順序應與成員序一致（跳過只讀成員）");
+		T(Writable[0] == "Id" && Writable[8] == "Token" && Writable[9] == "Note",
+			"可寫名順序應與成員序一致（跳過只讀成員、含只寫成員）");
 	}
 
-	/// 對一個來源驗證 TryGet/TrySet 端到端（造一個實例走完整讀寫）。
-	private static void CheckReadWriteE2E(ITypeInfo Info){
+	/// 見聲明處的說明。
+	private static partial void CheckReadWriteE2E(ITypeInfo Info){
 		var T = Assert.IsTrue;
 		var User = new PoUser{ Id = 7, Name = "小明", Age = 30 };
 
@@ -43,12 +45,16 @@ public partial class TestTypeInfo{
 		// 只讀成員寫不動。
 		T(!Info.GetMember("Secret").TrySet(User, "x"), "寫只讀 Secret 應返回 false");
 
+		// 只寫成員讀不到（它照樣在成員表與 WritableNames 裏）。
+		T(!Info.GetMember("Token").TryGet(User, out _), "讀只寫 Token 應返回 false");
+
 		// 實例型別不符 / null 實例。
 		T(!Info.GetMember("Age").TryGet(null, out _), "null 實例讀應返回 false");
 		T(!Info.GetMember("Age").TryGet(new PoColor(), out _), "錯誤型別實例讀應返回 false");
 	}
 
-	public void RegisterReadWrite(ITestNode Node){
+	/// 見聲明處的說明。
+	public partial void RegisterReadWrite(ITestNode Node){
 		var reg = Node.MkTestFnRegister(
 			typeof(TestTypeInfo), [typeof(PoUser)], [nameof(PoUser.Age)], "讀寫:"
 		);
