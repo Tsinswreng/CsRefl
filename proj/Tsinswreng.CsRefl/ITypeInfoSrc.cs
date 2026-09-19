@@ -13,10 +13,11 @@ using Tsinswreng.CsCore;
 + {nameof(TypeInfoReg)}：手寫註冊表（把手工元資料塞進去）
 + {nameof(MergedTypeInfoSrc)}：多來源按優先級合成
 
-例：AOT 主路徑上掛 {nameof(MergedTypeInfoSrc)}，
+實測：AOT 主路徑上掛 {nameof(MergedTypeInfoSrc)}，
 把 {nameof(JsonTypeInfoSrc)} 放第一位（讀寫走源生成的委託，零反射）、
 {nameof(ReflTypeInfoSrc)} 放第二位兜底，
-於是已註冊的型別走快路徑，沒掛 `[JsonSerializable]` 的型別照樣查得到。
+於是 `typeof(PoUser)` 由 Json 源接住（回傳實例與 Json 源單獨查到的 `{nameof(ReferenceEquals)}` 為 true），
+而沒掛 `[JsonSerializable]` 的 `typeof(PoNoCtor)` 落到反射源、照樣查得到。
 ]
 
 #Descr[
@@ -29,16 +30,17 @@ public interface ITypeInfoSrc{
 	[Doc($"""
 #Sum[取指定型別的元資料；未知返回 false。]
 
-#Params([[要查的型別], [取到的元資料；未知時為 null]])
+#Params([[Type, 要查的型別], [Info, 取到的元資料；未知時為 null]])
 
 #Descr[
 DAM 註解：反射來源需要被查型別保留
 接口、公共屬性、公共字段、無參構造函數 的元數據；
 JsonTypeInfo 來源不依賴它，但接口統一宣告了這個前置條件。
 
-例：從 {nameof(JsonTypeInfoSrc)} 查掛過 `[JsonSerializable]` 的型別返回 true，
-`Info` 非 null；查沒掛過的型別返回 false、`Info` 為 null
+實測：從 {nameof(JsonTypeInfoSrc)} 查 `typeof(PoUser)` 返回 true、`Info` 非 null；
+查沒掛過的 `typeof(PoNoCtor)` 返回 false、`Info` 為 null
 （未註冊的型別會被記進負面緩存，故重複查不會反復走 resolver 鏈）。
+從 {nameof(ReflTypeInfoSrc)} 查兩者都返回 true，這正是「兜底」的意義。
 
 要「查不到就拋異常」的便利版本用 {nameof(ITypeInfoSrcExtn)}.{nameof(ITypeInfoSrcExtn.GetMember)}。
 ]
@@ -61,8 +63,9 @@ JsonTypeInfo 來源不依賴它，但接口統一宣告了這個前置條件。
 （{nameof(ReflTypeInfoSrc)}、{nameof(JsonTypeInfoSrc)} 都如此）；
 調用方不得假設「能列舉」，只把它當加分能力。
 
-例：{nameof(TypeInfoReg)} 返回已註冊型別的清單；
-{nameof(JsonTypeInfoSrc)} 返回 null，因為官方上下文不暴露已註冊清單；
+實測：{nameof(TypeInfoReg)} 登記 `typeof(PoUser)` 與 `typeof(PoColor)` 後返回 2 個 `{nameof(Type)}`；
+{nameof(JsonTypeInfoSrc)} 返回 null，因為官方上下文不暴露已註冊清單
+（{nameof(ReflTypeInfoSrc)} 同樣返回 null）；
 {nameof(MergedTypeInfoSrc)} 只在全部成員來源都能列舉時才給出並集，否則整個返回 null。
 
 拼來源時可以先查這個屬性，返回 null 就說明這條鏈不能當「型別全集」用，

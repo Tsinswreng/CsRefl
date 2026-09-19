@@ -14,8 +14,9 @@ public static partial class IMemberInfoExtn{
 #Sum[取第一個匹配的特性；提供者缺失或沒有匹配都返回 null。]
 
 #Descr[
-例：成員上標了自訂特性時返回那個實例；
-沒標返回 null；`z` 為 null 也返回 null（擴展方法在 null 上可調，不拋）。
+實測（`PoUser`）：在 `Level` 上返回那個 `MyDemoAttr` 實例（`Tag` 是 "優等級"、`Rank` 是 2）；
+在 `Age`（沒標）上返回 null；`z` 傳 null 也返回 null（擴展方法在 null 上可調，不拋）；
+`{nameof(IMemberInfo)}` 的 {nameof(IMemberInfo.AttributeProvider)} 為 null 時同樣返回 null。
 ]
 
 #See[{nameof(IMemberInfoExtn.GetCustomAttribute)}]

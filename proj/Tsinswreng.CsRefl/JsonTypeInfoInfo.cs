@@ -11,9 +11,15 @@ using Tsinswreng.CsCore;
 {nameof(Kind)} 直接就是官方 {nameof(JsonTypeInfoKind)}，無需映射。
 成員沿用 {nameof(JsonTypeInfo.Properties)} 的既有序。
 
-例：要改官方反序列化行為（例如不許未對應的成員）時，
+實測：`Info.{nameof(Json)}` 拿到的就是官方那個 {nameof(JsonTypeInfo)} 本體，
+故要改官方反序列化行為（例如不許未對應的成員）時，
 `Info.{nameof(Json)}!.UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow;`
 這一行就直接作用在官方元資料上，本包不另做一層轉譯。
+
+實測（`PoUser`）：`Info.{nameof(Json)}!.{nameof(JsonTypeInfo.Type)}` 是 `typeof(PoUser)`；
+官方 {nameof(JsonTypeInfo.Properties)} 的項數與 `Info.{nameof(Members)}.Count` 都是 11
+（兩者口徑必須一致，因為成員表就是從它轉出來的）；
+從反射來源取回的同一個型別，`Info.{nameof(Json)}` 是 null。
 ]
 
 #Descr[
@@ -25,8 +31,12 @@ public partial class JsonTypeInfoInfo:TypeInfoBase{
 #Sum[被包的官方 {nameof(JsonTypeInfo)}。]
 
 #Descr[
-例：{nameof(CreateObject)} 與 {nameof(Json)} 兩個成員都直接轉發這個字段，
+實測：`Info.{nameof(Json)}` 就是這個字段本身（`{nameof(ReferenceEquals)}` 為 true）；
+{nameof(CreateObject)} 與 {nameof(Json)} 兩個成員都直接轉發這個字段，
 故包裝層不持有第二份狀態，官方改了它也就跟著變。
+
+實測：`Info.{nameof(Json)}` 與 `{nameof(JsonTypeInfoInfo)}` 內部的這個字段是同一實例
+（`{nameof(ReferenceEquals)}` 為 true），沒有第二份包裝物件。
 ]
 """)]
 	private readonly JsonTypeInfo _json;
@@ -34,12 +44,16 @@ public partial class JsonTypeInfoInfo:TypeInfoBase{
 	[Doc($"""
 #Sum[包一個 {nameof(JsonTypeInfo)}。]
 
-#Params([[要包的官方型別元資料]])
+#Params([[Json, 要包的官方型別元資料]])
 
 #Descr[
-例：從 {nameof(JsonTypeInfoSrc)} 查到的元資料內部就是這樣包出來的，
+實測：從 {nameof(JsonTypeInfoSrc)} 查 `typeof(PoUser)` 得到的元資料內部就是這樣包出來的，
 成員表在建構子裏由官方 {nameof(JsonTypeInfo.Properties)} 轉成 {nameof(IMemberInfo)}，
 再交給 {nameof(TypeInfoBase)} 規整成契約序。
+
+實測（`PoUser`）：包出來後 {nameof(Members)} 是 11 項，首項 `Id` 的
+{nameof(IMemberInfo.DeclaringType)} 是 `typeof(PoUserBase)`，
+與反射來源的成員表逐位相同。
 ]
 """)]
 	public partial JsonTypeInfoInfo(JsonTypeInfo Json);
@@ -50,7 +64,8 @@ public partial class JsonTypeInfoInfo:TypeInfoBase{
 #Descr[
 官方就是用它表示「可不可以建實例」（標量等型別官方給 null）。
 
-例：掛了 `[JsonSerializable]` 的類別非 null，`i32` 之類的標量官方給 null，
+實測：`typeof(PoUser)` 非 null，調一次得到一個 `PoUser`；
+`typeof(PoNoCtor)`（未註冊且無無參構造函數）為 null，
 故本包不必自己判斷可建性，轉發即可。
 ]
 
@@ -66,7 +81,7 @@ public partial class JsonTypeInfoInfo:TypeInfoBase{
 #Sum[被包的官方 {nameof(JsonTypeInfo)} 本體。]
 
 #Descr[
-例：`Info.{nameof(Json)}!.{nameof(JsonTypeInfo.Type)}` 與 `Info.{nameof(Type)}` 是同一個 {nameof(Type)}，
+實測（`PoUser`）：`Info.{nameof(Json)}!.{nameof(JsonTypeInfo.Type)}` 與 `Info.{nameof(Type)}` 是同一個 {nameof(Type)}（`{nameof(ReferenceEquals)}` 為 true），
 兩處取到的東西一致，故從哪邊拿都不會出現分歧。
 ]
 
@@ -84,4 +99,23 @@ public partial class JsonTypeInfoInfo:TypeInfoBase{
 #See[{nameof(ITypeInfo.MkInst)}]
 """)]
 	public override partial obj? MkInst();
+
+	// ---- 私有輔助（實現見 JsonTypeInfoInfo.Impl.cs）----
+
+	[Doc($"""
+#Sum[把官方 {nameof(JsonTypeInfo)}.{nameof(JsonTypeInfo.Properties)} 包成成員表。]
+
+#Params([[Json, 官方型別元資料]])
+
+#Rtn[包好的成員表（尚未規整，由 {nameof(TypeInfoBase)} 建構子統一處理）]
+
+#Descr[
+官方 {nameof(JsonPropertyInfo.Name)} 是 JSON 名，
+與 C# 名相等的前提由調用方保證（命名策略為 null 且無 `[JsonPropertyName]`）。
+
+實測（`PoUser`）：官方有 11 個成員時這裡就轉出 11 個 {nameof(JsonMemberInfo)}，
+順序保持官方既有序，之後由 {nameof(TypeInfoSorter)} 規整。
+]
+""")]
+	private static partial IReadOnlyList<IMemberInfo> CollectMembers(JsonTypeInfo Json);
 }

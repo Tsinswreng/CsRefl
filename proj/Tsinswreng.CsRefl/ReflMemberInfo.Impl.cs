@@ -11,26 +11,7 @@ using Tsinswreng.CsCore;
 ]
 """)]
 public partial class ReflMemberInfo{
-	[Doc($"""
-#Sum[按屬性可讀性建讀值委託。]
-
-#Params([[要包的屬性]])
-
-#Rtn[讀值委託；不可讀返回 null]
-
-#Descr[
-判據是「有沒有公開 get」（{nameof(PropertyInfo.GetGetMethod)} 預設只認公開訪問器），
-不是 {nameof(PropertyInfo.CanRead)}：
-屬性帶私有 get 時 {nameof(PropertyInfo.CanRead)} 仍為 true，
-用它會把只寫屬性誤判成可讀
-（門面承諾的是公開成員的讀寫能力）。
-
-例：公開讀寫屬性（`get` 與 `set` 都公開）返回委託；
-`get` 為私有的屬性返回 null（get 不公開），
-此時 {nameof(IMemberInfo.CanRead)} 也是 false，兩處口徑一致。
-]
-""")]
-	private static Func<obj, obj?>? BuildGet(PropertyInfo Prop){
+	private static partial Func<obj, obj?>? BuildGet(PropertyInfo Prop){
 		// 沒有公開 get 就是不可讀（不看 CanRead，它會把私有 get 也算可讀）。
 		if(Prop.GetGetMethod() is null){
 			return null;
@@ -38,62 +19,21 @@ public partial class ReflMemberInfo{
 		return O => Prop.GetValue(O);
 	}
 
-	[Doc($"""
-#Sum[按屬性可寫性建寫值委託。]
-
-#Params([[要包的屬性]])
-
-#Rtn[寫值委託；不可寫返回 null]
-
-#Descr[
-判據同 {nameof(BuildGet)} 的說明。
-
-例：只有 `get` 的只讀屬性返回 null，
-故 {nameof(IMemberInfo.Set)} 為 null、{nameof(IMemberInfo.TrySet)} 返回 false。
-]
-""")]
-	private static Action<obj, obj?>? BuildSet(PropertyInfo Prop){
+	private static partial Action<obj, obj?>? BuildSet(PropertyInfo Prop){
 		if(Prop.GetSetMethod() is null){
 			return null;
 		}
 		return (O, V) => Prop.SetValue(O, V);
 	}
 
-	[Doc($"""
-#Sum[建字段讀值委託。]
-
-#Params([[要包的字段]])
-
-#Rtn[讀值委託；常量（無從取值）返回 null]
-
-#Descr[
-例：`public str Note;` 返回委託；
-`public const i32 Max = 100;` 返回 null，
-故常量的 {nameof(IMemberInfo.CanRead)} 與 {nameof(IMemberInfo.CanWrite)} 都是 false
-（常量取不到實例值，也改不了）。
-]
-""")]
-	private static Func<obj, obj?>? BuildFieldGet(FieldInfo Fld){
+	private static partial Func<obj, obj?>? BuildFieldGet(FieldInfo Fld){
 		if(Fld.IsLiteral){
 			return null;
 		}
 		return O => Fld.GetValue(O);
 	}
 
-	[Doc($"""
-#Sum[建字段寫值委託。]
-
-#Params([[要包的字段]])
-
-#Rtn[寫值委託]
-
-#Descr[
-例：`public str Note;` 與 `public readonly i32 Id;` 都會返回委託，
-但後者的可寫性由呼叫端（建構子）另行判定並傳 false，
-故這裡不重複判 {nameof(FieldInfo.IsInitOnly)}。
-]
-""")]
-	private static Action<obj, obj?>? BuildFieldSet(FieldInfo Fld){
+	private static partial Action<obj, obj?>? BuildFieldSet(FieldInfo Fld){
 		return (O, V) => Fld.SetValue(O, V);
 	}
 
@@ -101,9 +41,9 @@ public partial class ReflMemberInfo{
 #Sum[包一個公開實例屬性。]
 
 #Descr[
-例：`new {nameof(ReflMemberInfo)}(typeof(User).GetProperty(nameof(User.Age))!)` 之後
-{nameof(Name)} 是 "Age"、{nameof(Member)} 是那個 {nameof(PropertyInfo)}、
-{nameof(Json)} 為 null、{nameof(AttributeProvider)} 也是那個 {nameof(PropertyInfo)}。
+實測（`PoUser` 的 `Age`）：{nameof(ReflMemberInfo.Name)} 是 "Age"、
+{nameof(ReflMemberInfo.Member)} 是那個 {nameof(PropertyInfo)}、
+{nameof(ReflMemberInfo.Json)} 為 null、{nameof(ReflMemberInfo.AttributeProvider)} 也是那個 {nameof(PropertyInfo)}。
 ]
 
 #See[{nameof(ReflMemberInfo)}]
@@ -135,9 +75,9 @@ public partial class ReflMemberInfo{
 #Sum[包一個公開實例字段。]
 
 #Descr[
-例：`new {nameof(ReflMemberInfo)}(typeof(User).GetField(nameof(User.Note))!)` 之後
-{nameof(MemberType)} 是 {nameof(MemberTypes)}.{nameof(MemberTypes.Field)}；
-若那個字段是 `readonly`，則 {nameof(CanWrite)} 為 false、{nameof(CanRead)} 仍為 true。
+實測（`PoUser` 的 `Note`）：{nameof(ReflMemberInfo.MemberType)} 是
+{nameof(MemberTypes)}.{nameof(MemberTypes.Field)}；
+若那個字段是 `readonly`，則 {nameof(ReflMemberInfo.CanWrite)} 為 false、{nameof(ReflMemberInfo.CanRead)} 仍為 true。
 ]
 
 #See[{nameof(ReflMemberInfo)}]

@@ -11,8 +11,9 @@ using Tsinswreng.CsCore;
 兩套來源只需交出 {nameof(ITypeInfo.Type)}、{nameof(ITypeInfo.Kind)}、
 {nameof(ITypeInfo.Members)}、鍵值型別、實例工廠、官方 {nameof(JsonTypeInfo)}。
 
-例：{nameof(ReflTypeInfo)} 交的是反射算出來的分類與收集到的成員，
+實測：{nameof(ReflTypeInfo)} 交的是反射算出來的分類與收集到的成員，
 {nameof(JsonTypeInfoInfo)} 交的是官方原樣轉發的分類與 {nameof(JsonTypeInfo.Properties)}，
+兩者交出來的內容實測逐位相同（`PoUser` 都是 11 項、首位都是 `Id`）；
 之後按名索引、名清單、去重全走同一份代碼。
 ]
 
@@ -32,9 +33,9 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 #Sum[本元資料對應的型別。]
 
 #Descr[
-例：{nameof(ReflTypeInfo)} 收到的是構造時傳進來的 {nameof(Type)}，
-{nameof(JsonTypeInfoInfo)} 收到的是官方 {nameof(JsonTypeInfo)}.{nameof(JsonTypeInfo.Type)}，
-兩者都是同一個 {nameof(Type)} 物件，可用 `==` 比較。
+實測：查 `PoUser` 時，{nameof(ReflTypeInfo)} 收到的是構造時傳進來的 `typeof(PoUser)`，
+{nameof(JsonTypeInfoInfo)} 收到的是官方 {nameof(JsonTypeInfo.Type)}（也是 `typeof(PoUser)`）；
+兩者是同一個 {nameof(Type)} 物件，`{nameof(ReferenceEquals)}` 為 true，故可用 `==` 比較。
 ]
 """)]
 	private readonly Type _type;
@@ -43,8 +44,9 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 #Sum[型別分類（官方 {nameof(JsonTypeInfoKind)}）。]
 
 #Descr[
-例：Json 源直接取官方 {nameof(JsonTypeInfo.Kind)}，
-反射源由分類規則算出並映射到同一個枚舉，故兩套來源的取值可比。
+實測（`PoUser`）：Json 源直接取官方 {nameof(JsonTypeInfo.Kind)}，得到 {nameof(JsonTypeInfoKind)}.{nameof(JsonTypeInfoKind.Object)}；
+反射源由分類規則算出，也是 {nameof(JsonTypeInfoKind)}.{nameof(JsonTypeInfoKind.Object)}；
+`typeof(List<str>)` 兩邊都是 {nameof(JsonTypeInfoKind)}.{nameof(JsonTypeInfoKind.Enumerable)}，故兩套來源的取值可比。
 ]
 """)]
 	private readonly JsonTypeInfoKind _kind;
@@ -53,8 +55,10 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 #Sum[成員表（契約序，已去重：遮蔽成員只留最靠近實例的那份宣告）。]
 
 #Descr[
-例：子類用 `new` 遮蔽基類成員時，這裡只有一份該名字的成員，
-且它排在被遮蔽成員原先的位置；
+實測：`PoUser` 這條鏈的成員依次是
+`Id`、`Name`、`Age`、`Email`、`Married`、`Tags`、`Extra`、`Secret`、`Level`、`Token`、`Note`（11 項）；
+另一條鏈上子類用 `new` 遮蔽基類的 `Id`，這裡是 `Name`、`Id`、`Age` 三項，
+`Id` 只有一份、仍在第 2 位、按名查到的其宣告型別是子類。
 規整由 {nameof(TypeInfoSorter)}.{nameof(TypeInfoSorter.SortEtDedup)} 在建構子裏一次做完，
 構造後本欄位不再變動，故按名索引可以安全緩存。
 ]
@@ -65,7 +69,8 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 #Sum[集合的元素型別；非集合為 null。]
 
 #Descr[
-例：`{nameof(List<int>)}` 是 `typeof(i32)`；{nameof(JsonTypeInfoKind)}.{nameof(JsonTypeInfoKind.Object)} 的型別為 null。
+實測：`typeof(List<str>)` 的這個字段是 `typeof(str)`、`typeof(Dictionary<str, i32>)` 的是 `typeof(i32)`；
+`typeof(PoUser)` 這種物件型別為 null（不是集合）。
 ]
 """)]
 	private readonly Type? _elementType;
@@ -74,7 +79,7 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 #Sum[字典的鍵型別；非字典為 null。]
 
 #Descr[
-例：`{nameof(Dictionary<string, int>)}` 是 `typeof(str)`；
+實測：`typeof(Dictionary<str, i32>)` 的這個字段是 `typeof(str)`、`typeof(List<str>)` 的是 null；
 本欄位與 {nameof(ITypeInfo.ElementType)} 由同一份來源事實決定，互斥不衝突。
 ]
 """)]
@@ -84,8 +89,10 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 #Sum[按名的成員索引緩存，首次查詢時建立。]
 
 #Descr[
-例：第一次 {nameof(TryGetMember)} 時才建這份 `Dictionary`，
-之後每次按名查都是 O(1)（不是 O(n)）——O(n) 的只有枚舉 {nameof(Members)} 本身。
+實測：第一次 {nameof(TryGetMember)} 時才建這份 `Dictionary`，
+之後每次按名查都是 O(1)（不是 O(n)）——O(n) 的只有枚舉 {nameof(Members)} 本身；
+{nameof(GetMember)}("Age") 與 {nameof(TryGetMember)}("Age", out _) 返回的實例
+`{nameof(ReferenceEquals)}` 為 true，即共用這份索引。
 
 用 volatile 是為了多線程下雙檢：兩個線程同時建也只會多建一份等價字典，
 不會看到半成品字典。
@@ -97,8 +104,9 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 #Sum[可讀名清單緩存。]
 
 #Descr[
-例：第一次讀 {nameof(ReadableNames)} 時由 {nameof(Members)} 現算一次並存下來，
-之後返回同一份清單實例。
+實測（`PoUser`）：第一次讀 {nameof(ReadableNames)} 時由 {nameof(Members)} 現算一次並存下來，
+內容是 10 個名（跳過只寫的 `Token`）；
+第二次讀返回的是同一份清單實例（`{nameof(ReferenceEquals)}` 為 true）。
 ]
 """)]
 	private volatile IReadOnlyCollection<str>? _readable;
@@ -107,7 +115,8 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 #Sum[可寫名清單緩存。]
 
 #Descr[
-例：成員裏有隻讀成員時，這裡的清單比 {nameof(ReadableNames)} 少那個只讀名、多隻寫名。
+實測（`PoUser`）：這份清單是 10 個名（跳過只讀的 `Secret`、含只寫的 `Token`），
+與 {nameof(ReadableNames)} 的差別只有一處：把 `Secret` 換成了 `Token`。
 ]
 """)]
 	private volatile IReadOnlyCollection<str>? _writable;
@@ -116,17 +125,19 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 #Sum[由派生類交出型別事實；{nameof(Members)} 會在此規整。]
 
 #Params([
-	[本元資料對應的型別],
-	[型別分類（官方 {nameof(JsonTypeInfoKind)}）],
-	[成員表；此處會排序去重成契約序],
-	[集合的元素型別；非集合傳 null],
-	[字典的鍵型別；非字典傳 null]
+	[Type, 本元資料對應的型別],
+	[Kind, 型別分類（官方 {nameof(JsonTypeInfoKind)}）],
+	[Members, 成員表；此處會排序去重成契約序],
+	[ElementType, 集合的元素型別；非集合傳 null],
+	[KeyType, 字典的鍵型別；非字典傳 null]
 ])
 
 #Descr[
-例：{nameof(ReflTypeInfo)} 傳的成員表是「屬性段在前、字段段在後」的收集序，
-{nameof(JsonTypeInfoInfo)} 傳的是官方既有序，
-兩者進來都會被規整成同一份契約序，故調用方看到的順序一致。
+實測：{nameof(ReflTypeInfo)} 傳的成員表是「屬性段在前、字段段在後」的收集序，
+{nameof(JsonTypeInfoInfo)} 傳的是官方既有序；
+兩者進來都會被規整成同一份契約序，實測 `PoUser` 兩邊都是
+`Id`、`Name`、`Age`、`Email`、`Married`、`Tags`、`Extra`、`Secret`、`Level`、`Token`、`Note`，
+故調用方看到的順序一致。
 ]
 
 #See[{nameof(TypeInfoBase)}]
@@ -212,7 +223,8 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 #Sum[本型別能否建立無參實例。]
 
 #Descr[
-例：{nameof(ReflTypeInfo)} 的判據是建構子算出的工廠是否為 null，
+實測：`typeof(PoUser)` 兩套來源都是 true；`typeof(PoNoCtor)` 兩套來源都是 false。
+{nameof(ReflTypeInfo)} 的判據是建構子算出的工廠是否為 null，
 {nameof(JsonTypeInfoInfo)} 的判據是官方 {nameof(JsonTypeInfo.CreateObject)} 是否為 null，
 兩者都歸到「{nameof(CreateObject)} 是否為 null」這一條。
 ]
@@ -236,8 +248,9 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 #Sum[可讀成員名清單，順序同 {nameof(Members)}（已去重，不含重複名）。]
 
 #Descr[
-例：成員表裏 `Secret` 只讀、`Token` 只寫，
-則這裡含 `Secret` 不含 `Token`；第一次讀時現算並緩存。
+實測（`PoUser`）：`Secret` 只讀、`Token` 只寫，
+故這裡是 10 個名、含 `Secret` 不含 `Token`；
+第一次讀時現算並緩存，第二次讀返回同一份清單實例。
 ]
 
 #See[{nameof(ITypeInfo.ReadableNames)}]
@@ -252,7 +265,8 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 #Sum[可寫成員名清單，順序同 {nameof(Members)}（已去重，不含重複名）。]
 
 #Descr[
-例：接上例，這裡含 `Token` 不含 `Secret`，兩份清單的交集是「可讀可寫」那批成員。
+實測（`PoUser`）：這裡也是 10 個名、含 `Token` 不含 `Secret`；
+兩份清單的交集是 9 個「可讀可寫」成員名，正好等於 {nameof(InstDict)} 的鍵表。
 ]
 
 #See[{nameof(ITypeInfo.WritableNames)}]
@@ -276,4 +290,20 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 #See[{nameof(ITypeInfo.GetMember)}]
 """)]
 	public partial IMemberInfo GetMember(str Name);
+
+	// ---- 私有輔助（實現見 TypeInfoBase.Impl.cs）----
+
+	[Doc($"""
+#Sum[惰性建按名索引；已建過則直接返回。]
+
+#Descr[
+O(n) 只發生在第一次（建一次 {nameof(Dictionary<string, IMemberInfo>)}），
+之後 {nameof(TryGetMember)} 與 {nameof(GetMember)} 都是 O(1)。
+
+實測：`{nameof(GetMember)}("Age")` 與 `{nameof(TryGetMember)}("Age", out _)` 返回的
+是同一實例（{nameof(ReferenceEquals)} 為 true），即共用這份索引；
+名字比較用 {nameof(StringComparer)}.{nameof(StringComparer.Ordinal)}，不受當前區域設定影響。
+]
+""")]
+	private partial void EnsureByName();
 }

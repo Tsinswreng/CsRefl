@@ -8,22 +8,25 @@ using Tsinswreng.CsCore;
 #Descr[
 兩條口徑（職責不同，不可混為一談）：
 
-+ 出現口徑（{nameof(IDictionary<string, object?>)}.{nameof(IDictionary<string, object?>.Keys)}、
++ 出現口徑（{nameof(IDictionary<string, object?>.Keys)}、
 	{nameof(IDictionary<string, object?>.Count)}、
 	{nameof(IDictionary<string, object?>.Values)}、枚舉）：
-	可讀且可寫的成員——這些是視圖「表現為字典」時呈現的鍵，順序 = 成員序；
+	可讀且可寫的成員，順序 = 成員序；
 + 訪問口徑（索引器、{nameof(IDictionary<string, object?>.TryGetValue)}、
 	{nameof(IDictionary<string, object?>.ContainsKey)}）：
-	讀寫各按成員自身能力放行，
-	只讀成員讀得到、寫不進；只寫成員寫得進、讀不到。
-	兩者的差別是故意的：
-	字典視圖要能當普通字典改值，
-	又不該因為某成員只讀就把它的值藏起來。
+	讀只要求可讀、寫只要求可寫，判據都是成員表而不是鍵表。
 
-例：某實例的成員表裏 `Secret` 只讀、`Token` 只寫，其餘可讀可寫，
-則 {nameof(IDictionary<string, object?>.Keys)} 不含 `Secret` 也不含 `Token`，
-但 `Dict["Secret"]` 讀得到值、`Dict["Token"] = "x"` 寫得進實例，
-這兩個操作都不以「在不在鍵表內」為前提。
+實測（`PoUser`，成員序 `Id`、`Name`、`Age`、`Email`、`Married`、`Tags`、`Extra`、
+`Secret`、`Level`、`Token`、`Note`，其中 `Secret` 只讀、`Token` 只寫）：
+
++ {nameof(IDictionary<string, object?>.Count)} 是 9，
+	{nameof(IDictionary<string, object?>.Keys)} 依次為
+	`Id`、`Name`、`Age`、`Email`、`Married`、`Tags`、`Extra`、`Level`、`Note`
+	（不含只讀的 `Secret`，也不含只寫的 `Token`）；
++ `Dict["Secret"]` 讀得到 "s"（只讀成員讀得，只是不是鍵）；
++ `Dict["Token"] = "t1"` 寫進物件（只寫成員寫得進，但 `Dict["Token"]` 讀會拋）；
++ `Dict.{nameof(IDictionary<string, object?>.ContainsKey)}("Secret")` 是 false，
+	而同一時刻 `Dict["Secret"]` 成功，兩者判據不同。
 ]
 
 #Descr[
@@ -38,9 +41,10 @@ using Tsinswreng.CsCore;
 只有改既有成員的值是合法的。
 {nameof(IDictionary<string, object?>.Keys)} 是活視圖（與視圖同一份鍵集合），但不提供改形狀的入口。
 
-例：`Dict["Age"] = 31` 合法且會寫回物件；
-`Dict["NoSuchKey"] = 1` 拋 {nameof(KeyNotFoundException)}（成員表裏沒這個名字）；
-`Dict.Add("NewKey", 1)` 拋 {nameof(NotSupportedException)}（型別上沒有這個成員，加不出來）。
+實測：`Dict["NoSuch"]` 與 `Dict["NoSuch"] = 1` 都拋 {nameof(KeyNotFoundException)}，
+訊息含可用鍵清單（實測含 `"Level"` 這個子串）；
+`Dict["Secret"] = "x"` 拋 {nameof(InvalidOperationException)}（成員在、但不可寫）；
+`Dict.Add("NewKey", 1)`、`Dict.Remove("Age")`、`Dict.Clear()` 都拋 {nameof(NotSupportedException)}。
 ]
 
 #Descr[
@@ -49,9 +53,8 @@ using Tsinswreng.CsCore;
 + {nameof(IDictionary<string, object?>.Values)} 不排序
 	（舊實現把異質值塞進排序集合，值型別不可互比時會拋）
 
-例：成員序是 `Id`、`Name`、`Age`，
-則 {nameof(IDictionary<string, object?>.Keys)} 就是這個順序，
-可以直接拿去當 SQL 的列序或前端表格的欄位序。
+實測：上例的鍵序就是成員序（`Id` 在 `Note` 之前，而不是字母序的 `Age` 在前），
+值裏 `i64`、`str`、`i32`、集合混在一起也照樣平鋪返回，不會拋。
 ]
 """)]
 //TswgTodo 是不是有點違反里氏替換了?
@@ -64,9 +67,8 @@ public interface IInstDict:IDictionary<str,obj?>{
 #Sum[視圖背後的物件。]
 
 #Descr[
-例：`new {nameof(InstDict)}(User, Info).{nameof(Target)}` 就是傳進去的那個 `User`，
-讀寫都是往這個物件上落，
-故視圖本身不持有成員值的副本，改一次立刻能從原物件看到。
+實測：`Dict["Level"] = 8` 之後原物件的 `Level` 就是 8，
+讀寫都落在這個物件上，視圖本身不持有成員值的副本。
 ]
 """)]
 	obj? Target{get;}
@@ -75,11 +77,10 @@ public interface IInstDict:IDictionary<str,obj?>{
 #Sum[視圖所用到的型別元資料。]
 
 #Descr[
-鍵表、讀寫能力都從這份元資料現算，故視圖的形狀由它決定。
+鍵表與讀寫能力都從這份元資料現算，故視圖的形狀由它決定。
 
-例：拿 {nameof(ITypeInfo.Type)} 不同的元資料來建視圖，
-鍵集合與可寫成員都會跟著變；
-用基類的元資料建視圖時，只有基類宣告的成員在視圖裏。
+實測：用 `PoUser` 的元資料建的視圖，其 {nameof(ITypeInfo.Type)} 是 `typeof(PoUser)`；
+換用基類 `PoUserBase` 的元資料建視圖，鍵就只有 `Id` 與 `Name` 兩個。
 ]
 """)]
 	ITypeInfo TypeInfo{get;}

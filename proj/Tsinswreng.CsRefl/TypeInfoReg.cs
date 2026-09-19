@@ -11,15 +11,19 @@ using Tsinswreng.CsCore;
 供「反射與 JSON 都覆蓋不到」的場合
 （如 CsSql 內部的 `SchemaHistory`，手寫 5 個成員的元資料即可）。
 
-例：某型別不適合走反射、也不想掛源生成註解時，
-手工造一份元資料塞進註冊表，上層代碼照常按名讀寫。
+實測：把 `typeof(PoColor)` 手工建的 {nameof(ReflTypeInfo)} 塞進註冊表，
+再合成到 {nameof(MergedTypeInfoSrc)} 且排在 {nameof(ReflTypeInfoSrc)} 之前時，
+查 `PoColor` 拿到的就是註冊表裏那個實例（{nameof(ReferenceEquals)} 為 true），
+證明手工登記確實蓋過了「現場全能反射」；
+上層代碼照常按名讀寫（`Dict["Level"] = 8` 之後物件上的 `Level` 就是 8）。
 ]
 
 #Descr[
 線程安全：讀寫都走 {nameof(ConcurrentDictionary<,>)}；
 初始化期填完之後當只讀用也安全。
 
-例：DI 容器裏註冊成單例，啟動時把手工元資料填進去，
+實測：登記 `typeof(PoUser)` 之後再登記 `typeof(PoColor)`，兩者互不影響、都可查到；
+讀寫都走 {nameof(ConcurrentDictionary<,>)}，故 DI 容器裏註冊成單例、啟動時把手工元資料填進去，
 之後多線程查詢不會互相干擾。
 ]
 
@@ -32,8 +36,11 @@ public partial class TypeInfoReg:ITypeInfoReg{
 #Sum[型別 → 元資料表。]
 
 #Descr[
-例：{nameof(Add)} 寫這張表，{nameof(TryGetInfo)} 讀這張表，
+實測：{nameof(Add)} 寫這張表，{nameof(TryGetInfo)} 讀這張表，
 {nameof(RegisteredTypes)} 取它的鍵快照，三者共用同一份狀態。
+
+實測：`{nameof(Add)}(typeof(PoUser), Info)` 之後
+`{nameof(TryGetInfo)}(typeof(PoUser), out var Got)` 返回 true 且 `Got` 就是剛才那個 `Info`（{nameof(ReferenceEquals)} 為 true）。
 ]
 """)]
 	private readonly ConcurrentDictionary<Type, ITypeInfo> _map = new();
@@ -42,8 +49,12 @@ public partial class TypeInfoReg:ITypeInfoReg{
 #Sum[列舉已註冊型別（快照）。]
 
 #Descr[
-例：登記了 3 個型別就返回 3 個 {nameof(Type)}；
+實測：登記 `typeof(PoUser)` 與 `typeof(PoColor)` 後返回 2 個 {nameof(Type)}；
 返回的是一份拷貝，之後再 {nameof(Add)} 不會改動已取出的那份清單。
+
+實測：登記 `typeof(PoUser)` 與 `typeof(PoColor)` 後 {nameof(RegisteredTypes)} 的
+{nameof(IReadOnlyCollection<int>)}.{nameof(IReadOnlyCollection<int>.Count)} 是 2，含這兩個型別；
+之後再 `{nameof(Add)}(typeof(PoNoCtor), Info)`，先前取出的那份仍是 2（快照不受影響）。
 ]
 
 #See[{nameof(ITypeInfoSrc.RegisteredTypes)}]
@@ -58,8 +69,12 @@ public partial class TypeInfoReg:ITypeInfoReg{
 #Sum[取已註冊型別的元資料；未註冊返回 false。]
 
 #Descr[
-例：{nameof(Add)} 過 `typeof(User)`（還未 {nameof(Remove)}）時返回 true，
+實測：{nameof(Add)} 過 `typeof(PoUser)`（還未 {nameof(Remove)}）時返回 true，
 移掉之後返回 false；與 {nameof(ReflTypeInfoSrc)} 不同，本表只認登記過的型別。
+
+實測：`{nameof(TryGetInfo)}(typeof(PoUser), out var Info)` 在登記過時返回 true
+且 `Info.{nameof(ITypeInfo.Type)}` 是 `typeof(PoUser)`；
+未登記的型別返回 false 且 `Info` 為 null（不像反射來源那樣現場造一份）。
 ]
 
 #See[{nameof(ITypeInfoSrc.TryGetInfo)}]
@@ -82,4 +97,18 @@ public partial class TypeInfoReg:ITypeInfoReg{
 #See[{nameof(ITypeInfoReg.Remove)}]
 """)]
 	public partial bool Remove(Type Type);
+
+	// ---- 私有輔助（實現見 TypeInfoReg.Impl.cs）----
+
+	[Doc($"""
+#Sum[已註冊型別快照。]
+
+#Rtn[型別列表；鍵的一份拷貝]
+
+#Descr[
+實測：登記 `typeof(PoUser)` 與 `typeof(PoColor)` 後得到 2 個 {nameof(Type)}；
+因為是拷貝，之後再 {nameof(Add)} 不會影響已經取出的那份。
+]
+""")]
+	private partial IReadOnlyCollection<Type>? SnapshotTypes();
 }

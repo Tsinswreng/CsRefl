@@ -15,9 +15,9 @@ public partial class JsonMemberInfo{
 #Sum[包一個 {nameof(JsonPropertyInfo)}。]
 
 #Descr[
-例：`new {nameof(JsonMemberInfo)}(Info.{nameof(JsonTypeInfo.Properties)}[0])` 之後
-{nameof(Json)} 是那個官方成員、{nameof(Member)} 為 null、
-{nameof(Get)} 與 {nameof(Set)} 就是官方源生成的委託。
+實測（`PoUser`）：包 `Info.{nameof(JsonTypeInfo.Properties)}[0]`（即 `Id`）之後
+{nameof(Json)} 是那個官方 {nameof(JsonPropertyInfo)}、{nameof(Member)} 為 null、
+{nameof(Name)} 是 "Id"、{nameof(Get)} 與 {nameof(Set)} 就是官方源生成的委託。
 ]
 
 #See[{nameof(JsonMemberInfo)}]

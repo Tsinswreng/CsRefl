@@ -11,8 +11,11 @@ using Tsinswreng.CsCore;
 來源只負責「查型別」，
 本類負責把查詢結果拼成好用的一次調用。
 
-例：不需要先 `TryGetInfo` 再 `TryGetMember` 再 `TryGet` 三步，
-直接 `Src.{nameof(TryGet)}(typeof(User), "Age", User, out var V)` 一次拿到值。
+實測：不必先 `TryGetInfo` 再 `TryGetMember` 再 `TryGet` 三步，
+直接 `Src.{nameof(TryGet)}(typeof(PoUser), "Age", User, out var V)` 一次拿到值，
+當 `User.Age` 是 30 時 `V` 是 boxed 的 `i32` 30；
+同樣的三步合寫在 {nameof(ToInstDict)} 與 {nameof(AssignFromDict)} 上，
+故調用方（CsSql、Ngan.Dict）不必自己碰來源與成員兩層。
 ]
 
 #Descr[
@@ -29,7 +32,7 @@ public static partial class ITypeInfoSrcExtn{
 	[Doc($"""
 #Sum[運行期型別的 DAM 擔保。]
 
-#Params([[運行期型別，通常來自 `obj.GetType()`]])
+#Params([[T, 運行期型別，通常來自 `obj.GetType()`]])
 
 #Rtn[原樣返回入參]
 
@@ -39,8 +42,9 @@ public static partial class ITypeInfoSrcExtn{
 缺元數據時會在反射建元資料處自然拋錯，不會悄悄剪錯，
 故此處顯式擔保成員元數據需求。
 
-例：`{nameof(ToInstDict)}(User)` 內部就是先 `{nameof(RuntimeType)}(User.GetType())`，
-再拿這個 {nameof(Type)} 去查來源；調用方不必自己處理 DAM。
+實測：`{nameof(ToInstDict)}(User)` 內部就是先 `{nameof(RuntimeType)}(User.GetType())`，
+再拿這個 {nameof(Type)} 去查來源（實測得到的是 `typeof(PoUser)`）；
+調用方不必自己處理 DAM，剪裁分析器也不會因此報警。
 ]
 """)]
 	[UnconditionalSuppressMessage("Trimming", "IL2068",
@@ -51,7 +55,7 @@ public static partial class ITypeInfoSrcExtn{
 	[Doc($"""
 #Sum[取成員。]
 
-#Params([[來源], [要查的型別], [成員名]])
+#Params([[z, 來源], [Type, 要查的型別], [Name, 成員名]])
 
 #Rtn[取到的成員元資料]
 
@@ -61,9 +65,11 @@ public static partial class ITypeInfoSrcExtn{
 `Type` 的 DAM 註解：
 後端會把型別交給來源查元資料（反射來源需要成員元數據）。
 
-例：`Src.{nameof(GetMember)}(typeof(User), "Age")` 返回 `Age` 的 {nameof(IMemberInfo)}；
-成員名拼錯成 `"NoSuch"` 則拋，訊息裏同時有型別全名與成員名，可直接拿去排查；
-型別沒註冊到這個來源時拋的也是 {nameof(KeyNotFoundException)}，但訊息指出的是型別未註冊。
+實測：`Src.{nameof(GetMember)}(typeof(PoUser), "Age")` 返回的
+{nameof(IMemberInfo.PropertyType)} 是 `typeof(i32)`、{nameof(IMemberInfo.DeclaringType)} 是 `typeof(PoUser)`；
+成員名拼錯成 `"NoSuch"` 拋 {nameof(KeyNotFoundException)}，訊息含成員名、可直接拿去排查；
+型別沒註冊到這個來源（如 {nameof(JsonTypeInfoSrc)} 查 `typeof(PoNoCtor)`）拋的也是
+{nameof(KeyNotFoundException)}，但訊息指出的是型別未註冊，兩種錯分得開。
 ]
 """)]
 	public static partial IMemberInfo GetMember(
@@ -75,14 +81,15 @@ public static partial class ITypeInfoSrcExtn{
 	[Doc($"""
 #Sum[取成員的 Try 版。]
 
-#Params([[來源], [要查的型別], [成員名], [取到的成員；失敗時為 null]])
+#Params([[z, 來源], [Type, 要查的型別], [Name, 成員名], [M, 取到的成員；失敗時為 null]])
 
 #Rtn[型別未註冊或成員不存在都返回 false]
 
 #Descr[
-例：先 `Src.{nameof(TryGetMember)}(T, "Age", out var M)` 判真假，
-命中才用 `M`，不命中就當這條欄位不存在；
-入參 `z` 或 `Type` 為 null 同樣返回 false 而不拋，故適合接外部傳來的名字。
+實測：`Src.{nameof(TryGetMember)}(typeof(PoUser), "Age", out var M)` 返回 true 且 `M` 非 null；
+名字換成 `"NoSuch"`、或型別換成未註冊的 `typeof(PoNoCtor)`、
+或來源與型別傳 null，都返回 false 且 `M` 為 null、一律不拋，
+故適合接外部傳來的名字。
 
 不確定名字是否在型別上時用這個；確定必須成功時用 {nameof(GetMember)}。
 ]
@@ -97,14 +104,14 @@ public static partial class ITypeInfoSrcExtn{
 	[Doc($"""
 #Sum[按名讀值。]
 
-#Params([[來源], [物件的型別], [成員名], [實例], [讀出的值]])
+#Params([[z, 來源], [Type, 物件的型別], [Name, 成員名], [O, 實例], [R, 讀出的值]])
 
 #Rtn[型別、成員、實例、可讀性任一不滿足返回 false]
 
 #Descr[
-例：`Src.{nameof(TryGet)}(typeof(User), "Age", User, out var V)` 命中，
-`V` 是 boxed 的 `i32`；讀只讀成員照樣命中（可讀），
-讀只寫成員返回 false；傳錯型別的實例返回 false。
+實測（`PoUser`，`Age = 30`、`Secret = "s"`）：`Src.{nameof(TryGet)}(typeof(PoUser), "Age", User, out var V)` 返回 true 且 `V` 是 boxed 的 `i32` 30；
+`"Secret"`（只讀）也返回 true 且 `V` 是 "s"；
+`"Token"`（只寫）返回 false；傳 `new PoColor()` 返回 false（實例型別不符）。
 
 三步（查型別、查成員、讀值）合一，失敗一律用 false 表示，
 故適合批量回填、按外部欄位名取值這類「能取就取」的場景。
@@ -121,14 +128,14 @@ public static partial class ITypeInfoSrcExtn{
 	[Doc($"""
 #Sum[按名寫值。]
 
-#Params([[來源], [物件的型別], [成員名], [實例], [要寫入的值]])
+#Params([[z, 來源], [Type, 物件的型別], [Name, 成員名], [O, 實例], [V, 要寫入的值]])
 
 #Rtn[型別、成員、實例、可寫性任一不滿足返回 false]
 
 #Descr[
-例：`Src.{nameof(TrySet)}(typeof(User), "Age", User, 31)` 命中，之後 `User.Age` 是 31；
-寫只讀成員返回 false 且不動實例；
-值型別不符（拿 `str` 當 `i32` 寫）不返回 false，而是照常拋異常。
+實測（`PoUser`）：`Src.{nameof(TrySet)}(typeof(PoUser), "Age", User, 31)` 返回 true，之後 `User.Age` 是 31；
+`"Secret"`（只讀）返回 false 且 `User.Secret` 仍是 "s"（不動實例）；
+拿 `str` 當 `i32` 寫不返回 false，而是拋 {nameof(InvalidOperationException)}。
 
 區分「不可寫」與「寫錯型別」是刻意的：
 前者是型別設計決定的、可以無視；後者是調用方的 bug、必須爆出來。
@@ -145,7 +152,7 @@ public static partial class ITypeInfoSrcExtn{
 	[Doc($"""
 #Sum[建淺字典視圖，型別取 `O.GetType()`。]
 
-#Params([[來源], [目標物件]])
+#Params([[z, 來源], [O, 目標物件]])
 
 #Rtn[該物件的淺字典視圖]
 
@@ -155,10 +162,11 @@ public static partial class ITypeInfoSrcExtn{
 
 `O` 為 null 拋 {nameof(ArgumentNullException)}。
 
-例：`Src.{nameof(ToInstDict)}(User)` 得到 {nameof(IInstDict)}
-（視圖的鍵是運行期型別上可讀可寫的成員）；
-若 `User` 的靜態型別是基類而運行期是子類，
-這裡查的是子類的元資料，故子類新增的成員也在視圖裏。
+實測：`Src.{nameof(ToInstDict)}(User)` 得到的 {nameof(IInstDict)}
+其 {nameof(IInstDict.Target)} 就是那個 `User`、{nameof(IInstDict.Count)} 是 9
+（鍵是運行期型別 `PoUser` 上可讀可寫的成員，`Secret` 只讀故不在鍵表內）；
+`Dict["Id"]` 與 `User.Id` 是同一個值。
+若變數的靜態型別是基類而運行期是子類，這裡查的是子類的元資料，故子類新增的成員也在視圖裏。
 ]
 """)]
 	public static partial IInstDict ToInstDict(this ITypeInfoSrc z, obj? O);
@@ -166,13 +174,14 @@ public static partial class ITypeInfoSrcExtn{
 	[Doc($"""
 #Sum[建淺字典視圖，型別可由調用方顯式給。]
 
-#Params([[來源], [目標物件], [物件的型別；為 null 時退到 `O.GetType()`]])
+#Params([[z, 來源], [O, 目標物件], [Type, 物件的型別；為 null 時退到 `O.GetType()`]])
 
 #Rtn[該物件的淺字典視圖]
 
 #Descr[
-例：傳 `typeof(Base)` 而物件其實是子類，
-則視圖只認基類宣告的成員（子類新增的成員不在鍵表裏，也讀寫不了），
+實測：傳 `typeof(PoUserBase)` 而物件其實是 `PoUser`，
+則視圖的 {nameof(IInstDict.Count)} 是 2、{nameof(IInstDict.Keys)} 依次是 `Id`、`Name`，
+子類新增的成員不在鍵表裏；
 這就是「只要基類那一部分」時該用的形狀。
 ]
 """)]
@@ -185,16 +194,19 @@ public static partial class ITypeInfoSrcExtn{
 	[Doc($"""
 #Sum[把字典寫回物件（型別取 `O.GetType()`）。]
 
-#Params([[來源], [目標物件], [要寫回的字典]])
+#Params([[z, 來源], [O, 目標物件], [Dict, 要寫回的字典]])
 
 #Descr[
 按名逐鍵 {nameof(TrySet)}，只讀成員跳過；
 鍵不在型別上 → {nameof(KeyNotFoundException)}（訊息同時列可寫名與可讀名，便於對照）；
 值型別不符 → {nameof(InvalidOperationException)}。
 
-例：外部傳來一個字典，裏面有 `Age` 一個正常值、還有一個只讀成員的鍵，
-`Age` 正常寫入，`Secret` 因只讀被靜默跳過（不算錯，這是型別決定的）；
-字典裏多一個 `"NoSuch"` 就不是跳過了，直接拋，因為那是鍵名對不上。
+實測：字典是 `Id=9L`、`Name="小紅"`、`Level=7` 時三個鍵都寫回物件；
+字典是 `Level=4`、`Secret="改不掉"` 時 `User.Level` 變成 4，
+而 `User.Secret` 仍是 "s"（只讀鍵被靜默跳過，不拋）；
+字典裏多一個 `"NoSuch"` 就不是跳過了，拋 {nameof(KeyNotFoundException)}
+（訊息含可用可寫鍵，實測含 "Age" 可被斷言）；
+值型別不符（`Age` 傳 `"不是數字"`）拋 {nameof(InvalidOperationException)}。
 
 要「只寫認得的鍵、其餘不管」的寬鬆語義，就先自己過濾字典再用；
 本方法選擇嚴格，是因為寫回物件通常發生在反序列化路徑上，靜默丟鍵比拋異常更難查。
@@ -205,11 +217,11 @@ public static partial class ITypeInfoSrcExtn{
 	[Doc($"""
 #Sum[把字典寫回物件，型別由調用方顯式給。]
 
-#Params([[來源], [目標物件], [要寫回的字典], [物件的型別；為 null 時退到 `O.GetType()`]])
+#Params([[z, 來源], [O, 目標物件], [Dict, 要寫回的字典], [Type, 物件的型別；為 null 時退到 `O.GetType()`]])
 
 #Descr[
-例：只想把字典裏的基類欄位寫進去時傳 `typeof(Base)`，
-子類新增的鍵就會因為「不在基類成員表上」而拋 {nameof(KeyNotFoundException)}，
+實測：傳 `typeof(PoUserBase)` 時，字典裏的 `Id`、`Name` 能寫進去，
+而 `Level`（子類宣告）因為「不在基類成員表上」拋 {nameof(KeyNotFoundException)}，
 故這種用法通常要先把字典裁剪到基類欄位。
 ]
 """)]

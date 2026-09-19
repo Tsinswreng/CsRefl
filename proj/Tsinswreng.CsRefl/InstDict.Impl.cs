@@ -19,9 +19,10 @@ public partial class InstDict{
 #Sum[用一個實例與它的型別元資料建視圖。]
 
 #Descr[
-例：`new {nameof(InstDict)}(User, Info)` 之後，
-{nameof(Keys)} 就是 `User` 上可讀可寫成員的名字，按成員序；
-{nameof(Target)} 是 `User` 本身，故改 `Dict["Age"]` 立刻能從 `User.Age` 看到。
+實測（`PoUser`）：`new {nameof(InstDict)}(User, Info)` 之後，
+{nameof(Keys)} 是 `Id`、`Name`、`Age`、`Email`、`Married`、`Tags`、`Extra`、`Level`、`Note`（9 個）；
+{nameof(Keys)} 與 {nameof(Target)} 都直接指向傳進來的 `User`，
+故 `Dict["Level"] = 8` 之後 `User.Level` 立刻是 8。
 ]
 
 #See[{nameof(InstDict)}]
@@ -50,8 +51,10 @@ public partial class InstDict{
 #Sum[讀寫各按成員能力放行。]
 
 #Descr[
-例：`Dict["Age"]` 走讀、`Dict["Age"] = 31` 走寫；
-只讀成員讀得到、只寫成員寫得進，兩者都不在 {nameof(Keys)} 裏。
+實測（`PoUser`，`Age = 26`）：`Dict["Age"]` 讀到 boxed 的 `i32` 26；
+`Dict["Level"] = 8` 之後 `User.Level` 是 8；
+`Dict["Secret"]` 讀到 "s"（只讀成員讀得到）、`Dict["Token"] = "t1"` 寫得進，
+而 `Secret` 與 `Token` 都不在 {nameof(Keys)} 裏。
 ]
 
 #See[{nameof(InstDict)}]
@@ -68,7 +71,7 @@ public partial class InstDict{
 	[Doc($"""
 #Sum[按鍵讀。]
 
-#Params([[要讀的鍵]])
+#Params([[Key, 要讀的鍵]])
 
 #Rtn[讀出的值]
 
@@ -76,11 +79,14 @@ public partial class InstDict{
 成員不存在或不可讀拋 {nameof(KeyNotFoundException)}（訊息含出現口徑的鍵）。
 判據是成員表而非 {nameof(_keys)}：只讀成員也讀得到（見 {nameof(InstDict)} 的口徑說明）。
 
-例：讀只讀成員成功；讀只寫成員拋，訊息裏列出的是可讀可寫那批鍵，
+實測（`PoUser`，`Secret = "s"`）：讀 `"Secret"` 返回 "s"；
+讀 `"Token"`（只寫）拋 {nameof(KeyNotFoundException)}，
+讀 `"NoSuch"` 也拋 {nameof(KeyNotFoundException)}；
+訊息裏列出的是可讀可寫那批鍵（實測含 "Level" 可被斷言），
 故「為甚麼這個成員讀不到」要回去看成員表的 {nameof(IMemberInfo.CanRead)}，不是看鍵表。
 ]
 """)]
-	private obj? ReadCell(str Key){
+	private partial obj? ReadCell(str Key){
 		// step 1: 成員必須存在且可讀（判據是成員表，不看鍵表）。
 		if(!_typeInfo.TryGetMember(Key, out var M) || !M.CanRead){
 			throw new KeyNotFoundException($"鍵 {Key} 不在字典視圖裏（不存在或不可讀）。可用鍵：{string.Join(", ", _keys)}");
@@ -95,7 +101,7 @@ public partial class InstDict{
 	[Doc($"""
 #Sum[按鍵寫。]
 
-#Params([[要寫的鍵], [要寫入的值]])
+#Params([[Key, 要寫的鍵], [Value, 要寫入的值]])
 
 #Rtn[無返回值；失敗時拋異常]
 
@@ -105,12 +111,12 @@ public partial class InstDict{
 
 判據同樣是成員表：只寫成員寫得進（它讀不出來，故不在 {nameof(_keys)} 裏）。
 
-例：寫 `Age` 成功並寫回物件；
-寫只讀成員拋 {nameof(InvalidOperationException)}（成員在、但不可寫）；
-寫不存在的名字拋 {nameof(KeyNotFoundException)}，兩種錯分得開。
+實測（`PoUser`）：寫 `"Level"` 為 8 成功且寫回物件；
+寫 `"Secret"` 拋 {nameof(InvalidOperationException)}，訊息指名 "Secret"（成員在、但不可寫）；
+寫 `"NoSuch"` 拋 {nameof(KeyNotFoundException)}，訊息含可用鍵，兩種錯分得開。
 ]
 """)]
-	private void WriteCell(str Key, obj? Value){
+	private partial void WriteCell(str Key, obj? Value){
 		// step 1: 成員必須存在。
 		if(!_typeInfo.TryGetMember(Key, out var M)){
 			throw new KeyNotFoundException($"鍵 {Key} 不在字典視圖裏（不存在）。可用鍵：{string.Join(", ", _keys)}");
@@ -133,11 +139,13 @@ public partial class InstDict{
 #Descr[
 逐鍵求值，不做排序。
 
-例：成員值是 `i32`、`str`、集合混在一起時照樣平鋪返回；
+實測（`PoUser`）：得到的值是 9 個，依次為 boxed 的 `i64` 1、`str` "小明"、boxed 的 `i32` 26、
+null、false、空列表、空字典、boxed 的 `i32` 0、`str` "n"；
+`i64`、`str`、集合混在一起照樣平鋪返回，
 因為這裡只取值不比較，故不會像舊 `PropDict` 那樣因異質值不可互比而拋。
 ]
 """)]
-	private ICollection<obj?> BuildValues(){
+	private partial ICollection<obj?> BuildValues(){
 		var R = new List<obj?>(_keys.Count);
 		foreach(var K in _keys){
 			R.Add(ReadCell(K));
@@ -149,8 +157,9 @@ public partial class InstDict{
 #Sum[鍵是否存在於本視圖。]
 
 #Descr[
-例：`Dict.{nameof(ContainsKey)}("Age")` 為 true；
-`Dict.{nameof(ContainsKey)}("Secret")` 為 false，因為只讀成員不在鍵表內。
+實測：`Dict.{nameof(ContainsKey)}("Age")` 為 true；
+`Dict.{nameof(ContainsKey)}("NoSuch")` 為 false；
+`Dict.{nameof(ContainsKey)}("Secret")` 也為 false，因為只讀成員不在鍵表內。
 ]
 
 #See[{nameof(InstDict.ContainsKey)}]
@@ -163,9 +172,10 @@ public partial class InstDict{
 #Sum[取值；按成員表判定，未知成員返回 false（只讀成員也取得到）。]
 
 #Descr[
-例：`Dict.{nameof(TryGetValue)}("Secret", out var V)` 返回 true 且 `V` 是只讀成員的值，
+實測（`PoUser`，`Age = 26`）：`Dict.{nameof(TryGetValue)}("Age", out var V)` 返回 true 且 `V` 是 boxed 的 `i32` 26；
+`Dict.{nameof(TryGetValue)}("Secret", out var S)` 返回 true 且 `S` 是 "s"，
 這與 {nameof(ContainsKey)} 的答案相反（後者按鍵表判）；
-取只寫成員返回 false。
+`Dict.{nameof(TryGetValue)}("Token", out _)` 與 `"NoSuch"` 都返回 false。
 ]
 
 #See[{nameof(InstDict.TryGetValue)}]
@@ -186,8 +196,8 @@ public partial class InstDict{
 #Sum[形狀由型別成員固定，不支持新增鍵。]
 
 #Descr[
-例：`Dict.{nameof(Add)}("NewKey", 1)` 恆拋，因為型別上沒有 `NewKey` 這個成員；
-要加就回型別上去加可寫成員。
+實測：`Dict.{nameof(Add)}("NewKey", 1)` 恆拋 {nameof(NotSupportedException)}，
+因為型別上沒有 `NewKey` 這個成員；要加就回型別上去加可寫成員。
 ]
 
 #See[{nameof(InstDict.Add)}]
@@ -209,7 +219,7 @@ public partial class InstDict{
 #Sum[形狀由型別成員固定，不支持刪鍵。]
 
 #Descr[
-例：`Dict.{nameof(Remove)}("Age")` 恆拋；
+實測：`Dict.{nameof(Remove)}("Age")` 恆拋 {nameof(NotSupportedException)}；
 成員在運行期無法從型別上抹掉，故這個操作沒有可兌現的語義。
 ]
 
@@ -232,7 +242,7 @@ public partial class InstDict{
 #Sum[形狀由型別成員固定，不支持清空。]
 
 #Descr[
-例：`Dict.{nameof(Clear)}()` 恆拋；
+實測：`Dict.{nameof(Clear)}()` 恆拋 {nameof(NotSupportedException)}；
 視圖的鍵就是型別的成員，清不掉（真要「全部歸零」得逐個成員
 {nameof(IMemberInfo)}.{nameof(IMemberInfo.TrySet)} 成默認值）。
 ]
@@ -247,8 +257,9 @@ public partial class InstDict{
 #Sum[鍵值對是否都在視圖內且相等。]
 
 #Descr[
-例：`Dict.{nameof(Contains)}(new KeyValuePair<str, obj?>("Age", 31))` 在 `Age` 恰好 31 時為 true；
-值不等於 31 時為 false；鍵是只寫成員時也為 false（取不到值）。
+實測（`PoUser`，`Age = 26`）：鍵 `Age` 配值 boxed 的 `i32` 26 時為 true；
+配 31（與物件不一致）時為 false；
+鍵 `Token`（只寫，取不到值）時也為 false。
 ]
 
 #See[{nameof(InstDict.Contains)}]
@@ -261,8 +272,10 @@ public partial class InstDict{
 #Sum[按鍵序拷貝鍵值對到數組。]
 
 #Descr[
-例：`Dict.{nameof(CopyTo)}(Buf, 0)` 把鍵值對按成員序填進 `Buf`；
-`Buf` 太短時拋 {nameof(ArgumentException)}，訊息說明「需要幾個位置、實際只剩幾個」。
+實測：`Buf` 長 11、`Dict.{nameof(CopyTo)}(Buf, 2)` 時下標 0 與 1 保持原樣，
+自下標 2 起依次寫入 `Id`、`Name`、`Age`、`Email`、`Married`、`Tags`、`Extra`、`Level`、`Note`；
+`Buf` 長度只有 3 時拋 {nameof(ArgumentException)}，
+訊息說明「需要幾個位置、實際只剩幾個」。
 ]
 
 #See[{nameof(InstDict.CopyTo)}]
@@ -288,7 +301,8 @@ public partial class InstDict{
 #Sum[按鍵序逐項取值的迭代器。]
 
 #Descr[
-例：`foreach(var Kv in Dict)` 依次拿到 `(Id, ...)`、`(Name, ...)`、`(Age, ...)`；
+實測：`foreach(var Kv in Dict)` 依次拿到 9 對，
+第一對是 `Id` 配 boxed 的 `i64` 1、第七對的鍵是 `Extra`、最後一對的鍵是 `Note`；
 每次迭代都現讀物件的值，故迭代期間物件被改動時看到的是改後的值。
 ]
 

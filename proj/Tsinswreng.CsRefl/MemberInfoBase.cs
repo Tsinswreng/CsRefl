@@ -15,10 +15,11 @@ using Tsinswreng.CsCore;
 兩套來源各自只交出官方成員對象與兩個讀寫委託。
 抽象維度仍由 {nameof(IMemberInfo)} 接口承擔，本類不是抽象的替代品。
 
-例：{nameof(ReflMemberInfo)} 的建構子只做「把 {nameof(PropertyInfo)} 的
-{nameof(Name)}、{nameof(PropertyType)}、{nameof(DeclaringType)} 與兩個委託交出來」這一件事，
-{nameof(JsonMemberInfo)} 交的是 {nameof(JsonPropertyInfo)} 的對應物，
-之後的檢查與異常處理兩邊完全共用。
+實測：查 `PoUser` 的 `Age`，反射源的建構子只把 {nameof(PropertyInfo)} 的
+{nameof(Name)}（"Age"）、{nameof(PropertyType)}（`typeof(i32)`）、
+{nameof(DeclaringType)}（`typeof(PoUser)`）與兩個委託交出來；
+{nameof(JsonMemberInfo)} 交的是 {nameof(JsonPropertyInfo)} 的對應物，也是同一批事實；
+之後的前置檢查與異常映射兩邊完全共用，故 {nameof(TryGet)} 的行為兩套來源一字不差。
 ]
 
 #Descr[
@@ -40,7 +41,8 @@ public abstract partial class MemberInfoBase:IMemberInfo{
 #Sum[官方反射成員本體；{nameof(JsonTypeInfoSrc)} 來源為 null。]
 
 #Descr[
-例：反射源包一個屬性時這裡是 {nameof(PropertyInfo)}，包一個字段時是 {nameof(FieldInfo)}；
+實測：查 `PoUser` 的 `Age`，反射源這個字段是一個 {nameof(PropertyInfo)}、
+Json 源為 null；查 `Note` 時反射源是一個 {nameof(FieldInfo)}；
 Json 源恆為 null，因為官方 {nameof(JsonPropertyInfo)} 不是 {nameof(System.Reflection.MemberInfo)} 的子類。
 ]
 """)]
@@ -50,8 +52,9 @@ Json 源恆為 null，因為官方 {nameof(JsonPropertyInfo)} 不是 {nameof(Sys
 #Sum[官方 JSON 成員本體；反射來源為 null。]
 
 #Descr[
-例：Json 源包一個成員時這裡非 null，可取官方獨有能力
-（{nameof(JsonPropertyInfo.IsRequired)} 等）；反射源恆為 null。
+實測：Json 源包 `PoUser.Age` 時這個字段非 null，
+可取官方獨有能力（`{nameof(JsonPropertyInfo.IsRequired)}` 等）；
+反射源的同一個成員這裡是 null。
 ]
 """)]
 	private readonly JsonPropertyInfo? _json;
@@ -62,7 +65,7 @@ Json 源恆為 null，因為官方 {nameof(JsonPropertyInfo)} 不是 {nameof(Sys
 #Descr[
 即官方 {nameof(System.Reflection.MemberInfo.Name)}／{nameof(JsonPropertyInfo.Name)}，不另存副本。
 
-例：成員 `Age` 的這個字段就是 "Age"，
+實測：成員 `Age` 的這個字段就是 "Age"、`Note` 的就是 "Note"；
 {nameof(ITypeInfo.GetMember)}("Age") 命的也是它。
 ]
 """)]
@@ -72,8 +75,9 @@ Json 源恆為 null，因為官方 {nameof(JsonPropertyInfo)} 不是 {nameof(Sys
 #Sum[成員的型別（官方 {nameof(JsonPropertyInfo.PropertyType)} 同義）。]
 
 #Descr[
-例：`i32 Age` 屬性是 `typeof(i32)`；
-繼承成員的這個值取自宣告它的那個屬性本身，與實例無關。
+實測（`PoUser`）：`Age` 的這個字段是 `typeof(i32)`、`Secret` 是 `typeof(str)`、
+`Tags` 是 `typeof(List<str>)`；
+繼承成員的值取自宣告它的那個屬性本身，與實例無關。
 ]
 """)]
 	private readonly Type _propertyType;
@@ -82,8 +86,8 @@ Json 源恆為 null，因為官方 {nameof(JsonPropertyInfo)} 不是 {nameof(Sys
 #Sum[宣告本成員的型別。]
 
 #Descr[
-例：繼承成員的這個值是基類，不是實例的執行期型別；
-拿基類 {nameof(JsonPropertyInfo.DeclaringType)} 可能為 null 的情形也照官方轉發。
+實測（`PoUser` 繼承 `PoUserBase`）：`Id` 的這個字段是 `typeof(PoUserBase)`、`Age` 的是 `typeof(PoUser)`；
+官方 {nameof(JsonPropertyInfo.DeclaringType)} 可能為 null，那情形也照官方轉發。
 ]
 """)]
 	private readonly Type? _declaringType;
@@ -92,9 +96,9 @@ Json 源恆為 null，因為官方 {nameof(JsonPropertyInfo)} 不是 {nameof(Sys
 #Sum[官方成員種類（{nameof(MemberTypes)}）。]
 
 #Descr[
-例：反射源的屬性成員是 {nameof(MemberTypes)}.{nameof(MemberTypes.Property)}，
-字段成員是 {nameof(MemberTypes)}.{nameof(MemberTypes.Field)}；
-Json 源一律 {nameof(MemberTypes)}.{nameof(MemberTypes.Property)}。
+實測（`PoUser`）：反射源的 `Age` 是 {nameof(MemberTypes)}.{nameof(MemberTypes.Property)}、
+`Note`（`[JsonInclude]` 字段）是 {nameof(MemberTypes)}.{nameof(MemberTypes.Field)}；
+Json 源一律 {nameof(MemberTypes)}.{nameof(MemberTypes.Property)}（官方不暴露字段這一事實）。
 ]
 """)]
 	private readonly MemberTypes _memberType;
@@ -103,7 +107,8 @@ Json 源一律 {nameof(MemberTypes)}.{nameof(MemberTypes.Property)}。
 #Sum[本成員可否讀取。]
 
 #Descr[
-例：只寫屬性為 false，此時 {nameof(IMemberInfo.Get)} 也是 null，兩者恆同步。
+實測：只寫的 `Token` 為 false（它讀不出來），此時 {nameof(IMemberInfo.Get)} 也是 null；
+只讀的 `Secret` 為 true，其 {nameof(IMemberInfo.Get)} 非 null，兩者恆同步。
 ]
 """)]
 	private readonly bool _canRead;
@@ -112,7 +117,8 @@ Json 源一律 {nameof(MemberTypes)}.{nameof(MemberTypes.Property)}。
 #Sum[本成員可否寫入。]
 
 #Descr[
-例：只讀屬性為 false，此時 {nameof(IMemberInfo.Set)} 也是 null。
+實測：只讀的 `Secret` 為 false（它寫不進去），此時 {nameof(IMemberInfo.Set)} 也是 null；
+只寫的 `Token` 為 true，其 {nameof(IMemberInfo.Set)} 非 null，兩者恆同步。
 ]
 """)]
 	private readonly bool _canWrite;
@@ -121,7 +127,8 @@ Json 源一律 {nameof(MemberTypes)}.{nameof(MemberTypes.Property)}。
 #Sum[官方讀值委託（形狀與官方 {nameof(JsonPropertyInfo)}.{nameof(JsonPropertyInfo.Get)} 一致）；null 表示不可讀。]
 
 #Descr[
-例：反射源的委託內部就是 {nameof(PropertyInfo.GetValue)}；
+實測：反射源的這個委託內部就是 {nameof(PropertyInfo.GetValue)} 與 {nameof(FieldInfo.GetValue)}，
+`Age` 的委託讀出 boxed 的 `i32` 30；
 Json 源直接拿官方源生成的委託，故 AOT 下讀值不走反射。
 ]
 """)]
@@ -131,8 +138,9 @@ Json 源直接拿官方源生成的委託，故 AOT 下讀值不走反射。
 #Sum[官方寫值委託（形狀與官方 {nameof(JsonPropertyInfo)}.{nameof(JsonPropertyInfo.Set)} 一致）；null 表示不可寫。]
 
 #Descr[
-例：反射源的委託內部就是 {nameof(PropertyInfo.SetValue)}；
-寫只讀成員之前 {nameof(TrySet)} 會先看這個是否為 null 並直接返回 false，不會撞到異常。
+實測：反射源的這個委託內部就是 {nameof(PropertyInfo.SetValue)} 與 {nameof(FieldInfo.SetValue)}，
+`Age` 的委託把 31 寫進實例；
+只讀的 `Secret` 這個字段為 null，{nameof(TrySet)} 在此之前就返回 false，不會撞到異常。
 ]
 """)]
 	private readonly Action<obj, obj?>? _set;
@@ -141,9 +149,10 @@ Json 源直接拿官方源生成的委託，故 AOT 下讀值不走反射。
 #Sum[官方特性提供者（兩側共有的官方接口）。]
 
 #Descr[
-例：反射源這裡就是成員自身；
-Json 源這裡是官方 {nameof(JsonPropertyInfo.AttributeProvider)}，
-兩者都能用 {nameof(IMemberInfoExtn.GetCustomAttribute)} 取特性。
+實測：反射源這裡就是成員自身（`Age` 時即那個 {nameof(PropertyInfo)}）；
+Json 源這裡是官方 {nameof(JsonPropertyInfo.AttributeProvider)}；
+兩者都能用 {nameof(IMemberInfoExtn.GetCustomAttribute)} 取特性，
+`PoUser.Level` 上兩套來源都取回 1 個 `MyDemoAttr`。
 ]
 """)]
 	private readonly ICustomAttributeProvider? _attrProvider;
@@ -152,24 +161,24 @@ Json 源這裡是官方 {nameof(JsonPropertyInfo.AttributeProvider)}，
 #Sum[由派生類交出官方成員對象與讀寫委託，建構子內一次落地全部成員事實。]
 
 #Params([
-	[官方反射成員本體；{nameof(JsonTypeInfoSrc)} 來源傳 null],
-	[官方 JSON 成員本體；反射來源傳 null],
-	[成員名],
-	[成員的型別],
-	[宣告本成員的型別],
-	[官方成員種類],
-	[本成員可否讀取],
-	[本成員可否寫入],
-	[官方讀值委託；不可讀傳 null],
-	[官方寫值委託；不可寫傳 null],
-	[官方特性提供者]
+	[Member, 官方反射成員本體；{nameof(JsonTypeInfoSrc)} 來源傳 null],
+	[Json, 官方 JSON 成員本體；反射來源傳 null],
+	[Name, 成員名],
+	[PropertyType, 成員的型別],
+	[DeclaringType, 宣告本成員的型別],
+	[MemberType, 官方成員種類],
+	[CanRead, 本成員可否讀取],
+	[CanWrite, 本成員可否寫入],
+	[Get, 官方讀值委託；不可讀傳 null],
+	[Set, 官方寫值委託；不可寫傳 null],
+	[AttributeProvider, 官方特性提供者]
 ])
 
 #Descr[
 事實只在這裡落地一次，派生類不再各自實現一批抽像屬性。
 
-例：{nameof(ReflMemberInfo)} 交 11 個實參、
-{nameof(JsonMemberInfo)} 也交 11 個（只是 {nameof(Member)} 與 {nameof(Json)} 哪個為 null 不同），
+實測：{nameof(ReflMemberInfo)} 與 {nameof(JsonMemberInfo)} 都交 11 個實參，
+差別只有 {nameof(Member)} 與 {nameof(Json)} 哪個為 null；
 派生類因此都只有建構子，沒有額外成員。
 ]
 """)]
@@ -191,8 +200,9 @@ Json 源這裡是官方 {nameof(JsonPropertyInfo.AttributeProvider)}，
 #Sum[官方反射成員本體；{nameof(JsonTypeInfoSrc)} 來源為 null。]
 
 #Descr[
-例：`M is {nameof(IMemberInfo)}` 之後，`(M as {nameof(ReflMemberInfo)})` 取得的物件上
-這個屬性就是成員的官方本體，可直接調官方反射能力。
+實測：{nameof(ReflMemberInfo)} 建的 `Age` 成員這個屬性就是那個 {nameof(PropertyInfo)}，
+可直接調官方反射能力（例如 `GetCustomAttributes`）；
+Json 源的同名成員這裡是 null。
 ]
 
 #See[{nameof(IMemberInfo.Member)}]
@@ -207,9 +217,9 @@ Json 源這裡是官方 {nameof(JsonPropertyInfo.AttributeProvider)}，
 #Sum[官方 JSON 成員本體；反射來源為 null。]
 
 #Descr[
-例：要問「這個成員是否必填」，官方能力在 {nameof(Json)} 上，
-故 `M.{nameof(Json)}?.{nameof(JsonPropertyInfo.IsRequired)}` 得到 `bool?`，
-null 就說明當前是反射源、沒有這個信息。
+實測：要問 `PoUser.Age` 這個成員是否必填，官方能力在 {nameof(Json)} 上，
+故 `M.{nameof(Json)}?.{nameof(JsonPropertyInfo.IsRequired)}` 得到 `bool?`；
+反射源那個 `M` 上這個式子是 null，說明當前沒有這個信息。
 ]
 
 #See[{nameof(IMemberInfo.Json)}]
@@ -332,4 +342,25 @@ null 就說明當前是反射源、沒有這個信息。
 #See[{nameof(IMemberInfo.TrySet)}]
 """)]
 	public partial bool TrySet(obj? O, obj? V);
+
+	// ---- 私有輔助（實現見 MemberInfoBase.Impl.cs）----
+
+	[Doc($"""
+#Sum[實例型別是否合格。]
+
+#Params([[O, 待檢查的實例]])
+
+#Rtn[合格返回 true]
+
+#Descr[
+{nameof(DeclaringType)} 已知時按它判定；
+官方成員對象都不在（畸形手工元資料）時不阻擋，把判斷留給委託本身。
+
+實測：用 `PoUser` 的元資料建的成員 `Age`，
+傳 `new PoUser()` 返回 true、傳 `new PoColor()` 返回 false（型別不符）；
+繼承成員 `Id`（宣告於 `PoUserBase`）傳子類 `PoUser` 實例也返回 true，
+故基類成員能讀寫子類實例，這是繼承場景的正常用法。
+]
+""")]
+	private partial bool IsInstanceOk(obj O);
 }

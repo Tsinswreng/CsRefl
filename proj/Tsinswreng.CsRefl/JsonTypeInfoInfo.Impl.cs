@@ -15,7 +15,7 @@ public partial class JsonTypeInfoInfo{
 #Sum[包一個 {nameof(JsonTypeInfo)}。]
 
 #Descr[
-例：成員表由官方 {nameof(JsonTypeInfo.Properties)} 一次轉出，
+實測（`PoUser`）：成員表由官方 {nameof(JsonTypeInfo.Properties)} 一次轉出（官方 11 項）；
 {nameof(JsonTypeInfo.Kind)}、{nameof(JsonTypeInfo.ElementType)}、{nameof(JsonTypeInfo.KeyType)}
 全部照官方轉發，故本包裝層不重複實現官方的分類邏輯。
 ]
@@ -41,8 +41,10 @@ public partial class JsonTypeInfoInfo{
 #Sum[建立實例，轉調官方 {nameof(JsonTypeInfo)}.{nameof(JsonTypeInfo.CreateObject)} 工廠。]
 
 #Descr[
-例：掛了 `[JsonSerializable]` 且可建實例的型別，這裡返回一個新實例；
-官方沒給工廠時拋 {nameof(NotSupportedException)}，訊息說明是官方 `CreateObject` 為 null。
+實測：`PoUser`（掛了 `[JsonSerializable]`、有公開無參構造函數）
+這裡返回一個 `PoUser` 新實例，其 `Id` 可立即賦值；
+官方沒給工廠時（如 `PoNoCtor`）拋 {nameof(NotSupportedException)}，
+訊息說明是官方 `CreateObject` 為 null。
 ]
 
 #See[{nameof(ITypeInfo.MkInst)}]
@@ -56,22 +58,7 @@ public partial class JsonTypeInfoInfo{
 		return F();
 	}
 
-	[Doc($"""
-#Sum[把官方 {nameof(JsonTypeInfo)}.{nameof(JsonTypeInfo.Properties)} 包成成員表。]
-
-#Params([[官方型別元資料]])
-
-#Rtn[包好的成員表（尚未規整，由建構子統一處理）]
-
-#Descr[
-注意：官方 {nameof(JsonPropertyInfo.Name)} 是 JSON 名，
-與 C# 名相等的前提由調用方保證（命名策略為 null 且無 `[JsonPropertyName]`）。
-
-例：官方有 11 個成員時這裡就轉出 11 個 {nameof(JsonMemberInfo)}，
-順序保持官方既有序，之後由 {nameof(TypeInfoSorter)} 規整。
-]
-""")]
-	private static IReadOnlyList<IMemberInfo> CollectMembers(JsonTypeInfo Json){
+	private static partial IReadOnlyList<IMemberInfo> CollectMembers(JsonTypeInfo Json){
 		// 先按官方成員數定容量，省掉過程中的擴容。
 		var R = new List<IMemberInfo>(Json.Properties.Count);
 		foreach(var P in Json.Properties){

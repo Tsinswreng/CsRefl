@@ -15,7 +15,7 @@ public partial class ReflTypeInfoSrc{
 #Sum[取任意型別的元資料；反射來源總是「可知」。]
 
 #Descr[
-例：同一型別查兩次拿到同一個 {nameof(ITypeInfo)} 實例，
+實測：同一型別查兩次拿到同一個 {nameof(ITypeInfo)} 實例（`{nameof(ReferenceEquals)}` 為 true），
 故元資料與其惰性按名索引只建一次；第二次查直接命中緩存，不再走反射。
 
 這裡刻意不用 {nameof(System.Collections.Concurrent.ConcurrentDictionary<,>)}

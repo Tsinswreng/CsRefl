@@ -16,7 +16,8 @@ public static partial class ITypeInfoSrcExtn{
 #Sum[見宣告處的說明。]
 
 #Descr[
-例：本體只是原樣返回，作用是在編譯期把 DAM 註解掛上，
+實測：本體只是原樣返回（`{nameof(RuntimeType)}(T)` 與 T 是同一實例），
+作用是在編譯期把 DAM 註解掛上，
 故調用方拿到的 {nameof(Type)} 在分析器眼裏就帶了成員元數據擔保。
 ]
 
@@ -30,7 +31,7 @@ public static partial class ITypeInfoSrcExtn{
 #Sum[取成員；型別未註冊或成員不存在都拋 {nameof(KeyNotFoundException)}（訊息含線索）。]
 
 #Descr[
-例：型別未註冊時訊息說明「未註冊到來源 Xxx」；
+實測：型別未註冊時訊息說明「未註冊到來源 Xxx」；
 型別在、成員名不存在時由 {nameof(ITypeInfo.GetMember)} 拋，訊息列出可用成員名。
 兩種失敗分得開，排查時不必猜是哪一種。
 ]
@@ -52,7 +53,8 @@ public static partial class ITypeInfoSrcExtn{
 #Sum[Try 版：型別未註冊、成員不存在、入參為 null 都返回 false。]
 
 #Descr[
-例：`Src.{nameof(TryGetMember)}(null, "Age", out _)` 返回 false 而不拋，
+實測：`Src.{nameof(TryGetMember)}(null, "Age", out _)` 返回 false 而不拋；
+型別未註冊、名字不存在也都返回 false（`M` 為 null），
 故可以放心接外部傳來的型別與名字。
 ]
 
@@ -73,8 +75,8 @@ public static partial class ITypeInfoSrcExtn{
 #Sum[按名讀值。]
 
 #Descr[
-例：`Src.{nameof(TryGet)}(typeof(User), "Age", User, out var V)` 命中；
-讀只寫成員返回 false（成員在、可讀性不滿足）。
+實測（`PoUser`，`Age = 30`）：`Src.{nameof(TryGet)}(typeof(PoUser), "Age", User, out var V)` 返回 true 且 `V` 是 boxed 的 `i32` 30；
+`"Token"`（只寫）返回 false（成員在、可讀性不滿足）。
 ]
 
 #See[{nameof(ITypeInfoSrcExtn.TryGet)}]
@@ -92,8 +94,8 @@ public static partial class ITypeInfoSrcExtn{
 #Sum[按名寫值。]
 
 #Descr[
-例：`Src.{nameof(TrySet)}(typeof(User), "Age", User, 31)` 命中並寫回；
-寫只讀成員返回 false；值型別不符照常拋。
+實測（`PoUser`）：`Src.{nameof(TrySet)}(typeof(PoUser), "Age", User, 31)` 返回 true 且 `User.Age` 變成 31；
+`"Secret"`（只讀）返回 false；值型別不符照常拋 {nameof(InvalidOperationException)}。
 ]
 
 #See[{nameof(ITypeInfoSrcExtn.TrySet)}]
@@ -110,8 +112,8 @@ public static partial class ITypeInfoSrcExtn{
 #Sum[建淺字典視圖，型別取 `O.GetType()`。]
 
 #Descr[
-例：`Src.{nameof(ToInstDict)}(User)` 等價於傳入 null 型別的重載，
-即走運行期型別。
+實測：`Src.{nameof(ToInstDict)}(User)` 得到的視圖其 {nameof(IInstDict.TypeInfo)}.{nameof(ITypeInfo.Type)}
+與 `User.GetType()` 是同一個 `{nameof(Type)}`（即走運行期型別，不是變數的靜態型別）。
 ]
 
 #See[{nameof(ITypeInfoSrcExtn.ToInstDict)}]
@@ -124,7 +126,7 @@ public static partial class ITypeInfoSrcExtn{
 #Sum[建淺字典視圖，型別可由調用方顯式給。]
 
 #Descr[
-例：`Src.{nameof(ToInstDict)}(User, typeof(Base))` 建的視圖只認基類成員；
+實測：`Src.{nameof(ToInstDict)}(User, typeof(PoUserBase))` 建的視圖 {nameof(IInstDict.Count)} 是 2、鍵是 `Id` 與 `Name`；
 型別未註冊到來源時拋 {nameof(KeyNotFoundException)}，訊息說明是哪個型別與哪個來源。
 ]
 
@@ -145,8 +147,8 @@ public static partial class ITypeInfoSrcExtn{
 #Sum[把字典寫回物件，型別取 `O.GetType()`。]
 
 #Descr[
-例：`Src.{nameof(AssignFromDict)}(User, Dict)` 等價於傳入 null 型別的重載，
-即走運行期型別。
+實測：`Src.{nameof(AssignFromDict)}(User, Dict)` 傳的型別就是 `User.GetType()`（即 `typeof(PoUser)`），
+故 `Id`、`Name`、`Level` 三個鍵一次寫回。
 ]
 
 #See[{nameof(ITypeInfoSrcExtn.AssignFromDict)}]
@@ -159,9 +161,9 @@ public static partial class ITypeInfoSrcExtn{
 #Sum[把字典寫回物件，型別可由調用方顯式給。]
 
 #Descr[
-例：字典裏有 `Age` 與一個只讀成員的鍵時，
-`Age` 正常寫入、只讀那個被靜默跳過；
-字典裏多一個型別上沒有的鍵時拋 {nameof(KeyNotFoundException)}，
+實測：字典裏有 `Level = 4` 與只讀的 `Secret = "改不掉"` 時，
+`User.Level` 變成 4、只讀那個被靜默跳過（`User.Secret` 仍是 "s"）；
+字典裏多一個型別上沒有的 `"NoSuch"` 時拋 {nameof(KeyNotFoundException)}，
 訊息同時列可寫名與可讀名，便於對照是哪邊對不上。
 ]
 

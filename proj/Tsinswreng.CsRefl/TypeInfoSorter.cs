@@ -12,7 +12,10 @@ Json 源：{nameof(System.Text.Json.Serialization.Metadata.JsonTypeInfo.Properti
 
 並保證同一個成員名只出現一次。
 
-例：`{nameof(InstDict)}` 的鍵序、CsSql 的列序都依賴這份契約序，
+實測：`PoUser` 的成員表經本工具規整後是
+`Id`、`Name`、`Age`、`Email`、`Married`、`Tags`、`Extra`、`Secret`、`Level`、`Token`、`Note`，
+`Id` 與 `Name` 是基類 `PoUserBase` 宣告的（故排在前兩個位置）；
+{nameof(InstDict)} 的鍵序與 CsSql 的列序都直接吃這個順序，
 故兩套來源切換時下游不必改代碼。
 
 實現見 `TypeInfoSorter.Impl.cs`。
@@ -22,16 +25,17 @@ internal static partial class TypeInfoSorter{
 	[Doc($"""
 #Sum[規整成員表：先按契約序排序，再按名去重。]
 
-#Params([[成員表所屬的型別，即實例的型別], [待規整的成員表]])
+#Params([[Root, 成員表所屬的型別，即實例的型別], [Members, 待規整的成員表]])
 
 #Rtn[規整後的只讀成員表]
 
 #Descr[
 去重時離實例最近的宣告勝出，且佔被遮蔽成員的位置。
 
-例：繼承鏈上 `Base` 先、`Derived` 後，故基類成員排前面；
-若子類用 `new` 遮蔽了基類的某個成員，輸出裏仍只有一個該名字的成員，
-位置不變（沿用被遮蔽那份的位置），但取到的是子類那份宣告。
+實測：`PoUser` 這條繼承鏈上基類 `PoUserBase` 宣告 `Id`、`Name`，
+子類宣告其餘成員，故輸出前兩位是基類那兩個；
+另一條鏈上子類用 `new` 再宣告 `Id`，輸出是 `Name`、`Id`、`Age` 三項，
+`Id` 只出現一次（位置仍是第 2 位），且按名查到的那份其宣告型別是子類。
 
 實現是防禦性的：
 現行兩套來源實測都不產生重複名（{nameof(Type)} 的收集方法自帶隱藏語義、
@@ -40,4 +44,27 @@ internal static partial class TypeInfoSorter{
 ]
 """)]
 	public static partial IReadOnlyList<IMemberInfo> SortEtDedup(Type Root, IReadOnlyList<IMemberInfo> Members);
+
+	// ---- 私有輔助（實現見 TypeInfoSorter.Impl.cs）----
+
+	[Doc($"""
+#Sum[`Declaring` 相對於 `Root` 的繼承深度（`Root` 自身為 0）。]
+
+#Params([[Root, 成員表所屬的型別], [Declaring, 成員的宣告型別]])
+
+#Rtn[繼承深度]
+
+#Descr[
+聲明型別若不是 `Root` 本身也不是它的基類
+（例如手工註冊表塞入的畸形元資料、或成員聲明在接口上），
+繼承鏈走不到 `Root`，此時返回整條鏈的長度——
+順序因此不可靠，但不會死循環
+（接口與根型別的 {nameof(Type.BaseType)} 為 null，走一步即退出）。
+
+實測：查 `PoUser` 時，基類 `PoUserBase` 宣告的 `Id` 與 `Name` 得 1，
+`PoUser` 自己宣告的 `Age` 得 0，故降序排列後 `Id`、`Name` 排在 `Age` 之前；
+直接以 `PoUserBase` 為 `Root` 時，`Id` 得 0。
+]
+""")]
+	private static partial int DepthOf(Type Root, Type Declaring);
 }

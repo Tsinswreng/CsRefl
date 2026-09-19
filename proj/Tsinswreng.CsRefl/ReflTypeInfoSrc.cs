@@ -14,7 +14,8 @@ AOT 下可用——前提是查詢目標的成員元數據已被保留
 {nameof(RegisteredTypes)} 返回 null：
 反射來源能查任意型別，無法也無需列舉。
 
-例：`{nameof(Inst)}.{nameof(TryGetInfo)}(typeof(User), out var Info)` 總是成功，
+實測：`{nameof(Inst)}.{nameof(TryGetInfo)}(typeof(PoUser), out var Info)` 與
+`{nameof(Inst)}.{nameof(TryGetInfo)}(typeof(PoNoCtor), out _)` 都返回 true，
 不需要事先把型別註冊到任何地方；
 反過來 `{nameof(RegisteredTypes)}` 也給不出「所有能查的型別」，
 因為那等於「所有型別」。
@@ -29,7 +30,7 @@ public partial class ReflTypeInfoSrc:ITypeInfoSrc{
 #Descr[
 同一型別只建一次（元資料構建有反射代價）。
 
-例：連續查同一個型別兩次拿到的是同一個 {nameof(ITypeInfo)} 實例，
+實測：連續查 `typeof(PoUser)` 兩次拿到的是同一個 {nameof(ITypeInfo)} 實例，
 故元資料與其惰性索引只建一次；
 並行下重複 {nameof(ConcurrentDictionary<,>)}.{nameof(ConcurrentDictionary<,>.TryAdd)} 無害，包的是等價實例。
 ]
@@ -40,7 +41,8 @@ public partial class ReflTypeInfoSrc:ITypeInfoSrc{
 #Sum[默認單例：不經 DI 也能直接使用的反射來源。]
 
 #Descr[
-例：不想接 DI 的場景可直接 `{nameof(ReflTypeInfoSrc)}.{nameof(Inst)}.{nameof(TryGetInfo)}(...)`；
+實測：`{nameof(Inst)}` 是單例（連續取兩次 `{nameof(ReferenceEquals)}` 為 true）；
+不想接 DI 的場景可直接 `{nameof(ReflTypeInfoSrc)}.{nameof(Inst)}.{nameof(TryGetInfo)}(typeof(PoUser), out var Info)`；
 接了 DI 的場景仍建議注入實例，方便測試時替換成別的來源。
 ]
 """)]
@@ -63,7 +65,8 @@ public partial class ReflTypeInfoSrc:ITypeInfoSrc{
 #Sum[取任意型別的元資料；反射來源總是「可知」。]
 
 #Descr[
-例：只有當型別為 null 之外的情形纔可能返回 false，
+實測：`typeof(PoUser)` 與 `typeof(PoNoCtor)` 都返回 true（`Info` 非 null），
+故除型別為 null 之外幾乎不返回 false，
 故此來源放在 {nameof(MergedTypeInfoSrc)} 的末位最合適（兜底）。
 ]
 

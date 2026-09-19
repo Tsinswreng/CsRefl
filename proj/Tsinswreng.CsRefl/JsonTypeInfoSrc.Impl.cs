@@ -47,8 +47,10 @@ public partial class JsonTypeInfoSrc{
 #Descr[
 三級短路：先查命中緩存，再查負面緩存，最後才真正解析。
 
-例：查一個沒掛 `[JsonSerializable]` 的型別首次返回 false 並記進負面緩存，
-第二次直接返回 false，不再走 resolver 鏈。
+實測：查未註冊的 `typeof(PoNoCtor)` 首次返回 false 且 `Info` 為 null；
+第二次直接返回 false，不再走 resolver 鏈；
+查已註冊的 `typeof(PoUser)` 返回 true，`Info.{nameof(ITypeInfo.Type)}` 是 `typeof(PoUser)`，
+且再查一次返回的 `Info` 與第一次 `{nameof(ReferenceEquals)}` 為 true（命中緩存）。
 ]
 
 #See[{nameof(ITypeInfoSrc.TryGetInfo)}]
@@ -78,21 +80,7 @@ public partial class JsonTypeInfoSrc{
 		return true;
 	}
 
-	[Doc($"""
-#Sum[解析並包裝。]
-
-#Params([[要解析的型別]])
-
-#Rtn[包好的元資料；resolver 返回 null（未註冊）時為 null]
-
-#Descr[
-返回 null 由調用方記入負面緩存。
-
-例：resolver 鏈裏的源生成上下文對未註冊型別返回 null，
-本方法就跟著返回 null，不自己造一份假的官方元資料。
-]
-""")]
-	private ITypeInfo? Build(Type Type){
+	private partial ITypeInfo? Build(Type Type){
 		var JsonInfo = _resolver.GetTypeInfo(Type, _options);
 		if(JsonInfo is null){
 			return null;

@@ -15,8 +15,10 @@ public abstract partial class TypeInfoBase{
 #Sum[把派生類交出的型別事實落地。]
 
 #Descr[
-例：派生類傳進來的成員表無論是「屬性段在前、字段段在後」還是官方既有序，
-都在這裡被規整成同一份契約序，
+實測：派生類傳進來的成員表無論是「屬性段在前、字段段在後」還是官方既有序，
+都在這裡被規整成同一份契約序；
+以 `PoUser` 為例，兩套來源進來的順序不同，出去都是
+`Id`、`Name`、`Age`、`Email`、`Married`、`Tags`、`Extra`、`Secret`、`Level`、`Token`、`Note`，
 故之後 {nameof(Members)} 的順序與來源無關。
 ]
 
@@ -47,15 +49,16 @@ public abstract partial class TypeInfoBase{
 {nameof(Members)} 在建構後不可變，故緩存安全。
 索引雙檢：{nameof(_byName)} 是 volatile，兩個線程同時建也只會多建一份等價字典。
 
-例：第一次 {nameof(TryGetMember)} 時才建這份字典，
+實測：第一次 {nameof(TryGetMember)}（或 {nameof(GetMember)}）時才建這份字典，
 故「只枚舉 {nameof(Members)}、從不按名查」的用法不付這份內存代價；
-建好之後每次按名查是 O(1)。
+建好之後每次按名查是 O(1)，且兩個入口共用同一份
+（{nameof(GetMember)}("Age") 與 {nameof(TryGetMember)}("Age", out _) 返回同一實例）。
 
 用 {nameof(StringComparer)}.{nameof(StringComparer.Ordinal)} 而非默認比較：
 成員名是程式碼識別符，Ordinal 才是正確語義，也不受當前文化影響。
 ]
 """)]
-	private void EnsureByName(){
+	private partial void EnsureByName(){
 		if(_byName is not null){
 			return;
 		}
@@ -70,8 +73,9 @@ public abstract partial class TypeInfoBase{
 #Sum[按名查成員；未知返回 false。]
 
 #Descr[
-例：`Info.{nameof(TryGetMember)}("Age", out var M)` 命中；
-`Info.{nameof(TryGetMember)}("NoSuch", out _)` 返回 false 且不拋。
+實測（`PoUser`）：`Info.{nameof(TryGetMember)}("Age", out var M)` 返回 true 且
+`M.{nameof(IMemberInfo.PropertyType)}` 是 `typeof(i32)`；
+`Info.{nameof(TryGetMember)}("NoSuch", out var Miss)` 返回 false、`Miss` 為 null 且不拋。
 ]
 
 #See[{nameof(ITypeInfo.TryGetMember)}]
@@ -86,9 +90,10 @@ public abstract partial class TypeInfoBase{
 #Sum[按名取成員；未知拋 {nameof(KeyNotFoundException)}，訊息含可用名清單。]
 
 #Descr[
-例：`Info.{nameof(GetMember)}("NoSuch")` 拋出的訊息形如
-「型別 Xxx 沒有成員 NoSuch。可用成員：Id, Name, Age」，
-直接把可用名擺出來，不必另去查 {nameof(Members)} 排查拼寫。
+實測：`Info.{nameof(GetMember)}("NoSuch")` 拋出的訊息形如
+「型別 ... 沒有成員 NoSuch。可用成員：Id, Name, Age, Email, Married, Tags, Extra, Secret, Level, Token, Note」，
+直接把可用名擺出來，不必另去查 {nameof(Members)} 排查拼寫
+（測試即以「訊息含 "Age"」斷言這一條）。
 
 訊息裏現算 {nameof(Members)} 的名字清單，故只在失敗路徑付這個代價。
 ]

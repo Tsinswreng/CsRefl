@@ -13,7 +13,7 @@ internal static partial class TypeInfoSorter{
 	[Doc($"""
 #Sum[規整成員表：排序 + 按名去重（保證每個成員名只出現一次）。]
 
-#Params([[成員表所屬的型別，即實例的型別], [待規整的成員表]])
+#Params([[Root, 成員表所屬的型別，即實例的型別], [Members, 待規整的成員表]])
 
 #Rtn[規整後的只讀成員表]
 
@@ -33,9 +33,10 @@ internal static partial class TypeInfoSorter{
 並佔用被遮蔽成員原先的位置——
 如此非遮蔽成員的相對序完全不變。
 
-例：成員表是 `Id`、`Name`、`Age`，
-子類用 `new` 遮蔽了 `Id`，則輸出仍是 `Id`、`Name`、`Age` 三項，
-第一項取到的是子類那份宣告。
+實測：`PoUser` 這條鏈的成員表依次是
+`Id`、`Name`、`Age`、`Email`、`Married`、`Tags`、`Extra`、`Secret`、`Level`、`Token`、`Note`；
+另一條鏈上子類用 `new` 遮蔽了基類的 `Id`，輸出是 `Name`、`Id`、`Age` 三項
+（`Id` 只出現一次、仍在第 2 位、按名查到的那份宣告型別是子類）。
 ]
 """)]
 	public static partial IReadOnlyList<IMemberInfo> SortEtDedup(Type Root, IReadOnlyList<IMemberInfo> Members){
@@ -71,25 +72,7 @@ internal static partial class TypeInfoSorter{
 		return R.AsReadOnly();
 	}
 
-	[Doc($"""
-#Sum[`Declaring` 相對於 `Root` 的繼承深度（`Root` 自身為 0）。]
-
-#Params([[成員表所屬的型別], [成員的宣告型別]])
-
-#Rtn[繼承深度]
-
-#Descr[
-聲明型別若不是 `Root` 本身也不是它的基類
-（例如手工註冊表塞入的畸形元資料、或成員聲明在接口上），
-繼承鏈走不到 `Root`，此時返回整條鏈的長度——
-順序因此不可靠，但不會死循環
-（接口與根型別的 {nameof(Type.BaseType)} 為 null，走一步即退出）。
-
-例：`Root` 是子類、成員宣告在它基類時返回 1，故該成員排在 `Root` 自己宣告的成員之後；
-宣告型別就是 `Root` 時返回 0，排最前。
-]
-""")]
-	private static int DepthOf(Type Root, Type Declaring){
+	private static partial int DepthOf(Type Root, Type Declaring){
 		var D = 0;
 		var T = Declaring;
 		while(T is not null && T != Root){

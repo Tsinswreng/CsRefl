@@ -17,8 +17,9 @@ public partial class TypeInfoReg{
 #Sum[取已註冊型別的元資料；未註冊返回 false。]
 
 #Descr[
-例：`Reg.{nameof(TryGetInfo)}(typeof(User), out var Info)` 在登記過時返回 true；
-沒登記過返回 false 且 {nameof(Info)} 為 null（本表不兜底、不猜）。
+實測：`Reg.{nameof(TryGetInfo)}(typeof(PoUser), out var Info)` 在登記過時返回 true
+且 `Info` 就是塞進去的那個實例（{nameof(ReferenceEquals)} 為 true）；
+未登記的型別（或移掉之後）返回 false 且 `Info` 為 null（本表不兜底、不猜）。
 ]
 
 #See[{nameof(ITypeInfoSrc.TryGetInfo)}]
@@ -28,17 +29,7 @@ public partial class TypeInfoReg{
 		return _map.TryGetValue(Type, out Info);
 	}
 
-	[Doc($"""
-#Sum[已註冊型別快照。]
-
-#Rtn[型別列表；取一份鍵的拷貝，返回一次性列表]
-
-#Descr[
-例：登記了 3 個型別時返回 3 個 {nameof(Type)}；
-因為是拷貝，之後再 {nameof(Add)} 不會影響已經取出的那份。
-]
-""")]
-	private IReadOnlyCollection<Type>? SnapshotTypes(){
+	private partial IReadOnlyCollection<Type>? SnapshotTypes(){
 		return _map.Keys.ToList();
 	}
 
@@ -46,8 +37,9 @@ public partial class TypeInfoReg{
 #Sum[登記一個型別的元資料。]
 
 #Descr[
-例：`Reg.{nameof(Add)}(typeof(Xxx), Info)` 首次成功；
-再登記同一型別拋 {nameof(InvalidOperationException)}，訊息提示「請先 Remove 再 Add」。
+實測：`Reg.{nameof(Add)}(typeof(PoUser), Info)` 首次成功；
+再對同一型別 {nameof(Add)} 拋 {nameof(InvalidOperationException)}，
+訊息含「已註冊」字樣（實測可用 `Contains("已註冊")` 斷言）。
 ]
 
 #See[{nameof(ITypeInfoReg.Add)}]
@@ -65,7 +57,9 @@ public partial class TypeInfoReg{
 #Sum[移除一個型別；原本不存在返回 false。]
 
 #Descr[
-例：`Reg.{nameof(Remove)}(typeof(Xxx))` 第一次返回 true，第二次返回 false。
+實測：登記過 `typeof(PoUser)` 後 `Reg.{nameof(Remove)}(typeof(PoUser))` 返回 true，
+第二次對同一型別返回 false（本來就不在）；
+移除後 `{nameof(TryGetInfo)}(typeof(PoUser), out var Info)` 返回 false 且 `Info` 為 null。
 ]
 
 #See[{nameof(ITypeInfoReg.Remove)}]

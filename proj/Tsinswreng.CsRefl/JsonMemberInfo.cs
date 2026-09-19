@@ -22,11 +22,15 @@ using Tsinswreng.CsCore;
 ]
 
 #Descr[
-例：同一個成員分別走兩套來源時，
-{nameof(Name)}、{nameof(IMemberInfo.PropertyType)}、{nameof(IMemberInfo.DeclaringType)}
-在兩邊取到的值相同，
-差別只在 {nameof(Member)} 與 {nameof(Json)} 哪個非 null，
-以及字段成員在 Json 源上報不出 {nameof(MemberTypes)}.{nameof(MemberTypes.Field)}。
+實測（`PoUser` 的 `Age`）：兩套來源的 {nameof(Name)} 都是 "Age"、
+{nameof(IMemberInfo.PropertyType)} 都是 `typeof(i32)`、
+{nameof(IMemberInfo.DeclaringType)} 都是 `typeof(PoUser)`、
+{nameof(IMemberInfo.CanRead)} 與 {nameof(IMemberInfo.CanWrite)} 都是 true；
+差別只在 {nameof(Member)} 與 {nameof(Json)} 哪個非 null：
+反射源 {nameof(Member)} 是 {nameof(PropertyInfo)}、{nameof(Json)} 為 null，
+Json 源相反。
+字段成員（`Note`）在反射源報 {nameof(MemberTypes)}.{nameof(MemberTypes.Field)}，
+在 Json 源只能報 {nameof(MemberTypes)}.{nameof(MemberTypes.Property)}。
 ]
 
 #Descr[
@@ -37,12 +41,14 @@ public partial class JsonMemberInfo:MemberInfoBase{
 	[Doc($"""
 #Sum[包一個 {nameof(JsonPropertyInfo)}。]
 
-#Params([[要包的官方 JSON 成員元資料]])
+#Params([[Prop, 要包的官方 JSON 成員元資料]])
 
 #Descr[
-例：`new {nameof(JsonMemberInfo)}(Info.{nameof(JsonTypeInfo.Properties)}[0])` 得到第一個成員，
+實測（`PoUser`）：`Info.{nameof(JsonTypeInfo.Properties)}[0]` 就是 `Id` 這個成員，
+包出來後 {nameof(Name)} 是 "Id"、{nameof(IMemberInfo.PropertyType)} 是 `typeof(i64)`、
+{nameof(IMemberInfo.DeclaringType)} 是 `typeof(PoUserBase)`；
 其 {nameof(Get)}／{nameof(Set)} 直接就是官方源生成的委託，
-故在 NativeAOT 下讀寫也不走反射。
+故在 NativeAOT 下讀寫也不走反射（本庫的 AOT 測試即跑在這條路徑上）。
 ]
 """)]
 	public partial JsonMemberInfo(JsonPropertyInfo Prop);

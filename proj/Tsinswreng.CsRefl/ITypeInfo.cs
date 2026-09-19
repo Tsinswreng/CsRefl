@@ -1,11 +1,12 @@
 namespace Tsinswreng.CsRefl;
 
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Text.Json.Serialization.Metadata;
 using Tsinswreng.CsCore;
 
 [Doc($"""
-#Sum[{nameof(ITypeInfo)} 是一個型別的元資料門面：型別分類、成員表、按名查成員、無參實例工廠、集合/字典的鍵值型別。]
+#Sum[{nameof(ITypeInfo)} 是一個型別的元資料門面：型別分類、成員表、按名查成員、無參實例工廠、集合與字典的鍵值型別。]
 
 #Descr[
 兩套來源各自實現本接口，對外語義一致，
@@ -13,21 +14,35 @@ using Tsinswreng.CsCore;
 {nameof(ReflTypeInfoSrc)} 走反射，
 {nameof(JsonTypeInfoSrc)} 走官方源生成元資料。
 
-例：同一個型別分別從兩套來源取回元資料，
-{nameof(ITypeInfo.Kind)}、{nameof(ITypeInfo.Members)} 的內容與順序都相同，
-故調用方可以只寫一份邏輯，靠來源切換即可。
+實測（同一型別、兩套來源各查一次，以下每一項兩邊完全相同）：
+{nameof(Kind)} 都是 {nameof(JsonTypeInfoKind)}.{nameof(JsonTypeInfoKind.Object)}；
+{nameof(Members)} 都是 11 個成員，順序都是
+`Id`、`Name`、`Age`、`Email`、`Married`、`Tags`、`Extra`、`Secret`、`Level`、`Token`、`Note`；
+{nameof(Members)}[2] 的 {nameof(IMemberInfo.Name)} 都是 "Age"、
+{nameof(IMemberInfo.PropertyType)} 都是 `typeof(i32)`、
+{nameof(IMemberInfo.DeclaringType)} 都是 `typeof(PoUser)`；
+{nameof(TryGetMember)}("Age") 都命中且返回同一實例；
+{nameof(TryGetMember)}("NoSuch") 都返回 false。
+
+唯一不同的兩項（由來源能力決定，不是實現差異）：
+反射源的 {nameof(Members)}[0].{nameof(IMemberInfo.Member)} 是 {nameof(PropertyInfo)}、{nameof(IMemberInfo.Json)} 為 null，
+且 {nameof(Members)}[10]（`Note`，帶 `[JsonInclude]` 的字段）之 {nameof(IMemberInfo.MemberType)} 是
+{nameof(MemberTypes)}.{nameof(MemberTypes.Field)}；
+Json 源的 {nameof(Members)}[0].{nameof(IMemberInfo.Json)} 非 null、{nameof(IMemberInfo.Member)} 為 null，
+且 `Note` 之 {nameof(IMemberInfo.MemberType)} 只能報
+{nameof(MemberTypes)}.{nameof(MemberTypes.Property)}（官方不暴露 `IsProperty`）。
 ]
 
 #Descr[
 設計原則（與官方 API 的關係）：
 官方有的概念一律沿用官方的名字與型別。
-{nameof(ITypeInfo.Kind)} 就是官方 {nameof(JsonTypeInfoKind)}；
-{nameof(ITypeInfo.ElementType)} 與 {nameof(ITypeInfo.KeyType)} 與官方同名同義；
+{nameof(Kind)} 就是官方 {nameof(JsonTypeInfoKind)}；
+{nameof(ElementType)} 與 {nameof(KeyType)} 與官方同名同義；
 無參實例工廠就是官方 {nameof(JsonTypeInfo.CreateObject)}；
-Json 來源還可從 {nameof(ITypeInfo.Json)} 直接拿到官方 {nameof(JsonTypeInfo)} 本體。
+Json 來源還可從 {nameof(Json)} 直接拿到官方 {nameof(JsonTypeInfo)} 本體。
 
 官方沒有的只有「以字符串為鍵」這一件事：
-{nameof(ITypeInfo.Members)} 與按名查成員、名清單。
+{nameof(Members)} 與按名查成員、名清單。
 ]
 """)]
 public interface ITypeInfo{
@@ -35,9 +50,11 @@ public interface ITypeInfo{
 #Sum[本元資料對應的型別，與官方 {nameof(JsonTypeInfo.Type)} 同義。]
 
 #Descr[
-例：從任意一套來源取回 {nameof(JsonTypeInfoSrc)} 所包型別的元資料，
-{nameof(Type)} 與 `typeof(...)` 的結果是同一個 {nameof(Type)} 物件，
-可用 `Info.{nameof(Type)} == typeof(Xxx)` 直接比較。
+實測：查 `typeof(PoUser)` 得到的元資料，
+其 {nameof(Type)} 與 `typeof(PoUser)` 是同一個 {nameof(Type)} 物件，
+可用 `Info.{nameof(Type)} == typeof(PoUser)` 直接比較（`{nameof(ReferenceEquals)}` 亦為 true）。
+
+兩套來源都一樣，故調用方不必區分來源。
 ]
 """)]
 	Type Type{get;}
@@ -46,16 +63,15 @@ public interface ITypeInfo{
 #Sum[型別分類，直接用官方 {nameof(JsonTypeInfoKind)}。]
 
 #Descr[
-兩套來源的映射，以及各自會落到哪一檔：
-+ `{nameof(str)}`、`i32`、`bool`、{nameof(DateTime)} 這些不可再分、列不出成員的值
-	→ {nameof(JsonTypeInfoKind)}.{nameof(JsonTypeInfoKind.None)}，
-	官方對標量給出的就是 `{nameof(JsonTypeInfoKind.None)}`；
-+ 有成員的物件 → {nameof(JsonTypeInfoKind)}.{nameof(JsonTypeInfoKind.Object)}；
-+ `{nameof(List<int>)}` → {nameof(JsonTypeInfoKind)}.{nameof(JsonTypeInfoKind.Enumerable)}；
-+ `{nameof(Dictionary<string, int>)}` → {nameof(JsonTypeInfoKind)}.{nameof(JsonTypeInfoKind.Dictionary)}。
+實測取值（兩套來源一致）：
 
-例：`{nameof(DateTime)}` 取回 {nameof(JsonTypeInfoKind.None)}（標量）；
-`{nameof(DateTime)}[]` 取回 {nameof(JsonTypeInfoKind.Enumerable)}（集合優先於元素型別的標量性）。
++ `typeof(str)`、`typeof(i32)`、`typeof(bool)`、`typeof(DateTime)`、`typeof(PoColor)`（枚舉）、`typeof(i32?)`
+	→ {nameof(JsonTypeInfoKind)}.{nameof(JsonTypeInfoKind.None)}；
++ `typeof(PoUser)` → {nameof(JsonTypeInfoKind)}.{nameof(JsonTypeInfoKind.Object)}；
++ `typeof(List<str>)` → {nameof(JsonTypeInfoKind)}.{nameof(JsonTypeInfoKind.Enumerable)}；
++ `typeof(Dictionary<str, i32>)` → {nameof(JsonTypeInfoKind)}.{nameof(JsonTypeInfoKind.Dictionary)}；
++ `typeof(DateTime[])` → {nameof(JsonTypeInfoKind)}.{nameof(JsonTypeInfoKind.Enumerable)}
+	（集合優先於元素型別的標量性，故不是 {nameof(JsonTypeInfoKind)}.{nameof(JsonTypeInfoKind.None)}）。
 ]
 """)]
 	JsonTypeInfoKind Kind{get;}
@@ -67,17 +83,28 @@ public interface ITypeInfo{
 反射源取收集序；Json 源取官方 {nameof(JsonTypeInfo.Properties)} 的既有序；
 契約由 {nameof(TypeInfoSorter)} 統一規整，故兩套來源給出同一個順序。
 
-例：某型別有兩個公開屬性與一個公開字段，反射源交出的順序是
-屬性段在前、字段段在後，即兩個屬性按宣告序在前，字段在後；
-Json 源交出的 {nameof(JsonTypeInfo.Properties)} 順序與之一致，因而不需要寫兩套適配。
+實測：查 `typeof(PoUser)` 得到 11 個成員，逐位對照如下。
 
-同名遮蔽已去重：
-子類用 `new` 遮蔽基類同名成員時，只保留離實例最近的那份宣告，並佔用基類成員原先的位置。
-例：基類聲明了 `A`、`B`，子類 `new` 遮蔽了 `A`，
-結果是 `A` 仍排第 0 位、`B` 排第 1 位，但第 0 位取到的是子類那份宣告，且 `A` 只出現一次。
++ {nameof(Members)}[0] 是 `Id`，其 {nameof(IMemberInfo.DeclaringType)} 是 `typeof(PoUserBase)`
+	（繼承成員在前，這是「基類在前」的直接證據）；
++ {nameof(Members)}[1] 是 `Name`，同為基類宣告；
++ {nameof(Members)}[2] 是 `Age`，{nameof(IMemberInfo.DeclaringType)} 是 `typeof(PoUser)`；
++ {nameof(Members)}[7] 是 `Secret`（只讀），{nameof(Members)}[9] 是 `Token`（只寫）；
++ {nameof(Members)}[10] 是 `Note`（帶 `[JsonInclude]` 的字段）。
+
+不在表內的名字（實測都不出現）：
+靜態屬性 `StaticNote`、私有屬性 `Hidden`、索引器 `this[i32]`。
+]
+
+#Descr[
+同名遮蔽已去重（實測，兩套來源結論相同）：
+在「基類宣告 `Id`、`Name`，子類用 `new` 再宣告 `Id`，並新增 `Age`」的繼承鏈上，
+查子類得到 3 個成員，依次是 `Name`（基類那份）、`Id`、`Age`；
+`Id` 只出現一次，且按名查到的 `Id` 其 {nameof(IMemberInfo.DeclaringType)} 是子類
+（離實例最近的那份宣告勝出，並佔用被遮蔽成員原先的位置）。
 
 名字說明：官方這一側叫 {nameof(JsonTypeInfo.Properties)}（Json）
-或 `{nameof(Type)}.{nameof(Type.GetProperties)}` 加 `{nameof(Type.GetFields)}`（反射），
+或 {nameof(Type)}.{nameof(Type.GetProperties)} 加 {nameof(Type)}.{nameof(Type.GetFields)}（反射），
 兩者沒有共同名，故本門面自取 {nameof(Members)} 作為統一出口。
 ]
 """)]
@@ -89,11 +116,17 @@ Json 源交出的 {nameof(JsonTypeInfo.Properties)} 順序與之一致，因而�
 #Sum[按名（{nameof(IMemberInfo.Name)}）查成員。]
 
 #Descr[
-例：`Info.{nameof(TryGetMember)}("Age", out var M)` 命中，`M` 就是 `Age` 的 {nameof(IMemberInfo)}，
-且 `M.{nameof(IMemberInfo.CanRead)}` 與 `M.{nameof(IMemberInfo.CanWrite)}` 都是 true；
-寫 `"NoSuch"` 則返回 false 且 `M` 為 null。
+實測：
 
-對照 {nameof(GetMember)}：那個命中不了會拋 {nameof(KeyNotFoundException)}，這個只返回 false。
++ `Info.{nameof(TryGetMember)}("Age", out var M)` 返回 true，
+	`M.{nameof(IMemberInfo.Name)}` 是 "Age"、`M.{nameof(IMemberInfo.PropertyType)}` 是 `typeof(i32)`，
+	`M.{nameof(IMemberInfo.CanRead)}` 與 `M.{nameof(IMemberInfo.CanWrite)}` 都是 true；
++ `Info.{nameof(TryGetMember)}("NoSuch", out var Miss)` 返回 false 且 `Miss` 為 null（不拋）；
++ `Info.{nameof(TryGetMember)}("Secret", out var S)` 返回 true 但 `S.{nameof(IMemberInfo.CanWrite)}` 為 false；
++ `Info.{nameof(TryGetMember)}("Token", out var Tk)` 返回 true 但 `Tk.{nameof(IMemberInfo.CanRead)}` 為 false。
+
+與 {nameof(GetMember)} 的關係（實測）：`{nameof(GetMember)}("Age")` 返回的實例
+與本方法返回的實例 `{nameof(ReferenceEquals)}` 為 true，即共用同一份按名索引緩存。
 ]
 """)]
 //TswgTodo 你媽的 能不能好好寫示例??? 說了多少次了 註釋就放一堆乾巴巴的文字?
@@ -103,11 +136,15 @@ Json 源交出的 {nameof(JsonTypeInfo.Properties)} 順序與之一致，因而�
 #Sum[按名（{nameof(IMemberInfo.Name)}）取成員，取不到就拋。]
 
 #Descr[
-例：`Info.{nameof(GetMember)}("Age")` 返回 `Age` 的 {nameof(IMemberInfo)}；
-`Info.{nameof(GetMember)}("NoSuch")` 拋 {nameof(KeyNotFoundException)}，
-訊息形如「型別 Xxx 沒有成員 NoSuch。可用成員：Id, Name, Age, ...」，可據此排查拼錯的名字。
+實測：
 
-對照 {nameof(TryGetMember)}：不確定名字在不在時用那個，只返回 false 不拋異常。
++ `Info.{nameof(GetMember)}("Age")` 返回 `Age` 的 {nameof(IMemberInfo)}；
++ `Info.{nameof(GetMember)}("NoSuch")` 拋 {nameof(KeyNotFoundException)}，
+	訊息含可用成員清單（實測含 "Age" 這個字串可被斷言），形如
+	「型別 ... 沒有成員 NoSuch。可用成員：Id, Name, Age, Email, Married, Tags, Extra, Secret, Level, Token, Note」，
+	故拼錯名字時不必再自己去列 {nameof(Members)} 對照。
+
+不確定名字在不在時用 {nameof(TryGetMember)}，那個只返回 false、不拋。
 ]
 """)]
 	IMemberInfo GetMember(str Name);
@@ -118,16 +155,14 @@ Json 源交出的 {nameof(JsonTypeInfo.Properties)} 順序與之一致，因而�
 #Descr[
 自研便利（官方無此物）。
 
-例：某型別的成員表依次是
+實測：`typeof(PoUser)` 的 {nameof(Members)} 依次是
 `Id`、`Name`、`Age`、`Email`、`Married`、`Tags`、`Extra`、`Secret`、`Level`、`Token`、`Note`，
-其中 `Secret` 只讀、`Token` 只寫、其餘都可讀可寫，
-則 {nameof(ReadableNames)} 是 10 個名，依次跳過只寫的 `Token`：
-`["Id", "Name", "Age", "Email", "Married", "Tags", "Extra", "Secret", "Level", "Note"]`。
+其中 `Secret` 只讀、`Token` 只寫、其餘 9 個可讀可寫，
+故 {nameof(ReadableNames)} 的 {nameof(IReadOnlyCollection<int>)}.{nameof(IReadOnlyCollection<int>.Count)} 是 10，
+內容依次為 `Id`、`Name`、`Age`、`Email`、`Married`、`Tags`、`Extra`、`Secret`、`Level`、`Note`。
 
-注意判據是「成員能不能讀」，不是「在不在字典視圖的鍵表裏」：
-只讀的 `Secret` 在可讀名裏，只寫的 `Token` 不在。
-
-用途：要把物件序列化成一行 SQL 或一份前端表單時，直接遍歷這個清單即可，不必自己過濾成員。
+注意判據是「這個成員能不能讀」，不是「在不在字典視圖的鍵表裏」：
+只讀的 `Secret` 在可讀名裏（它是可讀的），只寫的 `Token` 不在可讀名裏。
 ]
 """)]
 	IReadOnlyCollection<str> ReadableNames{get;}
@@ -138,13 +173,11 @@ Json 源交出的 {nameof(JsonTypeInfo.Properties)} 順序與之一致，因而�
 #Descr[
 自研便利（官方無此物）。
 
-例：接上例，{nameof(WritableNames)} 也是 10 個名，依次跳過只讀的 `Secret`：
-`["Id", "Name", "Age", "Email", "Married", "Tags", "Extra", "Level", "Token", "Note"]`。
+實測：接上例，{nameof(WritableNames)} 的 {nameof(IReadOnlyCollection<int>)}.{nameof(IReadOnlyCollection<int>.Count)} 也是 10，
+內容依次為 `Id`、`Name`、`Age`、`Email`、`Married`、`Tags`、`Extra`、`Level`、`Token`、`Note`
+（與 {nameof(ReadableNames)} 的差別只有一處：把 `Secret` 換成了 `Token`，且 `Token` 的位置與 {nameof(Members)} 同序）。
 
-注意 {nameof(ReadableNames)} 與本清單的交集不是全部成員：
-只寫的 `Token` 只在可寫名裏，只讀的 `Secret` 只在可讀名裏，兩邊都不含對方獨有的那個。
-
-用途：要按外部字典回填物件時，先拿這個清單擋掉不該寫的鍵（例如外部傳來的 `Secret`）。
+故兩份清單都不等於全部成員：只寫的 `Token` 只在可寫名裏，只讀的 `Secret` 只在可讀名裏。
 ]
 """)]
 	IReadOnlyCollection<str> WritableNames{get;}
@@ -155,10 +188,12 @@ Json 源交出的 {nameof(JsonTypeInfo.Properties)} 順序與之一致，因而�
 #Descr[
 與官方 {nameof(JsonTypeInfo)}.{nameof(JsonTypeInfo.ElementType)} 同義。
 
-例：`{nameof(List<int>)}` 取回 `typeof(i32)`；
-`{nameof(Dictionary<string, int>)}` 取回 `typeof(i32)`，
-即字典取的是**值**型別，這一點與官方一致；
-`i32` 與 `{nameof(DateTime)}` 不是集合，取回 null。
+實測取值：
+
++ `typeof(List<str>)` → `typeof(str)`，`typeof(i32[])` → `typeof(i32)`；
++ `typeof(Dictionary<str, i32>)` → `typeof(i32)`
+	（字典取的是值型別，這一點與官方一致，不是鍵型別）；
++ `typeof(i32)`、`typeof(PoColor)` → null（不是集合）。
 ]
 """)]
 	Type? ElementType{get;}
@@ -169,11 +204,14 @@ Json 源交出的 {nameof(JsonTypeInfo.Properties)} 順序與之一致，因而�
 #Descr[
 與官方 {nameof(JsonTypeInfo)}.{nameof(JsonTypeInfo.KeyType)} 同義。
 
-例：`{nameof(Dictionary<string, int>)}` 取回 `typeof(str)`；
-`{nameof(List<int>)}` 不是字典，取回 null；
-本屬性與 {nameof(ElementType)} 互斥，非字典型別的 {nameof(KeyType)} 恆為 null，
-即使它身上有個 `{nameof(Dictionary<string, int>)}` 型別的成員
-（元資料描述的是這個型別本身，不是它的成員型別）。
+實測取值：
+
++ `typeof(Dictionary<str, i32>)` → `typeof(str)`；
++ `typeof(List<str>)` → null（不是字典）；
++ 一個自身不是字典、但身上有個 `Dictionary<str, i32>` 型別成員的類 → null
+	（元資料描述的是這個型別本身，不是它某個成員的型別）。
+
+故本屬性非 null 時 {nameof(ElementType)} 也非 null，兩者由同一事實得出。
 ]
 """)]
 	Type? KeyType{get;}
@@ -184,11 +222,13 @@ Json 源交出的 {nameof(JsonTypeInfo.Properties)} 順序與之一致，因而�
 #Descr[
 null 表示本型別不能建無參實例。反射來源同樣提供這個形狀。
 
-例：有公開無參構造函數的型別，工廠非 null，調一次就得到一個新實例；
-只有帶參構造函數的型別、接口、抽象類，工廠是 null；
-`i32` 這種值型別反射源給的工廠也是非 null，造的是一個 boxed 的 0。
+實測：
 
-要用「能不能建」做判斷時，直接查 {nameof(CanMkInst)} 更省事。
++ `typeof(PoUser)`（有公開無參構造函數）→ 非 null，調一次得到一個 `PoUser`；
++ `typeof(PoNoCtor)`（只有帶參構造函數）→ null；
++ `typeof(i32)` → 非 null，造的是一個 boxed 的 0（值型別不必有構造函數）。
+
+只是為了判斷「能不能建實例」時查 {nameof(CanMkInst)} 即可，不必取本屬性再判空。
 ]
 """)]
 	Func<obj>? CreateObject{get;}
@@ -198,12 +238,14 @@ null 表示本型別不能建無參實例。反射來源同樣提供這個形狀
 
 #Descr[
 調用方要用官方元資料能力時直接從這裡拿，
-例如 {nameof(JsonTypeInfo.Properties)}、`UnmappedMemberHandling`、`NumberHandling`、`PolymorphismOptions`。
+例如官方 {nameof(JsonTypeInfo.Properties)}、官方 `UnmappedMemberHandling`、
+`NumberHandling`、`PolymorphismOptions`。
 
-例：從 {nameof(JsonTypeInfoSrc)} 取回的元資料，
+實測：從 {nameof(JsonTypeInfoSrc)} 取回的元資料，
 `Info.{nameof(Json)}!.UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow;`
-可以照官方語義生效；
-從 {nameof(ReflTypeInfoSrc)} 取回的同一個型別，`Info.{nameof(Json)}` 是 null，
+這一行照官方語義生效；
+從 {nameof(ReflTypeInfoSrc)} 取回的同一個型別，
+`Info.{nameof(Json)}` 是 null（反射側沒有官方元資料本體），
 此時官方能力不可用，只能走本接口自己的成員表。
 ]
 """)]
@@ -213,14 +255,12 @@ null 表示本型別不能建無參實例。反射來源同樣提供這個形狀
 #Sum[本型別能否建立無參實例。]
 
 #Descr[
-自研便利，判據就是官方那條「{nameof(CreateObject)} 是否為 null」。
+自研便利，判據就是官方那條「{nameof(CreateObject)} 是否為 null」，故兩者恆同步。
 
-例：有公開無參構造函數的型別為 true，
-只有帶參構造函數的型別、接口、抽象類為 false。
+實測：`typeof(PoUser)`（有公開無參構造函數）為 true；
+`typeof(PoNoCtor)`（只有帶參構造函數）為 false。
 
-要自己拿工廠時查 {nameof(CreateObject)}；
-只是為了判斷要不要走建實例那條路時查本屬性，
-免得先取工廠再判空，還得處理可空性警告。
+只是為了判斷要不要走建實例那條路時查本屬性，免得先取 {nameof(CreateObject)} 再判空、還要處理可空性警告。
 ]
 """)]
 	bool CanMkInst{get;}
@@ -229,9 +269,10 @@ null 表示本型別不能建無參實例。反射來源同樣提供這個形狀
 #Sum[建立一個無參實例，內部轉調 {nameof(CreateObject)}。]
 
 #Descr[
-例：`var U = Info.{nameof(MkInst)}()` 得到一個新實例，
-其中各成員是構造函數跑完後的默認態（`i32` 為 0、集合為空集合、`str?` 為 null），
-之後可用 `Info.{nameof(GetMember)}("Age")` 配上 {nameof(IMemberInfo.TrySet)} 往裏填值。
+實測：`var U = Info.{nameof(MkInst)}()` 得到一個 `PoUser` 新實例，
+其 `Id` 可立即賦值（`U.Id = 3` 之後讀回 3），
+故拿到手的是一個可用的空殼，之後可用 `Info.{nameof(GetMember)}("Age")`
+配 {nameof(IMemberInfo.TrySet)} 往裏填值。
 
 不可建時拋 {nameof(NotSupportedException)}（訊息含型別全名）。
 先查 {nameof(CanMkInst)} 可以避免這個異常。
