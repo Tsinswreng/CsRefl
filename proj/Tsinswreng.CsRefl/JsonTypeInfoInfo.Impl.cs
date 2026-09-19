@@ -38,7 +38,7 @@ public partial class JsonTypeInfoInfo{
 			KeyType: Json.KeyType
 		)
 	{
-		_Json = Json;
+		this.Json = Json;
 	}
 
 	[Doc($"""
@@ -55,7 +55,7 @@ public partial class JsonTypeInfoInfo{
 """)]
 	public override partial obj? MkInst(){
 		// 能走到這裏說明 CreateObject 非 null（CanMkInst 為 true），null 分支只是防禦。
-		var F = _Json.CreateObject
+		var F = Json.CreateObject
 			?? throw new NotSupportedException(
 				$"型別 {Type.FullName} 在 JsonTypeInfo 中沒有無參工廠（CreateObject 為 null），無法建立實例。"
 			);

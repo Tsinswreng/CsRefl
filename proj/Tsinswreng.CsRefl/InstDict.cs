@@ -57,12 +57,11 @@ using Tsinswreng.CsCore;
 """)]
 public partial class InstDict:IInstDict{
 	[Doc($"""
-#Sum[視圖背後的物件。]
+#Sum[視圖背後的物件；與官方 `JsonObject` 那種「本體直接公開」同款寫法。]
 
 #Descr[
 實測：`Dict["Level"] = 8` 之後 `User.Level` 就是 8，
-`Dict["Name"] = "阿強"` 之後 `User.Name` 就是 "阿強"
-（讀寫都落在傳進來的物件上，視圖不持有值的副本）。
+讀寫都落在這個物件上，視圖本身不持有成員值的副本。
 ]
 """)]
 	private readonly obj _target;
@@ -71,8 +70,7 @@ public partial class InstDict:IInstDict{
 #Sum[視圖所用到的型別元資料。]
 
 #Descr[
-實測：`{nameof(TypeInfo)}` 就是建視圖時傳進來的那份元資料，
-其 {nameof(ITypeInfo.Type)} 是 `typeof(PoUser)`；
+實測：其 {nameof(ITypeInfo.Type)} 是 `typeof(PoUser)`；
 鍵表與可讀可寫判據都從它現算，故換一份元資料建視圖，鍵集合也跟著變。
 ]
 """)]
@@ -151,7 +149,6 @@ public partial class InstDict:IInstDict{
 {nameof(IsReadOnly)} 的語義見 {nameof(IDictionary<string, object?>)}。
 
 實測：這個屬性恆為 false（視圖的核心用途就是改既有成員的值，下游看它就敢改），
-故這裡必須是 false（視圖的核心用途就是改既有成員的值）；
 但「能改值」不等於「能增刪鍵」，增刪仍拋 {nameof(NotSupportedException)}。
 ]
 """)]

@@ -41,7 +41,6 @@ public partial class JsonTypeInfoInfo:TypeInfoBase{
 （`{nameof(ReferenceEquals)}` 為 true），沒有第二份包裝物件。
 ]
 """)]
-	public JsonTypeInfo _Json;
 
 
 	public partial JsonTypeInfoInfo(JsonTypeInfo Json);
@@ -62,7 +61,7 @@ public partial class JsonTypeInfoInfo:TypeInfoBase{
 """)]
 	public override Func<obj>? CreateObject{
 		get{
-			return _Json.CreateObject;
+			return Json.CreateObject;
 		}
 	}
 
@@ -77,12 +76,7 @@ public partial class JsonTypeInfoInfo:TypeInfoBase{
 #See[{nameof(ITypeInfo.Json)}]
 """)]
 	
-	//TswgTodo 這tm不是脫褲子放屁嗎?? 直接搞個Json不就好了?
-	public override JsonTypeInfo Json{
-		get{
-			return _Json;
-		}
-	}
+	public override JsonTypeInfo Json{get;}
 
 	[Doc($"""
 #Sum[建立實例，轉調 {nameof(CreateObject)} 工廠；無無參工廠時拋 {nameof(NotSupportedException)}。]

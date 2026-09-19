@@ -46,7 +46,7 @@ Json 源為 null；查 `Note` 時反射源是一個 {nameof(FieldInfo)}；
 Json 源恆為 null，因為官方 {nameof(JsonPropertyInfo)} 不是 {nameof(System.Reflection.MemberInfo)} 的子類。
 ]
 """)]
-	private readonly global::System.Reflection.MemberInfo? _member;
+	// 官方物件與事實直接由自動屬性持有：不再「字段 + 屬性」兩條門指同一個東西。
 
 	[Doc($"""
 #Sum[官方 JSON 成員本體；反射來源為 null。]
@@ -57,7 +57,7 @@ Json 源恆為 null，因為官方 {nameof(JsonPropertyInfo)} 不是 {nameof(Sys
 反射源的同一個成員這裡是 null。
 ]
 """)]
-	private readonly JsonPropertyInfo? _json;
+
 
 	[Doc($"""
 #Sum[對外查詢、讀寫、字典鍵所用的名字。]
@@ -69,7 +69,7 @@ Json 源恆為 null，因為官方 {nameof(JsonPropertyInfo)} 不是 {nameof(Sys
 {nameof(ITypeInfo.GetMember)}("Age") 命的也是它。
 ]
 """)]
-	private readonly str _name;
+
 
 	[Doc($"""
 #Sum[成員的型別（官方 {nameof(JsonPropertyInfo.PropertyType)} 同義）。]
@@ -80,7 +80,7 @@ Json 源恆為 null，因為官方 {nameof(JsonPropertyInfo)} 不是 {nameof(Sys
 繼承成員的值取自宣告它的那個屬性本身，與實例無關。
 ]
 """)]
-	private readonly Type _propertyType;
+
 
 	[Doc($"""
 #Sum[宣告本成員的型別。]
@@ -90,7 +90,7 @@ Json 源恆為 null，因為官方 {nameof(JsonPropertyInfo)} 不是 {nameof(Sys
 官方 {nameof(JsonPropertyInfo.DeclaringType)} 可能為 null，那情形也照官方轉發。
 ]
 """)]
-	private readonly Type? _declaringType;
+
 
 	[Doc($"""
 #Sum[官方成員種類（{nameof(MemberTypes)}）。]
@@ -101,7 +101,7 @@ Json 源恆為 null，因為官方 {nameof(JsonPropertyInfo)} 不是 {nameof(Sys
 Json 源一律 {nameof(MemberTypes)}.{nameof(MemberTypes.Property)}（官方不暴露字段這一事實）。
 ]
 """)]
-	private readonly MemberTypes _memberType;
+
 
 	[Doc($"""
 #Sum[本成員可否讀取。]
@@ -111,7 +111,7 @@ Json 源一律 {nameof(MemberTypes)}.{nameof(MemberTypes.Property)}（官方不�
 只讀的 `Secret` 為 true，其 {nameof(IMemberInfo.Get)} 非 null，兩者恆同步。
 ]
 """)]
-	private readonly bool _canRead;
+
 
 	[Doc($"""
 #Sum[本成員可否寫入。]
@@ -121,7 +121,7 @@ Json 源一律 {nameof(MemberTypes)}.{nameof(MemberTypes.Property)}（官方不�
 只寫的 `Token` 為 true，其 {nameof(IMemberInfo.Set)} 非 null，兩者恆同步。
 ]
 """)]
-	private readonly bool _canWrite;
+
 
 	[Doc($"""
 #Sum[官方讀值委託（形狀與官方 {nameof(JsonPropertyInfo)}.{nameof(JsonPropertyInfo.Get)} 一致）；null 表示不可讀。]
@@ -132,7 +132,7 @@ Json 源一律 {nameof(MemberTypes)}.{nameof(MemberTypes.Property)}（官方不�
 Json 源直接拿官方源生成的委託，故 AOT 下讀值不走反射。
 ]
 """)]
-	private readonly Func<obj, obj?>? _get;
+
 
 	[Doc($"""
 #Sum[官方寫值委託（形狀與官方 {nameof(JsonPropertyInfo)}.{nameof(JsonPropertyInfo.Set)} 一致）；null 表示不可寫。]
@@ -143,7 +143,7 @@ Json 源直接拿官方源生成的委託，故 AOT 下讀值不走反射。
 只讀的 `Secret` 這個字段為 null，{nameof(TrySet)} 在此之前就返回 false，不會撞到異常。
 ]
 """)]
-	private readonly Action<obj, obj?>? _set;
+
 
 	[Doc($"""
 #Sum[官方特性提供者（兩側共有的官方接口）。]
@@ -155,7 +155,7 @@ Json 源這裡是官方 {nameof(JsonPropertyInfo.AttributeProvider)}；
 `PoUser.Level` 上兩套來源都取回 1 個 `MyDemoAttr`。
 ]
 """)]
-	private readonly ICustomAttributeProvider? _attrProvider;
+
 
 	[Doc($"""
 #Sum[由派生類交出官方成員對象與讀寫委託，建構子內一次落地全部成員事實。]
@@ -207,11 +207,7 @@ Json 源的同名成員這裡是 null。
 
 #See[{nameof(IMemberInfo.Member)}]
 """)]
-	public global::System.Reflection.MemberInfo? Member{
-		get{
-			return _member;
-		}
-	}
+	public global::System.Reflection.MemberInfo? Member{get;}
 
 	[Doc($"""
 #Sum[官方 JSON 成員本體；反射來源為 null。]
@@ -224,110 +220,70 @@ Json 源的同名成員這裡是 null。
 
 #See[{nameof(IMemberInfo.Json)}]
 """)]
-	public JsonPropertyInfo? Json{
-		get{
-			return _json;
-		}
-	}
+	public JsonPropertyInfo? Json{get;}
 
 	[Doc($"""
 #Sum[成員的官方元資料種類。]
 
 #See[{nameof(IMemberInfo.MemberType)}]
 """)]
-	public MemberTypes MemberType{
-		get{
-			return _memberType;
-		}
-	}
+	public MemberTypes MemberType{get;}
 
 	[Doc($"""
 #Sum[成員名，即對外查詢、讀寫時使用的鍵。]
 
 #See[{nameof(IMemberInfo.Name)}]
 """)]
-	public str Name{
-		get{
-			return _name;
-		}
-	}
+	public str Name{get;}
 
 	[Doc($"""
 #Sum[成員的型別。]
 
 #See[{nameof(IMemberInfo.PropertyType)}]
 """)]
-	public Type PropertyType{
-		get{
-			return _propertyType;
-		}
-	}
+	public Type PropertyType{get;}
 
 	[Doc($"""
 #Sum[宣告本成員的型別。]
 
 #See[{nameof(IMemberInfo.DeclaringType)}]
 """)]
-	public Type? DeclaringType{
-		get{
-			return _declaringType;
-		}
-	}
+	public Type? DeclaringType{get;}
 
 	[Doc($"""
 #Sum[本成員可讀。]
 
 #See[{nameof(IMemberInfo.CanRead)}]
 """)]
-	public bool CanRead{
-		get{
-			return _canRead;
-		}
-	}
+	public bool CanRead{get;}
 
 	[Doc($"""
 #Sum[本成員可寫。]
 
 #See[{nameof(IMemberInfo.CanWrite)}]
 """)]
-	public bool CanWrite{
-		get{
-			return _canWrite;
-		}
-	}
+	public bool CanWrite{get;}
 
 	[Doc($"""
 #Sum[官方讀值委託；不可讀為 null。]
 
 #See[{nameof(IMemberInfo.Get)}]
 """)]
-	public Func<obj, obj?>? Get{
-		get{
-			return _get;
-		}
-	}
+	public Func<obj, obj?>? Get{get;}
 
 	[Doc($"""
 #Sum[官方寫值委託；不可寫為 null。]
 
 #See[{nameof(IMemberInfo.Set)}]
 """)]
-	public Action<obj, obj?>? Set{
-		get{
-			return _set;
-		}
-	}
+	public Action<obj, obj?>? Set{get;}
 
 	[Doc($"""
 #Sum[官方特性提供者。]
 
 #See[{nameof(IMemberInfo.AttributeProvider)}]
 """)]
-	public ICustomAttributeProvider? AttributeProvider{
-		get{
-			return _attrProvider;
-		}
-	}
+	public ICustomAttributeProvider? AttributeProvider{get;}
 
 	[Doc($"""
 #Sum[讀取實例上的本成員。]

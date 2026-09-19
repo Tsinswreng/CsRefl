@@ -62,7 +62,6 @@ public partial class ReflTypeInfo:TypeInfoBase{
 
 	[Doc($"""
 #Sum[無參實例工廠；null 表示本型別不可建實例。]
-]
 
 #Descr[
 型別與官方 {nameof(JsonTypeInfo)}.{nameof(JsonTypeInfo.CreateObject)} 一致，

@@ -21,7 +21,7 @@ public partial class InstDict{
 #Descr[
 實測（`PoUser`）：`new {nameof(InstDict)}(User, Info)` 之後，
 {nameof(Keys)} 是 `Id`、`Name`、`Age`、`Email`、`Married`、`Tags`、`Extra`、`Level`、`Note`（9 個）；
-{nameof(Keys)} 與 {nameof(Target)} 都直接指向傳進來的 `User`，
+{nameof(Keys)} 與 {nameof(_target)} 都直接指向傳進來的 `User`，
 故 `Dict["Level"] = 8` 之後 `User.Level` 立刻是 8。
 ]
 
@@ -37,7 +37,7 @@ public partial class InstDict{
 		// 鍵只收「可讀且可寫」的成員：只讀成員寫不進去、只寫成員讀不出來，
 		// 兩者放進字典視圖都會讓 IDictionary 的讀寫契約自相矛盾。
 		var Keys = new List<str>();
-		foreach(var M in TypeInfo.Members){
+		foreach(var M in _typeInfo.Members){
 			if(M.CanRead && M.CanWrite){
 				Keys.Add(M.Name);
 			}

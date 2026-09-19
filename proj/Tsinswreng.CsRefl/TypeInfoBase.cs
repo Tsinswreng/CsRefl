@@ -38,7 +38,7 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 兩者是同一個 {nameof(Type)} 物件，`{nameof(ReferenceEquals)}` 為 true，故可用 `==` 比較。
 ]
 """)]
-	private readonly Type _type;
+	protected Type _type;
 
 	[Doc($"""
 #Sum[型別分類（官方 {nameof(JsonTypeInfoKind)}）。]
@@ -49,7 +49,7 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 `typeof(List<str>)` 兩邊都是 {nameof(JsonTypeInfoKind)}.{nameof(JsonTypeInfoKind.Enumerable)}，故兩套來源的取值可比。
 ]
 """)]
-	private readonly JsonTypeInfoKind _kind;
+	protected JsonTypeInfoKind _kind;
 
 	[Doc($"""
 #Sum[成員表（契約序，已去重：遮蔽成員只留最靠近實例的那份宣告）。]
@@ -63,7 +63,7 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 構造後本欄位不再變動，故按名索引可以安全緩存。
 ]
 """)]
-	private readonly IReadOnlyList<IMemberInfo> _members;
+	protected IReadOnlyList<IMemberInfo> _members;
 
 	[Doc($"""
 #Sum[集合的元素型別；非集合為 null。]
@@ -73,7 +73,7 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 `typeof(PoUser)` 這種物件型別為 null（不是集合）。
 ]
 """)]
-	private readonly Type? _elementType;
+	protected Type? _elementType;
 
 	[Doc($"""
 #Sum[字典的鍵型別；非字典為 null。]
@@ -85,7 +85,7 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 """)]
 //TswgNote 爲甚麼有這麼多脫褲子放屁的東西? 給我個理由?
 
-	private readonly Type? _keyType;
+	protected Type? _keyType;
 
 	[Doc($"""
 #Sum[按名的成員索引緩存，首次查詢時建立。]

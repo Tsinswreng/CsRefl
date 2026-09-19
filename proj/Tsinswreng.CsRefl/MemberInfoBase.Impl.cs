@@ -36,17 +36,17 @@ public abstract partial class MemberInfoBase{
 		Action<obj, obj?>? Set,
 		ICustomAttributeProvider? AttributeProvider
 	){
-		_member = Member;
-		_json = Json;
-		_name = Name;
-		_propertyType = PropertyType;
-		_declaringType = DeclaringType;
-		_memberType = MemberType;
-		_canRead = CanRead;
-		_canWrite = CanWrite;
-		_get = Get;
-		_set = Set;
-		_attrProvider = AttributeProvider;
+		this.Member = Member;
+		this.Json = Json;
+		this.Name = Name;
+		this.PropertyType = PropertyType;
+		this.DeclaringType = DeclaringType;
+		this.MemberType = MemberType;
+		this.CanRead = CanRead;
+		this.CanWrite = CanWrite;
+		this.Get = Get;
+		this.Set = Set;
+		this.AttributeProvider = AttributeProvider;
 	}
 
 	[Doc($"""
@@ -68,7 +68,7 @@ public abstract partial class MemberInfoBase{
 ]
 """)]
 	private partial bool IsInstanceOk(obj O){
-		var D = _declaringType;
+		var D = DeclaringType;
 		return D is null || D.IsInstanceOfType(O);
 	}
 
@@ -91,7 +91,7 @@ public abstract partial class MemberInfoBase{
 	public partial bool TryGet(obj? O, out obj? R){
 		// 前置檢查：實例為 null、不是 DeclaringType 的實例、或不可讀 → false。
 		R = default;
-		var GetFn = _get;
+		var GetFn = Get;
 		if(GetFn is null || O is null || !IsInstanceOk(O)){
 			return false;
 		}
@@ -101,10 +101,10 @@ public abstract partial class MemberInfoBase{
 			return true;
 		}
 		catch(InvalidCastException E){
-			throw new InvalidOperationException($"讀取 {_declaringType?.FullName}.{Name} 失敗（值型別不符）。", E);
+			throw new InvalidOperationException($"讀取 {DeclaringType?.FullName}.{Name} 失敗（值型別不符）。", E);
 		}
 		catch(ArgumentException E){
-			throw new InvalidOperationException($"讀取 {_declaringType?.FullName}.{Name} 失敗。", E);
+			throw new InvalidOperationException($"讀取 {DeclaringType?.FullName}.{Name} 失敗。", E);
 		}
 	}
 
@@ -126,7 +126,7 @@ public abstract partial class MemberInfoBase{
 """)]
 	public partial bool TrySet(obj? O, obj? V){
 		// 前置檢查：實例為 null、不是 DeclaringType 的實例、或不可寫 → false。
-		var SetFn = _set;
+		var SetFn = Set;
 		if(SetFn is null || O is null || !IsInstanceOk(O)){
 			return false;
 		}
@@ -137,13 +137,13 @@ public abstract partial class MemberInfoBase{
 			return true;
 		}
 		catch(InvalidCastException E){
-			throw new InvalidOperationException($"寫入 {_declaringType?.FullName}.{Name} 失敗：值 {V?.GetType().Name} 與成員型別 {PropertyType.Name} 不符。", E);
+			throw new InvalidOperationException($"寫入 {DeclaringType?.FullName}.{Name} 失敗：值 {V?.GetType().Name} 與成員型別 {PropertyType.Name} 不符。", E);
 		}
 		catch(ArgumentException E){
-			throw new InvalidOperationException($"寫入 {_declaringType?.FullName}.{Name} 失敗：值型別不符。", E);
+			throw new InvalidOperationException($"寫入 {DeclaringType?.FullName}.{Name} 失敗：值型別不符。", E);
 		}
 		catch(FormatException E){
-			throw new InvalidOperationException($"寫入 {_declaringType?.FullName}.{Name} 失敗：值無法轉換（格式不符）。", E);
+			throw new InvalidOperationException($"寫入 {DeclaringType?.FullName}.{Name} 失敗：值無法轉換（格式不符）。", E);
 		}
 	}
 }
