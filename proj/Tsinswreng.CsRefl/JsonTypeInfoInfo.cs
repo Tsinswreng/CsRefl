@@ -27,6 +27,8 @@ using Tsinswreng.CsCore;
 ]
 """)]
 public partial class JsonTypeInfoInfo:TypeInfoBase{
+	
+	
 	[Doc($"""
 #Sum[被包的官方 {nameof(JsonTypeInfo)}。]
 
@@ -39,24 +41,11 @@ public partial class JsonTypeInfoInfo:TypeInfoBase{
 （`{nameof(ReferenceEquals)}` 為 true），沒有第二份包裝物件。
 ]
 """)]
-	private readonly JsonTypeInfo _json;
+	public JsonTypeInfo _Json;
 
-	[Doc($"""
-#Sum[包一個 {nameof(JsonTypeInfo)}。]
 
-#Params([[Json, 要包的官方型別元資料]])
-
-#Descr[
-實測：從 {nameof(JsonTypeInfoSrc)} 查 `typeof(PoUser)` 得到的元資料內部就是這樣包出來的，
-成員表在建構子裏由官方 {nameof(JsonTypeInfo.Properties)} 轉成 {nameof(IMemberInfo)}，
-再交給 {nameof(TypeInfoBase)} 規整成契約序。
-
-實測（`PoUser`）：包出來後 {nameof(Members)} 是 11 項，首項 `Id` 的
-{nameof(IMemberInfo.DeclaringType)} 是 `typeof(PoUserBase)`，
-與反射來源的成員表逐位相同。
-]
-""")]
 	public partial JsonTypeInfoInfo(JsonTypeInfo Json);
+
 
 	[Doc($"""
 #Sum[無參實例工廠，直接轉官方 {nameof(JsonTypeInfo)}.{nameof(JsonTypeInfo.CreateObject)}。]
@@ -73,7 +62,7 @@ public partial class JsonTypeInfoInfo:TypeInfoBase{
 """)]
 	public override Func<obj>? CreateObject{
 		get{
-			return _json.CreateObject;
+			return _Json.CreateObject;
 		}
 	}
 
@@ -87,9 +76,11 @@ public partial class JsonTypeInfoInfo:TypeInfoBase{
 
 #See[{nameof(ITypeInfo.Json)}]
 """)]
+	
+	//TswgTodo 這tm不是脫褲子放屁嗎?? 直接搞個Json不就好了?
 	public override JsonTypeInfo Json{
 		get{
-			return _json;
+			return _Json;
 		}
 	}
 

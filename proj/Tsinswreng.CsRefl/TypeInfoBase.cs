@@ -83,6 +83,8 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 本欄位與 {nameof(ITypeInfo.ElementType)} 由同一份來源事實決定，互斥不衝突。
 ]
 """)]
+//TswgNote 爲甚麼有這麼多脫褲子放屁的東西? 給我個理由?
+
 	private readonly Type? _keyType;
 
 	[Doc($"""
@@ -194,11 +196,7 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 		}
 	}
 
-	[Doc($"""
-#Sum[字典的鍵型別；非字典為 null。]
-
-#See[{nameof(ITypeInfo.KeyType)}]
-""")]
+	[Impl]
 	public Type? KeyType{
 		get{
 			return _keyType;
