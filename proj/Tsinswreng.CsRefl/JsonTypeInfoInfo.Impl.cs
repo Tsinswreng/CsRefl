@@ -3,16 +3,22 @@ namespace Tsinswreng.CsRefl;
 using System.Text.Json.Serialization.Metadata;
 using Tsinswreng.CsCore;
 
-[Doc("""
-#Sum[`JsonTypeInfoInfo` 的函數實現。]
+[Doc($"""
+#Sum[{nameof(JsonTypeInfoInfo)} 的函數實現。]
 
 #Descr[
 只放函數實現：型別事實字段與訪問器在 `JsonTypeInfoInfo.cs`。
 ]
 """)]
 public partial class JsonTypeInfoInfo{
-	[Doc("""
-#Sum[包一個 `JsonTypeInfo`。]
+	[Doc($"""
+#Sum[包一個 {nameof(JsonTypeInfo)}。]
+
+#Descr[
+例：成員表由官方 {nameof(JsonTypeInfo.Properties)} 一次轉出，
+{nameof(JsonTypeInfo.Kind)}、{nameof(JsonTypeInfo.ElementType)}、{nameof(JsonTypeInfo.KeyType)}
+全部照官方轉發，故本包裝層不重複實現官方的分類邏輯。
+]
 
 #See[{nameof(JsonTypeInfoInfo)}]
 """)]
@@ -31,8 +37,13 @@ public partial class JsonTypeInfoInfo{
 		_json = Json;
 	}
 
-	[Doc("""
-#Sum[建立實例，轉調官方 `CreateObject` 工廠。]
+	[Doc($"""
+#Sum[建立實例，轉調官方 {nameof(JsonTypeInfo)}.{nameof(JsonTypeInfo.CreateObject)} 工廠。]
+
+#Descr[
+例：掛了 `[JsonSerializable]` 且可建實例的型別，這裡返回一個新實例；
+官方沒給工廠時拋 {nameof(NotSupportedException)}，訊息說明是官方 `CreateObject` 為 null。
+]
 
 #See[{nameof(ITypeInfo.MkInst)}]
 """)]
@@ -45,19 +56,23 @@ public partial class JsonTypeInfoInfo{
 		return F();
 	}
 
-	[Doc("""
-#Sum[把官方 `Json.Properties` 包成成員表。]
+	[Doc($"""
+#Sum[把官方 {nameof(JsonTypeInfo)}.{nameof(JsonTypeInfo.Properties)} 包成成員表。]
 
 #Params([[官方型別元資料]])
 
 #Rtn[包好的成員表（尚未規整，由建構子統一處理）]
 
 #Descr[
-注意：`JsonPropertyInfo.Name` 是 JSON 名，
+注意：官方 {nameof(JsonPropertyInfo.Name)} 是 JSON 名，
 與 C# 名相等的前提由調用方保證（命名策略為 null 且無 `[JsonPropertyName]`）。
+
+例：官方有 11 個成員時這裡就轉出 11 個 {nameof(JsonMemberInfo)}，
+順序保持官方既有序，之後由 {nameof(TypeInfoSorter)} 規整。
 ]
 """)]
 	private static IReadOnlyList<IMemberInfo> CollectMembers(JsonTypeInfo Json){
+		// 先按官方成員數定容量，省掉過程中的擴容。
 		var R = new List<IMemberInfo>(Json.Properties.Count);
 		foreach(var P in Json.Properties){
 			R.Add(new JsonMemberInfo(P));

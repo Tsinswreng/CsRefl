@@ -4,8 +4,13 @@ using static Tsinswreng.CsSh.ShGlobal;
 
 namespace Tsinswreng.CsRefl.Scripts;
 
-[Doc("""
-#Sum[`Test` 命令的流程實現。]
+[Doc($"""
+#Sum[{nameof(Test)} 命令的流程實現。]
+
+#Descr[
+例：本體只有一步——把 `dotnet run` 交給測試專案，
+故測試邏輯全在測試專案裏，腳本不重複一份。
+]
 """)]
 internal static partial class Test{
 	internal static async partial Task Main(ISCtx Ctx, CT Ct){

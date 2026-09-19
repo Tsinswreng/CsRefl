@@ -3,16 +3,22 @@ namespace Tsinswreng.CsRefl;
 using System.Text.Json.Serialization.Metadata;
 using Tsinswreng.CsCore;
 
-[Doc("""
-#Sum[`JsonMemberInfo` 的函數實現。]
+[Doc($"""
+#Sum[{nameof(JsonMemberInfo)} 的函數實現。]
 
 #Descr[
 只放函數實現：成員事實字段與訪問器在 `JsonMemberInfo.cs`。
 ]
 """)]
 public partial class JsonMemberInfo{
-	[Doc("""
-#Sum[包一個 `JsonPropertyInfo`。]
+	[Doc($"""
+#Sum[包一個 {nameof(JsonPropertyInfo)}。]
+
+#Descr[
+例：`new {nameof(JsonMemberInfo)}(Info.{nameof(JsonTypeInfo.Properties)}[0])` 之後
+{nameof(Json)} 是那個官方成員、{nameof(Member)} 為 null、
+{nameof(Get)} 與 {nameof(Set)} 就是官方源生成的委託。
+]
 
 #See[{nameof(JsonMemberInfo)}]
 """)]

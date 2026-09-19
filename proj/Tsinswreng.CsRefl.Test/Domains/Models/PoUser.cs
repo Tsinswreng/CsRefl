@@ -31,7 +31,8 @@ public class PoUser:PoUserBase{
 	private str Hidden{get;} = "h";
 	/// 索引器：不進門面。
 	public str this[i32 Index] => $"i{Index}";
-	/// 帶特性的屬性：反射來源能查到 MyDemoAttr，Json 來源查不到。
+	/// 帶特性的屬性：兩套來源都能透過 AttributeProvider 查到 MyDemoAttr
+	/// （實測源生成下也取得到，故不是「只有反射查得到」）。
 	[MyDemoAttr("優等級", 2)]
 	public i32 Level{get;set;}
 	/// 只寫屬性：對外可寫不可讀——get 是私有的，故 PropertyInfo.CanRead=false

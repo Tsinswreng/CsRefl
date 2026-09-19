@@ -3,31 +3,44 @@ namespace Tsinswreng.CsRefl;
 using System.Diagnostics.CodeAnalysis;
 using Tsinswreng.CsCore;
 
-[Doc("""
+[Doc($"""
 #Sum[型別元資料的來源。可插拔、可合成。]
 
 #Descr[
-現成實現：
-+ `ReflTypeInfoSrc`：兼容 AOT 的反射來源，任何型別都能查（元數據保留時）
-+ `JsonTypeInfoSrc`：`System.Text.Json` 源生成上下文，只認已註冊型別
-+ `TypeInfoReg`：手寫註冊表（把手工元資料塞進去）
-+ `MergedTypeInfoSrc`：多來源按優先級合成
+現成實現各自覆蓋一種場景：
++ {nameof(ReflTypeInfoSrc)}：兼容 AOT 的反射來源，任何型別都能查（元數據保留時）
++ {nameof(JsonTypeInfoSrc)}：`System.Text.Json` 源生成上下文，只認已註冊型別
++ {nameof(TypeInfoReg)}：手寫註冊表（把手工元資料塞進去）
++ {nameof(MergedTypeInfoSrc)}：多來源按優先級合成
 
+例：AOT 主路徑上掛 {nameof(MergedTypeInfoSrc)}，
+把 {nameof(JsonTypeInfoSrc)} 放第一位（讀寫走源生成的委託，零反射）、
+{nameof(ReflTypeInfoSrc)} 放第二位兜底，
+於是已註冊的型別走快路徑，沒掛 `[JsonSerializable]` 的型別照樣查得到。
+]
+
+#Descr[
 「來源」是行為不是資料：
 本接口只有查詢，沒有可寫屬性；
-想手動註冊請用 `ITypeInfoReg`，想合成請用 `MergedTypeInfoSrc`。
+想手動註冊請用 {nameof(ITypeInfoReg)}，想合成請用 {nameof(MergedTypeInfoSrc)}。
 ]
 """)]
 public interface ITypeInfoSrc{
-	[Doc("""
+	[Doc($"""
 #Sum[取指定型別的元資料；未知返回 false。]
 
 #Params([[要查的型別], [取到的元資料；未知時為 null]])
 
 #Descr[
 DAM 註解：反射來源需要被查型別保留
-接口/公共屬性/公共字段/無參構造函數 的元數據；
+接口、公共屬性、公共字段、無參構造函數 的元數據；
 JsonTypeInfo 來源不依賴它，但接口統一宣告了這個前置條件。
+
+例：從 {nameof(JsonTypeInfoSrc)} 查掛過 `[JsonSerializable]` 的型別返回 true，
+`Info` 非 null；查沒掛過的型別返回 false、`Info` 為 null
+（未註冊的型別會被記進負面緩存，故重複查不會反復走 resolver 鏈）。
+
+要「查不到就拋異常」的便利版本用 {nameof(ITypeInfoSrcExtn)}.{nameof(ITypeInfoSrcExtn.GetMember)}。
 ]
 """)]
 	bool TryGetInfo(
@@ -40,13 +53,20 @@ JsonTypeInfo 來源不依賴它，但接口統一宣告了這個前置條件。
 		[NotNullWhen(true)] out ITypeInfo? Info
 	);
 
-	[Doc("""
+	[Doc($"""
 #Sum[列舉本來源所知的所有型別。]
 
 #Descr[
 來源不支持列舉時返回 null
-（反射來源、JsonTypeInfo 來源都如此）；
+（{nameof(ReflTypeInfoSrc)}、{nameof(JsonTypeInfoSrc)} 都如此）；
 調用方不得假設「能列舉」，只把它當加分能力。
+
+例：{nameof(TypeInfoReg)} 返回已註冊型別的清單；
+{nameof(JsonTypeInfoSrc)} 返回 null，因為官方上下文不暴露已註冊清單；
+{nameof(MergedTypeInfoSrc)} 只在全部成員來源都能列舉時才給出並集，否則整個返回 null。
+
+拼來源時可以先查這個屬性，返回 null 就說明這條鏈不能當「型別全集」用，
+例如不能用它來做全庫掃描。
 ]
 """)]
 	IReadOnlyCollection<Type>? RegisteredTypes{get;}

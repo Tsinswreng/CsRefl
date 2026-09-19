@@ -4,16 +4,22 @@ using System.Reflection;
 using System.Text.Json.Serialization.Metadata;
 using Tsinswreng.CsCore;
 
-[Doc("""
-#Sum[`MemberInfoBase` 的函數實現。]
+[Doc($"""
+#Sum[{nameof(MemberInfoBase)} 的函數實現。]
 
 #Descr[
 只放函數實現：成員事實字段與訪問器在 `MemberInfoBase.cs`。
 ]
 """)]
 public abstract partial class MemberInfoBase{
-	[Doc("""
+	[Doc($"""
 #Sum[把派生類交出的官方成員對象與讀寫委託落地；事實一律在此一次性賦值。]
+
+#Descr[
+例：{nameof(ReflMemberInfo)} 交的是 {nameof(PropertyInfo)} 側的事實，
+{nameof(JsonMemberInfo)} 交的是 {nameof(JsonPropertyInfo)} 側的事實，
+本建構子只做賦值，不含分支（分支留給各自的派生類建構子）。
+]
 
 #See[{nameof(MemberInfoBase)}]
 """)]
@@ -43,7 +49,7 @@ public abstract partial class MemberInfoBase{
 		_attrProvider = AttributeProvider;
 	}
 
-	[Doc("""
+	[Doc($"""
 #Sum[實例型別是否合格。]
 
 #Params([[待檢查的實例]])
@@ -51,8 +57,11 @@ public abstract partial class MemberInfoBase{
 #Rtn[合格返回 true]
 
 #Descr[
-`DeclaringType` 已知時按它判定。
+{nameof(IMemberInfo.DeclaringType)} 已知時按它判定。
 官方成員對象都不在（畸形手工元資料）時不阻擋，把判斷留給委託本身。
+
+例：成員宣告在基類、實例是子類時判定為合格，
+故用基類元資料建的成員能讀寫子類實例，這是繼承場景的正常用法。
 ]
 """)]
 	private bool IsInstanceOk(obj O){
@@ -60,8 +69,15 @@ public abstract partial class MemberInfoBase{
 		return D is null || D.IsInstanceOfType(O);
 	}
 
-	[Doc("""
+	[Doc($"""
 #Sum[讀取實例上的本成員。]
+
+#Descr[
+例：`M.{nameof(TryGet)}(User, out var V)` 命中；
+`M.{nameof(TryGet)}(null, out _)` 返回 false（不拋 {nameof(NullReferenceException)}）；
+拿另一種型別的實例返回 false；
+讀只寫成員返回 false。
+]
 
 #See[{nameof(IMemberInfo.TryGet)}]
 """)]
@@ -85,8 +101,16 @@ public abstract partial class MemberInfoBase{
 		}
 	}
 
-	[Doc("""
+	[Doc($"""
 #Sum[寫入實例上的本成員。]
+
+#Descr[
+例：`M.{nameof(TrySet)}(User, 31)` 命中並寫回；
+寫只讀成員返回 false（不改動實例、不拋）；
+傳錯型別的實例返回 false；
+值型別不符（如拿 `str` 當 `i32` 寫）包成 {nameof(InvalidOperationException)}，
+訊息含成員全名、值型別名與成員型別名，故不必再自己去比對型別。
+]
 
 #See[{nameof(IMemberInfo.TrySet)}]
 """)]
