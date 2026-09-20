@@ -80,13 +80,11 @@ public partial class TestTypeInfo{
 			typeof(TestTypeInfo), [typeof(PoUser)], [nameof(PoUser.Age)], "成員表:"
 		);
 		var R = reg.Register;
-		R("反射來源 成員表契約", async _ => {
-			CheckMembers(InfoOf(_refl), true);
-			return null;
-		});
-		R("Json來源 成員表契約", async _ => {
-			CheckMembers(InfoOf(_json), false);
-			return null;
-		});
+		foreach(var Src in _srcs){
+			R($"{Src.GetType().Name} 成員表契約", async _ => {
+				CheckMembers(InfoOf(Src), Src is ReflTypeInfoSrc);
+				return null;
+			});
+		}
 	}
 }

@@ -52,13 +52,11 @@ public partial class TestTypeInfo{
 			typeof(TestTypeInfo), [typeof(PoUser)], [nameof(PoUser.Level)], "特性:"
 		);
 		var R = reg.Register;
-		R("反射來源 特性可查", async _ => {
-			CheckAttrs(InfoOf(_refl), true);
-			return null;
-		});
-		R("Json來源 特性可查", async _ => {
-			CheckAttrs(InfoOf(_json), false);
-			return null;
-		});
+		foreach(var Src in _srcs){
+			R($"{Src.GetType().Name} 特性可查", async _ => {
+				CheckAttrs(InfoOf(Src), Src is ReflTypeInfoSrc);
+				return null;
+			});
+		}
 	}
 }

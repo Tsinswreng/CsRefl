@@ -37,13 +37,11 @@ public partial class TestTypeInfo{
 			typeof(TestTypeInfo), [typeof(PoUser)], [nameof(PoUser.Age)], "按名查詢:"
 		);
 		var R = reg.Register;
-		R("反射來源 查詢契約", async _ => {
-			CheckLookup(InfoOf(_refl));
-			return null;
-		});
-		R("Json來源 查詢契約", async _ => {
-			CheckLookup(InfoOf(_json));
-			return null;
-		});
+		foreach(var Src in _srcs){
+			R($"{Src.GetType().Name} 查詢契約", async _ => {
+				CheckLookup(InfoOf(Src));
+				return null;
+			});
+		}
 	}
 }

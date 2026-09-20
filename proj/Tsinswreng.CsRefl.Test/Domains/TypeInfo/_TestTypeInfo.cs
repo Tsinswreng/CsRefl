@@ -7,13 +7,15 @@ namespace Tsinswreng.CsRefl.Test.Domains.TypeInfo;
 
 /// 契約測試：同一套斷言分別跑在反射來源與 JsonTypeInfo 來源上，
 /// 驗證「兩套實現對外語義一致」是本包的核心設計要求。
+///
+/// 寫法要點：不為兩套實現各存一個字段，
+/// 而是把它們放進同一個 {nameof(ITypeInfoSrc)} 序列裏逐一跑——
+/// 用例體因此只寫一遍，且「換實現不改測試」這件事本身就被證明了。
 /// 分部文件（TestMembers/TestLookup/TestReadWrite/TestMkInstKind/TestAttrs/TestShadowing）
 /// 各自以 RegisterXxx 命名並在下面組裝；它們只放函數實現，聲明都在本文件。
 public partial class TestTypeInfo:ITester{
-	/// 反射來源。
-	private readonly ReflTypeInfoSrc _refl;
-	/// JsonTypeInfo 來源。
-	private readonly JsonTypeInfoSrc _json;
+	/// 兩套來源實現（反射、Json 源生成）；用例對它逐個跑同一套斷言。
+	private readonly IReadOnlyList<ITypeInfoSrc> _srcs;
 
 	public partial TestTypeInfo(ReflTypeInfoSrc Refl, JsonTypeInfoSrc Json);
 	public partial ITestNode RegisterTestsInto(ITestNode? Node);

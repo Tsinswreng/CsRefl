@@ -15,7 +15,7 @@ public partial class MergedTypeInfoSrc{
 #Sum[按優先級順序給出來源。]
 
 #Descr[
-實測：`new {nameof(MergedTypeInfoSrc)}(_json, _refl)` 的優先級是 Json 源在前；
+實測：`new {nameof(MergedTypeInfoSrc)}(JsonSrc, ReflSrc)` 的優先級是 Json 源在前；
 無來源（空 params）拋 {nameof(ArgumentException)}，
 任一來源為 null 拋 {nameof(ArgumentNullException)}，都在構造期就暴露。
 

@@ -1,0 +1,80 @@
+using Tsinswreng.CsTreeTest;
+using Tsinswreng.CsRefl;
+using Tsinswreng.CsRefl.Test.Domains.Models;
+
+namespace Tsinswreng.CsRefl.Test.Domains.Synthesis;
+
+/// 用法二：落庫與回填——一段完整業務流程。
+/// 只放函數實現：聲明在 _TestSynthesis.cs。
+public partial class TestSynthesis{
+	/// 見聲明處的說明。
+	public partial Task<nil> BizRowAndFillBack(obj? O){
+		var T = Assert.IsTrue;
+
+		// 起點：調用方自己把門面建出來（生產是合成來源，注入進來的也是這一個）。
+		var Src = new MergedTypeInfoSrc(
+			new JsonTypeInfoSrc(TestJsonCtx.Default),
+			new ReflTypeInfoSrc()
+		);
+
+		var U = new PoUser{Id = 1, Name = "小明", Age = 26};
+
+		// 要落庫的列 = 可寫成員名，順序就是成員序，可直接當 SQL 的列序。
+		var Info = Src.GetInfo(typeof(PoUser));
+		var Cols = Info.WritableNames();
+		T(Cols.Count == 9, $"可寫成員應有 9 個，實際 {Cols.Count}");
+		T(Cols.SequenceEqual([
+			nameof(PoUser.Id), nameof(PoUser.Name), nameof(PoUser.Age), nameof(PoUser.Email),
+			nameof(PoUser.Married), nameof(PoUser.Tags), nameof(PoUser.Extra),
+			nameof(PoUser.Level), nameof(PoUser.Note),
+		]), "列序應是成員序（只讀的 Secret 與只寫的 Token 都不是列）");
+
+		// 列名是運行期才知道的，所以這裏按名字逐列取值；
+		// TryGet 不拋——名字髒了就返回 false，適合批量回填。
+		var Vals = new List<obj?>();
+		foreach(var Col in Cols){
+			T(Src.TryGet(typeof(PoUser), Col, U, out var V), $"{Col} 是列，應取得到值");
+			Vals.Add(V);
+		}
+		T(Vals.Count == Cols.Count, "列與值應一一對應");
+		T((i64)Vals[0]! == 1, "第 1 列 Id 應是 1");
+		T((str)Vals[1]! == "小明", "第 2 列 Name 應是小明");
+		T((i32)Vals[2]! == 26, "第 3 列 Age 應是 26");
+
+		// 回填：字典的鍵就是成員名；可寫鍵寫入、只讀鍵靜默跳過。
+		Src.AssignFromDict(U, new Dictionary<str, obj?>{
+			[nameof(PoUser.Age)] = 31,
+			[nameof(PoUser.Name)] = "小紅",
+			[nameof(PoUser.Secret)] = "改不掉",
+		});
+		T(U.Age == 31 && U.Name == "小紅", "可寫鍵應寫回物件");
+		T(U.Secret == "s", "只讀鍵應被跳過：不拋、也不改值");
+
+		// 字典裏出現型別上沒有的鍵就不是跳過而是拋——
+		// 回填多發生在反序列化路徑上，靜默丟鍵比當場拋更難查。
+		var Threw = false;
+		try{
+			Src.AssignFromDict(U, new Dictionary<str, obj?>{["NoSuch"] = 1});
+		}catch(KeyNotFoundException){
+			Threw = true;
+		}
+		T(Threw, "未知鍵應拋 KeyNotFoundException");
+
+		return NIL;
+	}
+
+	/// 見聲明處的說明。
+	public partial void RegisterBizFlow(ITestNode Node){
+		var reg = Node.MkTestFnRegister(
+			typeof(TestSynthesis),
+			[typeof(ITypeInfoSrcExtn), typeof(ITypeInfoExtn)],
+			[
+				nameof(ITypeInfoSrcExtn.GetInfo),
+				nameof(ITypeInfoExtn.WritableNames),
+				nameof(ITypeInfoSrcExtn.AssignFromDict),
+			],
+			"綜合測試:落庫與回填:"
+		);
+		reg.Register(nameof(BizRowAndFillBack), BizRowAndFillBack!);
+	}
+}

@@ -1,5 +1,6 @@
 namespace Tsinswreng.CsRefl;
 
+using System.Reflection;
 using System.Text.Json.Serialization.Metadata;
 using Tsinswreng.CsCore;
 
@@ -12,14 +13,12 @@ using Tsinswreng.CsCore;
 """)]
 public abstract partial class TypeInfoBase{
 	[Doc($"""
-#Sum[把派生類交出的型別事實落地。]
+#Sum[把派生類交出的型別事實落地，成員表在此規整成契約序。]
 
 #Descr[
 實測：派生類傳進來的成員表無論是「屬性段在前、字段段在後」還是官方既有序，
-都在這裡被規整成同一份契約序；
-以 `PoUser` 為例，兩套來源進來的順序不同，出去都是
-`Id`、`Name`、`Age`、`Email`、`Married`、`Tags`、`Extra`、`Secret`、`Level`、`Token`、`Note`，
-故之後 {nameof(Members)} 的順序與來源無關。
+都在這裡被規整成同一份契約序；以 `PoUser` 為例，出去都是
+`Id`、`Name`、`Age`、`Email`、`Married`、`Tags`、`Extra`、`Secret`、`Level`、`Token`、`Note`。
 ]
 
 #See[{nameof(TypeInfoBase)}]
@@ -27,7 +26,7 @@ public abstract partial class TypeInfoBase{
 	protected partial TypeInfoBase(
 		Type Type,
 		JsonTypeInfoKind Kind,
-		IReadOnlyList<IMemberInfo> Members,
+		IReadOnlyList<obj?> Members,
 		Type? ElementType,
 		Type? KeyType
 	){
@@ -35,7 +34,7 @@ public abstract partial class TypeInfoBase{
 		ArgumentNullException.ThrowIfNull(Members);
 		_type = Type;
 		_kind = Kind;
-		// 規整（排序 + 去重 + 只讀）：兩套來源都可能給出同名成員，
+		// step 1: 規整（排序 + 去重 + 只讀）：兩套來源都可能給出同名成員，
 		// 詳見 TypeInfoSorter.SortEtDedup。
 		_members = TypeInfoSorter.SortEtDedup(Type, Members);
 		_elementType = ElementType;
@@ -46,25 +45,23 @@ public abstract partial class TypeInfoBase{
 #Sum[惰性建立按名索引。]
 
 #Descr[
-{nameof(Members)} 在建構後不可變，故緩存安全。
+成員表在建構後不可變，故緩存安全。
 索引雙檢：{nameof(_byName)} 是 volatile，兩個線程同時建也只會多建一份等價字典。
 
-實測：第一次 {nameof(TryGetMember)}（或 {nameof(GetMember)}）時才建這份字典，
-故「只枚舉 {nameof(Members)}、從不按名查」的用法不付這份內存代價；
-建好之後每次按名查是 O(1)，且兩個入口共用同一份
-（{nameof(GetMember)}("Age") 與 {nameof(TryGetMember)}("Age", out _) 返回同一實例）。
+實測：第一次按名查時才建這份字典，故「只枚舉成員、從不按名查」的用法不付這份內存代價；
+建好之後每次按名查是 O(1)。
 
-用 {nameof(StringComparer)}.{nameof(StringComparer.Ordinal)} 而非默認比較：
+鍵比較用 {nameof(StringComparer)}.{nameof(StringComparer.Ordinal)} 而非默認比較：
 成員名是程式碼識別符，Ordinal 才是正確語義，也不受當前文化影響。
 ]
 """)]
-	private partial void EnsureByName(){
+	internal partial void EnsureByName(){
 		if(_byName is not null){
 			return;
 		}
-		var Dict = new Dictionary<str, IMemberInfo>(Members.Count, StringComparer.Ordinal);
+		var Dict = new Dictionary<str, obj?>(Members.Count, StringComparer.Ordinal);
 		foreach(var M in Members){
-			Dict[M.Name] = M;
+			Dict[MemberExtn.Name(M)] = M;
 		}
 		_byName = Dict;
 	}
@@ -73,40 +70,24 @@ public abstract partial class TypeInfoBase{
 #Sum[按名查成員；未知返回 false。]
 
 #Descr[
-實測（`PoUser`）：`Info.{nameof(TryGetMember)}("Age", out var M)` 返回 true 且
-`M.{nameof(IMemberInfo.PropertyType)}` 是 `typeof(i32)`；
-`Info.{nameof(TryGetMember)}("NoSuch", out var Miss)` 返回 false、`Miss` 為 null 且不拋。
+實測（`PoUser`）：`"Age"` 命中且 `{nameof(MemberExtn.Name)}` 是 "Age"；
+`"NoSuch"` 返回 false、`M` 為 null 且不拋。
 ]
 
-#See[{nameof(ITypeInfo.TryGetMember)}]
+#See[{nameof(ITypeInfoExtn.TryGetMember)}]
 """)]
-	public partial bool TryGetMember(str Name, out IMemberInfo? M){
+	internal partial bool TryGetByName(str Name, out obj? M){
 		EnsureByName();
 		M = null;
 		return _byName!.TryGetValue(Name, out M);
 	}
 
 	[Doc($"""
-#Sum[按名取成員；未知拋 {nameof(KeyNotFoundException)}，訊息含可用名清單。]
+#Sum[按名的可用成員名清單，供未命中時的錯誤訊息用。]
 
-#Descr[
-實測：`Info.{nameof(GetMember)}("NoSuch")` 拋出的訊息形如
-「型別 ... 沒有成員 NoSuch。可用成員：Id, Name, Age, Email, Married, Tags, Extra, Secret, Level, Token, Note」，
-直接把可用名擺出來，不必另去查 {nameof(Members)} 排查拼寫
-（測試即以「訊息含 "Age"」斷言這一條）。
-
-訊息裏現算 {nameof(Members)} 的名字清單，故只在失敗路徑付這個代價。
-]
-
-#See[{nameof(ITypeInfo.GetMember)}]
+#Descr[實測（`PoUser`）：11 個名，與成員表同序。]
 """)]
-	public partial IMemberInfo GetMember(str Name){
-		EnsureByName();
-		if(_byName!.TryGetValue(Name, out var M)){
-			return M;
-		}
-		throw new KeyNotFoundException(
-			$"型別 {Type.FullName} 沒有成員 {Name}。可用成員：{string.Join(", ", Members.Select(X => X.Name))}"
-		);
+	internal partial IEnumerable<str> AllNames(){
+		return Members.Select(M => MemberExtn.Name(M));
 	}
 }

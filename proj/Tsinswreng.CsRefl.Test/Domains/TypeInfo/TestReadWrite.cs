@@ -59,21 +59,16 @@ public partial class TestTypeInfo{
 			typeof(TestTypeInfo), [typeof(PoUser)], [nameof(PoUser.Age)], "讀寫:"
 		);
 		var R = reg.Register;
-		R("反射來源 名字清單契約", async _ => {
-			CheckReadWriteNames(InfoOf(_refl));
-			return null;
-		});
-		R("Json來源 名字清單契約", async _ => {
-			CheckReadWriteNames(InfoOf(_json));
-			return null;
-		});
-		R("反射來源 讀寫端到端", async _ => {
-			CheckReadWriteE2E(InfoOf(_refl));
-			return null;
-		});
-		R("Json來源 讀寫端到端", async _ => {
-			CheckReadWriteE2E(InfoOf(_json));
-			return null;
-		});
+		// 兩套來源跑同一套斷言：名字清單與讀寫端到端。
+		foreach(var Src in _srcs){
+			R($"{Src.GetType().Name} 名字清單契約", async _ => {
+				CheckReadWriteNames(InfoOf(Src));
+				return null;
+			});
+			R($"{Src.GetType().Name} 讀寫端到端", async _ => {
+				CheckReadWriteE2E(InfoOf(Src));
+				return null;
+			});
+		}
 	}
 }

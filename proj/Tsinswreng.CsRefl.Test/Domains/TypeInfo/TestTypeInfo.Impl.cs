@@ -9,8 +9,7 @@ namespace Tsinswreng.CsRefl.Test.Domains.TypeInfo;
 public partial class TestTypeInfo{
 	/// 見聲明處的說明。
 	public partial TestTypeInfo(ReflTypeInfoSrc Refl, JsonTypeInfoSrc Json){
-		_refl = Refl;
-		_json = Json;
+		_srcs = [Refl, Json];
 	}
 
 	/// 見聲明處的說明。新增用例時在這裡登記一行。

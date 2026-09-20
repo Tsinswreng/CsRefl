@@ -30,6 +30,28 @@ using Tsinswreng.CsCore;
 """)]
 public static partial class ITypeInfoSrcExtn{
 	[Doc($"""
+#Sum[查型別的元資料；查不到就拋。]
+
+#Params([[z, 來源], [Type, 要查的型別]])
+
+#Rtn[取到的型別元資料]
+
+#Descr[
+與 {nameof(ITypeInfoSrc.TryGetInfo)} 成對，正如 {nameof(GetMember)} 之於 {nameof(TryGetMember)}：
+型別沒註冊到這個來源時拋 {nameof(KeyNotFoundException)}，訊息指出是哪個型別與哪個來源。
+
+實測：`Src.{nameof(GetInfo)}(typeof(PoUser))` 返回的 {nameof(ITypeInfo.Type)} 是 `typeof(PoUser)`；
+對只認已註冊型別的 {nameof(JsonTypeInfoSrc)} 查 `typeof(PoNoCtor)` 拋 {nameof(KeyNotFoundException)}。
+
+確定型別一定查得到時用本方法，省掉調用方的 `if(!TryGetInfo(...))` 樣板。
+]
+""")]
+	public static partial ITypeInfo GetInfo(
+		this ITypeInfoSrc z,
+		[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] Type Type
+	);
+
+	[Doc($"""
 #Sum[運行期型別的 DAM 擔保。]
 
 #Params([[T, 運行期型別，通常來自 `obj.GetType()`]])

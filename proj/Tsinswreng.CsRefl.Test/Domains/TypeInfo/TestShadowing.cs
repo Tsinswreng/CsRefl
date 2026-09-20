@@ -42,15 +42,12 @@ public partial class TestTypeInfo{
 			typeof(TestTypeInfo), [typeof(PoUserExt)], [nameof(PoUserExt.Age)], "同名遮蔽:"
 		);
 		var R = reg.Register;
-		R("反射來源 遮蔽成員契約", async _ => {
-			Assert.IsTrue(_refl.TryGetInfo(typeof(PoUserExt), out var Info), "反射應能查 PoUserExt");
-			CheckShadowing(Info!);
-			return null;
-		});
-		R("Json來源 遮蔽成員契約", async _ => {
-			Assert.IsTrue(_json.TryGetInfo(typeof(PoUserExt), out var Info), "Json 應能查已註冊的 PoUserExt");
-			CheckShadowing(Info!);
-			return null;
-		});
+		foreach(var Src in _srcs){
+			R($"{Src.GetType().Name} 遮蔽成員契約", async _ => {
+				Assert.IsTrue(Src.TryGetInfo(typeof(PoUserExt), out var Info), $"{Src.GetType().Name} 應能查 PoUserExt");
+				CheckShadowing(Info!);
+				return null;
+			});
+		}
 	}
 }
