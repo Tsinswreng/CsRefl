@@ -65,19 +65,26 @@ public partial class TypeInfoReg:ITypeInfoReg{
 		}
 	}
 
-	[Doc($"""
+	[Doc($$"""
 #Sum[取已註冊型別的元資料；未註冊返回 false。]
 
 #Descr[
-實測：{nameof(Add)} 過 `typeof(PoUser)`（還未 {nameof(Remove)}）時返回 true，
-移掉之後返回 false；與 {nameof(ReflTypeInfoSrc)} 不同，本表只認登記過的型別。
+調用方這樣寫：
 
-實測：`{nameof(TryGetInfo)}(typeof(PoUser), out var Info)` 在登記過時返回 true
-且 `Info.{nameof(ITypeInfo.Type)}` 是 `typeof(PoUser)`；
-未登記的型別返回 false 且 `Info` 為 null（不像反射來源那樣現場造一份）。
+```csharp
+var Reg = new TypeInfoReg();
+Reg.Add(typeof(PoUser), Info);
+
+Reg.TryGetInfo(typeof(PoUser), out var Got);
+// true；Got 就是登記進去的那個 Info（ReferenceEquals 為 true），且 Got.Type 是 typeof(PoUser)。
+
+Reg.Remove(typeof(PoUser));
+Reg.TryGetInfo(typeof(PoUser), out _);
+// false：移掉之後查不到。本表只認登記過的型別，不像 {{nameof(ReflTypeInfoSrc)}} 那樣現場造一份。
+```
 ]
 
-#See[{nameof(ITypeInfoSrc.TryGetInfo)}]
+#See[{{nameof(ITypeInfoSrc.TryGetInfo)}}]
 """)]
 	public partial bool TryGetInfo(
 		[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] Type Type,

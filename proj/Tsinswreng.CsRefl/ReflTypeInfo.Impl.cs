@@ -17,13 +17,6 @@ public partial class ReflTypeInfo{
 	[Doc($"""
 #Sum[對一個型別建立元資料：分類、收集成員、找鍵值型別、建無參實例委託。]
 
-#Descr[
-實測（`PoUser`）：`new {nameof(ReflTypeInfo)}(typeof(PoUser))` 一次算出四件事，
-之後 {nameof(ReflTypeInfo.Kind)}、{nameof(ReflTypeInfo.Members)}、
-{nameof(ReflTypeInfo.ElementType)}、{nameof(ReflTypeInfo.KeyType)}、
-{nameof(ReflTypeInfo.CreateObject)} 全是現成的，不做惰性重算。
-]
-
 #See[{nameof(ReflTypeInfo)}]
 """)]
 	public partial ReflTypeInfo(
@@ -38,28 +31,24 @@ public partial class ReflTypeInfo{
 		)
 	{
 		// 成員的排序與去重統一交給 TypeInfoBase 建構子（見 TypeInfoSorter.SortEtDedup）。
-		_mkInstFn = TryBuildMkInst(Type);
+		// 無參工廠構造期算一次就落在屬性上（不再另存欄位）。
+		CreateObject = TryBuildMkInst(Type);
 	}
 
 	[Doc($"""
 #Sum[無參構造：值型別取 `default(T)`，類型別取無參構造函數。]
 
-#Descr[
-實測：`typeof(PoUser)` 可以建（得到一個 `PoUser` 實例）；
-接口、抽象類、只有帶參構造函數的類都拋 {nameof(NotSupportedException)}，
-訊息說明是哪一種情形。
-]
-
 #See[{nameof(ITypeInfo.MkInst)}]
 """)]
 	public override partial obj? MkInst(){
-		// 錯誤訊息用 _mkInstFn 判空（與官方那條「CreateObject 是否為 null」同一判據）。
-		if(_mkInstFn is null){
+		// 錯誤訊息用 CreateObject 判空（與官方那條「CreateObject 是否為 null」同一判據）。
+		var F = CreateObject;
+		if(F is null){
 			throw new NotSupportedException(
 				$"型別 {Type.FullName} 沒有可用的無參構造函數（接口/抽象類/無無參構造函數），無法建立實例。"
 			);
 		}
-		return _mkInstFn();
+		return F();
 	}
 
 	private static partial JsonTypeInfoKind ComputeKind([DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] Type T){

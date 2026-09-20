@@ -61,16 +61,24 @@ public partial class ReflTypeInfoSrc:ITypeInfoSrc{
 		}
 	}
 
-	[Doc($"""
+	[Doc($$"""
 #Sum[取任意型別的元資料；反射來源總是「可知」。]
 
 #Descr[
-實測：`typeof(PoUser)` 與 `typeof(PoNoCtor)` 都返回 true（`Info` 非 null），
-故除型別為 null 之外幾乎不返回 false，
-故此來源放在 {nameof(MergedTypeInfoSrc)} 的末位最合適（兜底）。
-]
+調用方這樣寫：
 
-#See[{nameof(ITypeInfoSrc.TryGetInfo)}]
+```csharp
+var Refl = new ReflTypeInfoSrc();
+
+Refl.TryGetInfo(typeof(PoUser), out var Info);   // true
+Refl.TryGetInfo(typeof(PoNoCtor), out _);        // true：不必事先註冊任何型別
+
+// 不接 DI 的場合可直接用默認單例：
+ReflTypeInfoSrc.Inst.TryGetInfo(typeof(PoUser), out _);
+```
+
+除型別傳 null 之外幾乎不返回 false（故適合放在 {{nameof(MergedTypeInfoSrc)}} 的末位兜底）。
+]
 """)]
 	public partial bool TryGetInfo(
 		[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] Type Type,

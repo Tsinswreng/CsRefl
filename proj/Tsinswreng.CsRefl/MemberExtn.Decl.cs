@@ -72,7 +72,7 @@ Json 側看官方 {nameof(JsonPropertyInfo.Set)} 是否為 null；
 """)]
 	public static partial bool CanWrite(this obj? M);
 
-	[Doc($"""
+	[Doc($$"""
 #Sum[讀取實例上的本成員；失敗返回 false。]
 
 #Params([[M, 官方成員物件], [O, 實例；null 或與宣告型別不符時返回 false], [V, 讀出的值；失敗時為 default]])
@@ -80,14 +80,28 @@ Json 側看官方 {nameof(JsonPropertyInfo.Set)} 是否為 null；
 #Rtn[不可讀、實例為 null 或型別不符時返回 false]
 
 #Descr[
-實測（`PoUser`，`Age = 30`）：兩側都讀出 boxed 的 `i32` 30；
-只讀的 `Secret` 兩側都讀出 "s"；只寫的 `Token` 兩側都返回 false；傳 null 返回 false；
-傳 `new PoColor()` 返回 false（型別不符）。
+調用方這樣寫：
+
+```csharp
+var Info = Src.GetInfo(typeof(PoUser));
+var User = new PoUser{ Age = 26 };
+
+var M = Info.GetMember(nameof(PoUser.Age));
+M.TryGet(User, out var V);
+// true；V 是 boxed 的 i32 26。
+
+Info.GetMember(nameof(PoUser.Secret)).TryGet(User, out var S);   // true；V 是 "s"（只讀成員讀得到）
+Info.GetMember(nameof(PoUser.Token)).TryGet(User, out _);        // false：只寫成員讀不到
+Info.GetMember(nameof(PoUser.Age)).TryGet(null, out _);          // false：實例是 null
+Info.GetMember(nameof(PoUser.Age)).TryGet(new PoColor(), out _); // false：實例與宣告型別不符
+```
+
+兩套來源同一條口徑：反射側的 `PropertyInfo`/`FieldInfo` 與 Json 側的 `JsonPropertyInfo` 都走本方法。
 ]
 """)]
 	public static partial bool TryGet(this obj? M, obj? O, out obj? V);
 
-	[Doc($"""
+	[Doc($$"""
 #Sum[寫入實例上的本成員；失敗返回 false。]
 
 #Params([[M, 官方成員物件], [O, 實例；null 或與宣告型別不符時返回 false], [V, 要寫入的值]])
@@ -95,10 +109,24 @@ Json 側看官方 {nameof(JsonPropertyInfo.Set)} 是否為 null；
 #Rtn[不可寫、實例為 null 或型別不符時返回 false]
 
 #Descr[
-值型別不符不返回 false，而是照常拋（那是調用方的 bug，不是「不可寫」）。
+調用方這樣寫：
 
-實測（`PoUser`）：`Age` 兩側都寫得進；繼承成員 `Name` 兩側都寫得進；
-只讀的 `Secret` 兩側都返回 false 且不動實例。
+```csharp
+var Info = Src.GetInfo(typeof(PoUser));
+var User = new PoUser{ Age = 26 };
+
+Info.GetMember(nameof(PoUser.Age)).TrySet(User, 31);
+// true；之後 User.Age 是 31。
+
+Info.GetMember(nameof(PoUser.Name)).TrySet(User, "阿強");
+// true；繼承來的成員一樣寫得進。
+
+Info.GetMember(nameof(PoUser.Secret)).TrySet(User, "x");
+// false：Secret 是只讀成員，且 User.Secret 仍是 "s"（不動實例）。
+
+Info.GetMember(nameof(PoUser.Age)).TrySet(User, "不是數字");
+// 拋（不是返回 false）：值型別不符是調用方的 bug。
+```
 ]
 """)]
 	public static partial bool TrySet(this obj? M, obj? O, obj? V);

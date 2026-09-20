@@ -57,26 +57,6 @@ using Tsinswreng.CsCore;
 """)]
 public partial class InstDict:IInstDict{
 	[Doc($"""
-#Sum[視圖背後的物件；與官方 `JsonObject` 那種「本體直接公開」同款寫法。]
-
-#Descr[
-實測：`Dict["Level"] = 8` 之後 `User.Level` 就是 8，
-讀寫都落在這個物件上，視圖本身不持有成員值的副本。
-]
-""")]
-	private readonly obj _target;
-
-	[Doc($"""
-#Sum[視圖所用到的型別元資料。]
-
-#Descr[
-實測：其 {nameof(ITypeInfo.Type)} 是 `typeof(PoUser)`；
-鍵表與可讀可寫判據都從它現算，故換一份元資料建視圖，鍵集合也跟著變。
-]
-""")]
-	private readonly ITypeInfo _typeInfo;
-
-	[Doc($"""
 #Sum[出現口徑的鍵清單：可讀且可寫的成員名，按成員序。]
 
 #Descr[
@@ -89,16 +69,6 @@ public partial class InstDict:IInstDict{
 ]
 """)]
 	private readonly List<str> _keys;
-
-	[Doc($"""
-#Sum[{nameof(Keys)} 對外只讀包裝：活視圖（與 {nameof(_keys)} 同一份數據，不複製），但不許外部改形狀。]
-
-#Descr[
-實測：對外只暴露 {nameof(ICollection<string>)}，
-外部拿到的 {nameof(Keys)} 沒有增刪入口，故繞不過「形狀由型別成員固定」這條約束。
-]
-""")]
-	private readonly ICollection<str> _keysView;
 
 	[Doc($"""
 #Sum[{nameof(ContainsKey)} 用的鍵索引：與 {nameof(_keys)} 同一批名字，只為把存在性判斷做成 O(1)。]
@@ -138,23 +108,33 @@ public partial class InstDict:IInstDict{
 	[Doc($"""
 #Sum[視圖背後的物件。]
 
+#Descr[
+構造期賦值（自動屬性），之後不再改；與官方 `JsonObject` 那種「本體直接公開」同款寫法。
+
+實測：`Dict["Level"] = 8` 之後 `User.Level` 就是 8，
+讀寫都落在這個物件上，視圖本身不持有成員值的副本。
+]
+
 #See[{nameof(IInstDict.Target)}]
 """)]
 	public obj? Target{
-		get{
-			return _target;
-		}
+		get;
 	}
 
 	[Doc($"""
 #Sum[視圖所用到的型別元資料。]
 
+#Descr[
+構造期賦值（自動屬性），之後不再改。
+
+實測：其 {nameof(ITypeInfo.Type)} 是 `typeof(PoUser)`；
+鍵表與可讀可寫判據都從它現算，故換一份元資料建視圖，鍵集合也跟著變。
+]
+
 #See[{nameof(IInstDict.TypeInfo)}]
 """)]
 	public ITypeInfo TypeInfo{
-		get{
-			return _typeInfo;
-		}
+		get;
 	}
 
 	[Doc($"""
@@ -188,17 +168,16 @@ public partial class InstDict:IInstDict{
 
 	[Doc($"""
 #Sum[出現口徑的鍵集合。]
+
 #Descr[
-活視圖，與視圖同一份鍵集合，但不提供改形狀的入口。
+構造期建好的只讀包裝（與 {nameof(_keys)} 同一份數據、不複製），對外不提供改形狀的入口。
 
 實測：`foreach(var K in Dict.Keys)` 依次拿到 `Id`、`Name`、`Age`、`Email`、`Married`、`Tags`、`Extra`、`Level`、`Note`；
 這個順序與名前綴的成員序一致，可直接當列序用。
 ]
 """)]
 	public ICollection<str> Keys{
-		get{
-			return _keysView;
-		}
+		get;
 	}
 
 	[Doc($"""
@@ -221,31 +200,45 @@ null（`Email` 未賦值）、false、空列表、空字典、boxed 的 `i32` 0�
 		}
 	}
 
-	[Doc($"""
+	[Doc($$"""
 #Sum[鍵是否存在於出現口徑（= 可讀且可寫的成員）。]
 
 #Descr[
-實測：`Dict.{nameof(ContainsKey)}("Age")` 是 true；
-`Dict.{nameof(ContainsKey)}("NoSuch")` 是 false；
-`Dict.{nameof(ContainsKey)}("Secret")` 也是 false（只讀成員不在鍵表內），
-但同一時刻 `Dict["Secret"]` 讀得到值，兩者判據不同。
+調用方這樣寫：
+
+```csharp
+var Dict = Src.ToInstDict(User);
+
+Dict.ContainsKey(nameof(PoUser.Age));    // true：Age 可讀可寫，在鍵表內
+Dict.ContainsKey("NoSuch");              // false：沒有這個成員
+Dict.ContainsKey(nameof(PoUser.Secret)); // false：Secret 只讀，不在鍵表內
+Dict[nameof(PoUser.Secret)];             // 但同一時刻讀得到值——鍵表口徑與訪問口徑不同
+```
 ]
 
-#See[{nameof(IInstDict.ContainsKey)}]
+#See[{{nameof(IInstDict.ContainsKey)}}]
 """)]
 	public partial bool ContainsKey(str Key);
 
-	[Doc($"""
+	[Doc($$"""
 #Sum[按成員表取值：成員存在且可讀即成功；未知成員返回 false。]
 
 #Descr[
-實測：`Dict.{nameof(TryGetValue)}("Age", out var V)` 返回 true，V 是 boxed 的 `i32` 26；
-`Dict.{nameof(TryGetValue)}("Secret", out var S)` 返回 true（只讀成員取得到）；
-`Dict.{nameof(TryGetValue)}("Token", out _)` 返回 false（只寫成員取不到）；
-`Dict.{nameof(TryGetValue)}("NoSuch", out _)` 返回 false（未知鍵）。
+調用方這樣寫：
+
+```csharp
+var Dict = Src.ToInstDict(User);   // User.Age = 26
+
+Dict.TryGetValue(nameof(PoUser.Age), out var V);     // true；V 是 boxed 的 i32 26
+Dict.TryGetValue(nameof(PoUser.Secret), out var S);  // true；S 是 "s"（只讀成員取得到）
+Dict.TryGetValue(nameof(PoUser.Token), out _);       // false：只寫成員取不到
+Dict.TryGetValue("NoSuch", out _);                   // false：沒有這個成員
+```
+
+與 {{nameof(ContainsKey)}} 的答案可以不一樣：後者按鍵表（可讀可寫）判，本方法按成員表判。
 ]
 
-#See[{nameof(IInstDict.TryGetValue)}]
+#See[{{nameof(IInstDict.TryGetValue)}}]
 """)]
 	public partial bool TryGetValue(str Key, out obj? Value);
 
@@ -253,8 +246,15 @@ null（`Email` 未賦值）、false、空列表、空字典、boxed 的 `i32` 0�
 #Sum[形狀由型別成員固定，本操作恆拋 {nameof(NotSupportedException)}。]
 
 #Descr[
-實測：`Dict.{nameof(Add)}("NewKey", 1)` 恆拋；
-型別上沒有這個成員，字典視圖加不出來。
+調用方這樣寫：
+
+```csharp
+var Dict = Src.ToInstDict(User);
+
+Dict.Add("NewKey", 1);
+// 拋 NotSupportedException：型別上沒有 NewKey 這個成員，視圖加不出鍵。
+// 要加就回型別上加一個可寫成員，再重建視圖。
+```
 ]
 
 #See[{nameof(IInstDict.Add)}]
@@ -272,8 +272,14 @@ null（`Email` 未賦值）、false、空列表、空字典、boxed 的 `i32` 0�
 #Sum[形狀由型別成員固定，本操作恆拋 {nameof(NotSupportedException)}。]
 
 #Descr[
-實測：`Dict.{nameof(Remove)}("Age")` 恆拋；
-成員在運行期無法從型別上抹掉，這個操作沒有可兌現的語義。
+調用方這樣寫：
+
+```csharp
+var Dict = Src.ToInstDict(User);
+
+Dict.Remove(nameof(PoUser.Age));
+// 拋 NotSupportedException：成員在運行期沒法從型別上抹掉，這個操作沒有可兌現的語義。
+```
 ]
 
 #See[{nameof(IInstDict.Remove)}]
@@ -303,9 +309,15 @@ null（`Email` 未賦值）、false、空列表、空字典、boxed 的 `i32` 0�
 #Sum[鍵值對是否都在視圖內且相等。]
 
 #Descr[
-實測：`Dict.{nameof(Contains)}` 傳入鍵 `Age`、值 boxed 的 `i32` 26 時為 true；
-值傳 31（與物件不一致）為 false；
-鍵傳 `Token`（只寫，取不到值）也為 false。
+調用方這樣寫：
+
+```csharp
+var Dict = Src.ToInstDict(User);   // User.Age = 26
+
+Dict.Contains(new KeyValuePair<str, obj?>(nameof(PoUser.Age), 26));    // true
+Dict.Contains(new KeyValuePair<str, obj?>(nameof(PoUser.Age), 31));    // false：值與物件不一致
+Dict.Contains(new KeyValuePair<str, obj?>(nameof(PoUser.Token), "t")); // false：只寫成員取不到值
+```
 ]
 
 #See[{nameof(IInstDict.Contains)}]
@@ -316,12 +328,19 @@ null（`Email` 未賦值）、false、空列表、空字典、boxed 的 `i32` 0�
 #Sum[按出現口徑的鍵序拷貝鍵值對到數組。]
 
 #Descr[
-下標為負或容量不足時拋 {nameof(ArgumentException)} 系列。
+調用方這樣寫：
 
-實測：`{nameof(CopyTo)}(Buf, 2)` 時 `Buf` 的下標 0 與 1 保持原樣，
-自下標 2 起依次寫入 `Id`、`Name`、`Age`、`Email`、`Married`、`Tags`、`Extra`、`Level`、`Note`；
-`Buf` 長度只有 3 時拋 {nameof(ArgumentException)}
-（修前裸拋 `IndexOutOfRangeException`，對調用方毫無線索）。
+```csharp
+var Dict = Src.ToInstDict(User);
+
+var Buf = new KeyValuePair<str, obj?>[11];
+Dict.CopyTo(Buf, 2);
+// 下標 0 與 1 保持原樣；自下標 2 起依次是 Id、Name、Age、Email、Married、Tags、Extra、Level、Note。
+
+var Small = new KeyValuePair<str, obj?>[3];
+Dict.CopyTo(Small, 0);
+// 拋 ArgumentException，訊息說明「需要幾個位置、實際只剩幾個」。
+```
 ]
 
 #See[{nameof(IInstDict.CopyTo)}]
@@ -394,18 +413,29 @@ boxed 的 `i32` 26、null、false、空列表、空字典、boxed 的 `i32` 0、
 	// 顯式接口實現（IEnumerable.GetEnumerator）不能標 partial，故不在聲明側列出；
 	// 它只是對上面公開 GetEnumerator 的一行轉發，見 InstDict.Impl.cs。
 
-	[Doc($"""
+	[Doc($$"""
 #Sum[用一個實例與它的型別元資料建視圖。]
 
 #Params([[Target, 視圖背後的物件，不允許 null], [TypeInfo, 該物件的型別元資料]])
 
 #Descr[
-{nameof(Target)} 不允許 null（視圖必須能讀寫實例）。
+調用方通常不直接 new，而是從門面拿（門面會替你把型別查好）：
 
-實測：`new {nameof(InstDict)}(User, Info)` 之後
-`Dict["Level"] = 8` 使 `User.Level` 變成 8；
-`Target` 傳 null 或 `TypeInfo` 傳 null 都在構造期拋 {nameof(ArgumentNullException)}，
-不留到讀寫時才暴露。
+```csharp
+var User = new PoUser{ Level = 0 };
+var Info = Src.GetInfo(typeof(PoUser));
+
+var Dict = new InstDict(User, Info);
+Dict[nameof(PoUser.Level)] = 8;
+// User.Level 變成 8：讀寫都落在原物件上，視圖不持有副本。
+
+new InstDict(null!, Info);
+// 拋 ArgumentNullException：視圖必須能讀寫實例。
+new InstDict(User, null!);
+// 也拋 ArgumentNullException，兩者都在構造期暴露，不留到讀寫時。
+```
+
+順帶：{{nameof(ITypeInfoSrcExtn.ToInstDict)}} 就是「查型別 + new 本類」這兩步的合寫。
 ]
 """)]
 	public partial InstDict(obj Target, ITypeInfo TypeInfo);

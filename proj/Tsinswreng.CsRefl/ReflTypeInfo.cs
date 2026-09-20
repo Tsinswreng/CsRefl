@@ -60,35 +60,30 @@ public partial class ReflTypeInfo:TypeInfoBase{
 		| DynamicallyAccessedMemberTypes.PublicFields
 		| DynamicallyAccessedMemberTypes.PublicParameterlessConstructor;
 
-	[Doc($"""
-#Sum[無參實例工廠；null 表示本型別不可建實例。]
-
-#Descr[
-型別與官方 {nameof(JsonTypeInfo)}.{nameof(JsonTypeInfo.CreateObject)} 一致，
-對外以 {nameof(CreateObject)} 暴露。
-
-實測：`typeof(PoUser)` 這個字段非 null，調一次得到一個 `PoUser`；
-`typeof(PoNoCtor)`（只有帶參構造函數）為 null。
-JIT 下它由表達式樹一次編譯成委託；
-NativeAOT 下表達式樹不能 Compile（會拋 {nameof(PlatformNotSupportedException)}），
-故退成每次調 {nameof(Activator)}.{nameof(Activator.CreateInstance)}。
-]
-""")]
-	private readonly Func<obj>? _mkInstFn;
-
-	[Doc($"""
+	[Doc($$"""
 #Sum[對一個型別建立元資料。]
 
 #Params([[Type, 要建立元資料的型別]])
 
 #Descr[
-DAM 註解：
-反射建立元資料需要 接口、公共屬性、公共字段、無參構造函數 的元數據被保留
-（AOT 剪裁的前提，見 {nameof(ReflDam)} 的說明）。
+調用方這樣寫：
 
-實測：`new {nameof(ReflTypeInfo)}(typeof(PoUser))` 一次做完分類、收集成員、找鍵值型別、建無參工廠；
-之後 {nameof(Members)} 與 {nameof(GetMember)} 都直接用這份結果，不會每次重算
-（`{nameof(GetMember)}("Age")` 與 `{nameof(TryGetMember)}("Age", out _)` 返回同一實例）。
+```csharp
+var Info = new ReflTypeInfo(typeof(PoUser));
+// 建構子一次做完分類、收集成員、找鍵值型別、建無參工廠。
+
+Info.Kind;                        // JsonTypeInfoKind.Object
+Info.Members.Count;               // 11
+Info.ElementType;                 // null（物件型別不是集合）
+Info.CanMkInst;                   // true
+
+Info.GetMember(nameof(PoUser.Age));   // 之後按名查直接用這份結果，不重算
+
+new ReflTypeInfo(typeof(PoNoCtor)).CanMkInst;   // false：只有帶參構造函數
+```
+
+DAM 註解：反射建立元資料需要 接口、公共屬性、公共字段、無參構造函數 的元數據被保留
+（AOT 剪裁的前提，見 {{nameof(ReflDam)}} 的說明）。
 ]
 """)]
 	public partial ReflTypeInfo(
@@ -96,14 +91,22 @@ DAM 註解：
 	);
 
 	[Doc($"""
-#Sum[無參實例工廠，形狀與官方 {nameof(JsonTypeInfo)}.{nameof(JsonTypeInfo.CreateObject)} 一致。]
+#Sum[無參實例工廠，形狀與官方 {nameof(JsonTypeInfo)}.{nameof(JsonTypeInfo.CreateObject)} 一致；null 表示本型別不可建實例。]
+
+#Descr[
+構造期由 {nameof(TryBuildMkInst)} 算好、直接落在本屬性上，不再另存欄位轉發。
+
+實測：`typeof(PoUser)` 的這個屬性非 null，調一次得到一個 `PoUser` 實例；
+`typeof(PoNoCtor)`（只有帶參構造函數）為 null。
+JIT 下它由表達式樹一次編譯成委託；
+NativeAOT 下表達式樹不能 Compile（會拋 {nameof(PlatformNotSupportedException)}），
+故退成每次調 {nameof(Activator)}.{nameof(Activator.CreateInstance)}。
+]
 
 #See[{nameof(ITypeInfo.CreateObject)}]
 """)]
 	public override Func<obj>? CreateObject{
-		get{
-			return _mkInstFn;
-		}
+		get;
 	}
 
 	[Doc($"""

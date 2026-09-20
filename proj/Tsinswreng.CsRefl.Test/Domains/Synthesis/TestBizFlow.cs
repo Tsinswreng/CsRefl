@@ -34,7 +34,7 @@ public partial class TestSynthesis{
 		// TryGet 不拋——名字髒了就返回 false，適合批量回填。
 		var Vals = new List<obj?>();
 		foreach(var Col in Cols){
-			T(Src.TryGet(typeof(PoUser), Col, U, out var V), $"{Col} 是列，應取得到值");
+			T(Src.TryGet(typeof(PoUser), U, Col, out var V), $"{Col} 是列，應取得到值");
 			Vals.Add(V);
 		}
 		T(Vals.Count == Cols.Count, "列與值應一一對應");
@@ -55,6 +55,8 @@ public partial class TestSynthesis{
 		// 回填多發生在反序列化路徑上，靜默丟鍵比當場拋更難查。
 		var Threw = false;
 		try{
+			//TswgNote 爲甚麼這麼設計? 那我子類的Dict 賦到接口上你不炸了?
+			//甚麼時候該靜默 甚麼時候該拋異常分不清楚嗎? 這時候靜默又能怎樣?
 			Src.AssignFromDict(U, new Dictionary<str, obj?>{["NoSuch"] = 1});
 		}catch(KeyNotFoundException){
 			Threw = true;

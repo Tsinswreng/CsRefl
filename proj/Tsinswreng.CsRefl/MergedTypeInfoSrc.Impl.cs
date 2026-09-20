@@ -14,14 +14,6 @@ public partial class MergedTypeInfoSrc{
 	[Doc($"""
 #Sum[按優先級順序給出來源。]
 
-#Descr[
-實測：`new {nameof(MergedTypeInfoSrc)}(JsonSrc, ReflSrc)` 的優先級是 Json 源在前；
-無來源（空 params）拋 {nameof(ArgumentException)}，
-任一來源為 null 拋 {nameof(ArgumentNullException)}，都在構造期就暴露。
-
-參數數組會被防禦性拷貝（實測：構造後改動調用方那份數組，合成查詢仍按原優先級命中）。
-]
-
 #See[{nameof(MergedTypeInfoSrc)}]
 """)]
 	public partial MergedTypeInfoSrc(params ITypeInfoSrc[] Sources){
@@ -39,16 +31,6 @@ public partial class MergedTypeInfoSrc{
 
 	[Doc($"""
 #Sum[第一個答「已知」的來源勝出；全部答「未知」返回 false。]
-
-#Descr[
-實測：`typeof(PoUser)` 被第一個來源（{nameof(JsonTypeInfoSrc)}）接住，
-回傳的實例與 Json 源單獨查到的 `{nameof(ReferenceEquals)}` 為 true；
-未註冊的 `typeof(PoNoCtor)` 落到 {nameof(ReflTypeInfoSrc)} 兜底，回傳的是反射源那個實例；
-鏈裏若沒有任何來源認識這個型別，返回 false 且 `Info` 為 null。
-
-因為是「短路返回」，後面的來源不會被問到，
-故把便宜的來源排前面能省掉不必要的解析。
-]
 
 #See[{nameof(ITypeInfoSrc.TryGetInfo)}]
 """)]

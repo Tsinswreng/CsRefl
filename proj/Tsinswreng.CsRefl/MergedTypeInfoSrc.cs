@@ -66,18 +66,33 @@ public partial class MergedTypeInfoSrc:ITypeInfoSrc{
 		}
 	}
 
-	[Doc($"""
+	[Doc($$"""
 #Sum[按優先級順序給出來源。]
 
 #Params([[Sources, 來源，順序即優先級；至少要一個]])
 
 #Descr[
-實測：`new {nameof(MergedTypeInfoSrc)}(JsonSrc, Reg, ReflSrc)` 的優先級是
-Json 源最高、註冊表次之、反射源兜底。
+調用方這樣寫（生產就該是這一行）：
 
-實測：無來源（`new {nameof(MergedTypeInfoSrc)}()`）拋 {nameof(ArgumentException)}；
-其中一個來源為 null 拋 {nameof(ArgumentNullException)}，都在構造期就暴露。
+```csharp
+var Src = new MergedTypeInfoSrc(
+	new JsonTypeInfoSrc(TestJsonCtx.Default),   // 第一順位：掛過 [JsonSerializable] 的走源生成（零反射）
+	new TypeInfoReg(),                          // 第二順位：手工登記的精確元資料（必須排在反射之前）
+	new ReflTypeInfoSrc()                       // 末位：兜住其餘型別
+);
+
+Src.TryGetInfo(typeof(PoUser), out _);    // true：由 Json 源接住
+Src.TryGetInfo(typeof(PoNoCtor), out _);  // true：落到反射源
+
+new MergedTypeInfoSrc();
+// 拋 ArgumentException：至少要一個來源。
+```
+
+實測：`new {{nameof(MergedTypeInfoSrc)}}(JsonSrc, Reg, ReflSrc)` 的優先級是
+Json 源最高、註冊表次之、反射源兜底。
 ]
+
+#See[{{nameof(MergedTypeInfoSrc)}}]
 """)]
 	public partial MergedTypeInfoSrc(params ITypeInfoSrc[] Sources);
 
@@ -85,9 +100,17 @@ Json 源最高、註冊表次之、反射源兜底。
 #Sum[第一個答「已知」的來源勝出；全部答「未知」返回 false。]
 
 #Descr[
-實測：`typeof(PoUser)` 在 Json 源與反射源都能查，
-但因 Json 源排在前面，取到的是 Json 源的元資料（讀寫走源生成委託）；
-把優先級顛倒過來，同一型別取到的就變成反射源的元資料。
+調用方不必知道自己命中哪一個來源：
+
+```csharp
+Src.TryGetInfo(typeof(PoUser), out var Info);
+// true；Info 來自 Json 源（它排前面，故讀寫走官方委託）。
+
+Src.TryGetInfo(typeof(SomeUnregisteredType), out _);
+// false：所有來源都答「未知」時才 false。
+```
+
+實測：把優先級顛倒過來（反射源排前面），同一型別取到的就變成反射源的元資料。
 ]
 
 #See[{nameof(ITypeInfoSrc.TryGetInfo)}]

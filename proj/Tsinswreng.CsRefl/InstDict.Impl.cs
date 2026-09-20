@@ -18,37 +18,31 @@ public partial class InstDict{
 	[Doc($"""
 #Sum[用一個實例與它的型別元資料建視圖。]
 
-#Descr[
-實測（`PoUser`）：`new {nameof(InstDict)}(User, Info)` 之後，
-{nameof(Keys)} 是 `Id`、`Name`、`Age`、`Email`、`Married`、`Tags`、`Extra`、`Level`、`Note`（9 個）；
-{nameof(Keys)} 與 {nameof(_target)} 都直接指向傳進來的 `User`，
-故 `Dict["Level"] = 8` 之後 `User.Level` 立刻是 8。
-]
-
 #See[{nameof(InstDict)}]
 """)]
 	public partial InstDict(obj Target, ITypeInfo TypeInfo){
 		ArgumentNullException.ThrowIfNull(Target);
 		ArgumentNullException.ThrowIfNull(TypeInfo);
 		// step 1: 記住視圖背後的物件與型別元資料，後續讀寫都落在這兩者上。
-		_target = Target;
-		_typeInfo = TypeInfo;
+		// 兩者直接落在屬性上（自動屬性），不另存欄位由屬性轉發；參數同名，故用 this.。
+		this.Target = Target;
+		this.TypeInfo = TypeInfo;
 		// step 2: 收集出現口徑的鍵。
 		// 鍵只收「可讀且可寫」的成員：只讀成員寫不進去、只寫成員讀不出來，
 		// 兩者放進字典視圖都會讓 IDictionary 的讀寫契約自相矛盾。
-		var Keys = new List<str>();
+		var KeyList = new List<str>();
 		var KeySet = new HashSet<str>(StringComparer.Ordinal);
-		foreach(var M in _typeInfo.Members){
+		foreach(var M in TypeInfo.Members){
 			if(MemberExtn.CanRead(M) && MemberExtn.CanWrite(M)){
 				var N = MemberExtn.Name(M);
-				Keys.Add(N);
+				KeyList.Add(N);
 				KeySet.Add(N);
 			}
 		}
-		_keys = Keys;
+		_keys = KeyList;
 		_keySet = KeySet;
-		// step 3: 包成只讀視圖（不複製）：外部拿不到 List 的 Add/Remove，形狀改不動。
-		_keysView = new ReadOnlyCollection<str>(Keys);
+		// step 3: 對外只讀包裝（不複製）：外部拿不到 List 的 Add/Remove，形狀改不動。
+		Keys = new ReadOnlyCollection<str>(KeyList);
 	}
 
 	[Doc($"""
@@ -92,11 +86,11 @@ public partial class InstDict{
 """)]
 	private partial obj? ReadCell(str Key){
 		// step 1: 成員必須存在且可讀（判據是成員表，不看鍵表）。
-		if(!_typeInfo.TryGetMember(Key, out var M) || !MemberExtn.CanRead(M)){
+		if(!TypeInfo.TryGetMember(Key, out var M) || !MemberExtn.CanRead(M)){
 			throw new KeyNotFoundException($"鍵 {Key} 不在字典視圖裏（不存在或不可讀）。可用鍵：{string.Join(", ", _keys)}");
 		}
 		// step 2: 真正取值；實例型別不符時 TryGet 返回 false。
-		if(!MemberExtn.TryGet(M, _target, out var R)){
+		if(!MemberExtn.TryGet(M, Target, out var R)){
 			throw new KeyNotFoundException($"讀取成員 {Key} 失敗（實例型別不符）。");
 		}
 		return R;
@@ -122,7 +116,7 @@ public partial class InstDict{
 """)]
 	private partial void WriteCell(str Key, obj? Value){
 		// step 1: 成員必須存在。
-		if(!_typeInfo.TryGetMember(Key, out var M)){
+		if(!TypeInfo.TryGetMember(Key, out var M)){
 			throw new KeyNotFoundException($"鍵 {Key} 不在字典視圖裏（不存在）。可用鍵：{string.Join(", ", _keys)}");
 		}
 		// step 2: 成員必須可寫（只讀成員到這裡就被擋住，不會撞到底層異常）。
@@ -130,7 +124,7 @@ public partial class InstDict{
 			throw new InvalidOperationException($"成員 {Key} 不可寫。");
 		}
 		// step 3: 真正寫入；實例型別或值型別不符時 TrySet 返回 false。
-		if(!MemberExtn.TrySet(M, _target, Value)){
+		if(!MemberExtn.TrySet(M, Target, Value)){
 			throw new InvalidOperationException($"寫入成員 {Key} 失敗（實例型別或值型別不符）。");
 		}
 	}
@@ -160,12 +154,6 @@ null、false、空列表、空字典、boxed 的 `i32` 0、`str` "n"；
 	[Doc($"""
 #Sum[鍵是否存在於本視圖。]
 
-#Descr[
-實測：`Dict.{nameof(ContainsKey)}("Age")` 為 true；
-`Dict.{nameof(ContainsKey)}("NoSuch")` 為 false；
-`Dict.{nameof(ContainsKey)}("Secret")` 也為 false，因為只讀成員不在鍵表內。
-]
-
 #See[{nameof(InstDict.ContainsKey)}]
 """)]
 	public partial bool ContainsKey(str Key){
@@ -176,19 +164,12 @@ null、false、空列表、空字典、boxed 的 `i32` 0、`str` "n"；
 	[Doc($"""
 #Sum[取值；按成員表判定，未知成員返回 false（只讀成員也取得到）。]
 
-#Descr[
-實測（`PoUser`，`Age = 26`）：`Dict.{nameof(TryGetValue)}("Age", out var V)` 返回 true 且 `V` 是 boxed 的 `i32` 26；
-`Dict.{nameof(TryGetValue)}("Secret", out var S)` 返回 true 且 `S` 是 "s"，
-這與 {nameof(ContainsKey)} 的答案相反（後者按鍵表判）；
-`Dict.{nameof(TryGetValue)}("Token", out _)` 與 `"NoSuch"` 都返回 false。
-]
-
 #See[{nameof(InstDict.TryGetValue)}]
 """)]
 	public partial bool TryGetValue(str Key, out obj? Value){
-		if(_typeInfo.TryGetMember(Key, out var M)
+		if(TypeInfo.TryGetMember(Key, out var M)
 			&& MemberExtn.CanRead(M)
-			&& MemberExtn.TryGet(M, _target, out var R))
+			&& MemberExtn.TryGet(M, Target, out var R))
 		{
 			Value = R;
 			return true;
@@ -199,11 +180,6 @@ null、false、空列表、空字典、boxed 的 `i32` 0、`str` "n"；
 
 	[Doc($"""
 #Sum[形狀由型別成員固定，不支持新增鍵。]
-
-#Descr[
-實測：`Dict.{nameof(Add)}("NewKey", 1)` 恆拋 {nameof(NotSupportedException)}，
-因為型別上沒有 `NewKey` 這個成員；要加就回型別上去加可寫成員。
-]
 
 #See[{nameof(InstDict.Add)}]
 """)]
@@ -222,11 +198,6 @@ null、false、空列表、空字典、boxed 的 `i32` 0、`str` "n"；
 
 	[Doc($"""
 #Sum[形狀由型別成員固定，不支持刪鍵。]
-
-#Descr[
-實測：`Dict.{nameof(Remove)}("Age")` 恆拋 {nameof(NotSupportedException)}；
-成員在運行期無法從型別上抹掉，故這個操作沒有可兌現的語義。
-]
 
 #See[{nameof(InstDict.Remove)}]
 """)]
@@ -261,12 +232,6 @@ null、false、空列表、空字典、boxed 的 `i32` 0、`str` "n"；
 	[Doc($"""
 #Sum[鍵值對是否都在視圖內且相等。]
 
-#Descr[
-實測（`PoUser`，`Age = 26`）：鍵 `Age` 配值 boxed 的 `i32` 26 時為 true；
-配 31（與物件不一致）時為 false；
-鍵 `Token`（只寫，取不到值）時也為 false。
-]
-
 #See[{nameof(InstDict.Contains)}]
 """)]
 	public partial bool Contains(KeyValuePair<str, obj?> Item){
@@ -275,13 +240,6 @@ null、false、空列表、空字典、boxed 的 `i32` 0、`str` "n"；
 
 	[Doc($"""
 #Sum[按鍵序拷貝鍵值對到數組。]
-
-#Descr[
-實測：`Buf` 長 11、`Dict.{nameof(CopyTo)}(Buf, 2)` 時下標 0 與 1 保持原樣，
-自下標 2 起依次寫入 `Id`、`Name`、`Age`、`Email`、`Married`、`Tags`、`Extra`、`Level`、`Note`；
-`Buf` 長度只有 3 時拋 {nameof(ArgumentException)}，
-訊息說明「需要幾個位置、實際只剩幾個」。
-]
 
 #See[{nameof(InstDict.CopyTo)}]
 """)]

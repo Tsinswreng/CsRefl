@@ -116,34 +116,41 @@ public partial class JsonTypeInfoSrc:ITypeInfoSrc{
 """)]
 	private readonly ConcurrentDictionary<Type, byte> _misses = new();
 
-	[Doc($"""
+	[Doc($$"""
 #Sum[用一個源生成 context 建來源。]
 
 #Params([[Ctx, 源生成 context，最常見是 AppJsonCtx.Default]])
 
 #Descr[
-實測：`new {nameof(JsonTypeInfoSrc)}(AppJsonCtx.Default)` 之後
-即可查 `AppJsonCtx` 上宣告過 `[JsonSerializable]` 的所有型別。
+調用方這樣寫：
 
-實測：這樣建出來的來源查 `typeof(PoUser)` 返回 true、
-查 `typeof(PoNoCtor)` 返回 false（後者沒進上下文）。
+```csharp
+var JsonOnly = new JsonTypeInfoSrc(TestJsonCtx.Default);
+
+JsonOnly.TryGetInfo(typeof(PoUser), out var Info);   // true：PoUser 掛過 [JsonSerializable]
+JsonOnly.TryGetInfo(typeof(PoNoCtor), out _);        // false：沒進上下文
+```
+
+生產通常不直接用這個來源，而是把它放進 {{nameof(MergedTypeInfoSrc)}} 當第一順位。
 ]
 """)]
 	public partial JsonTypeInfoSrc(JsonSerializerContext Ctx);
 
-	[Doc($"""
+	[Doc($$"""
 #Sum[用一份配好的 options 建來源。]
 
-#Params([[Options, 選項；其 {nameof(JsonSerializerOptions.TypeInfoResolver)} 鏈裏含源生成 context 即可]])
+#Params([[Options, 選項；其 {{nameof(JsonSerializerOptions.TypeInfoResolver)}} 鏈裏含源生成 context 即可]])
 
 #Descr[
-實測：應用已經有一份全域 {nameof(JsonSerializerOptions)}，
-直接拿它建來源，元資料口徑就與序列化一致，
-不會出現「序列化用一套命名策略、元資料用另一套」的分歧。
+應用已經有一份全域 {{nameof(JsonSerializerOptions)}} 時這樣寫，元資料口徑就與序列化一致：
 
-實測：那份 options 的 {nameof(JsonSerializerOptions.TypeInfoResolver)} 為 null 時
-建構期即拋 {nameof(ArgumentException)}（訊息含 "TypeInfoResolver"），
-避免把問題拖到查詢時才暴露。
+```csharp
+var Src = new JsonTypeInfoSrc(AppOptions);
+// AppOptions 配了什麼命名策略，元資料就按同一套策略給名字（成員名即 JSON 名）。
+
+new JsonTypeInfoSrc(new JsonSerializerOptions());
+// 拋 ArgumentException（訊息含 "TypeInfoResolver"）：options 沒配 resolver，建構期就擋住。
+```
 ]
 """)]
 	public partial JsonTypeInfoSrc(JsonSerializerOptions Options);
@@ -159,22 +166,20 @@ public partial class JsonTypeInfoSrc:ITypeInfoSrc{
 		}
 	}
 
-	[Doc($"""
+	[Doc($$"""
 #Sum[取已註冊型別的元資料；未註冊返回 false。]
 
 #Descr[
-實測：查掛過 `[JsonSerializable]` 的型別返回 true；
-查沒掛過的返回 false 且 {nameof(Info)} 為 null。
+調用方這樣寫：
 
-想讓這種型別也查得到有兩條路：
-把它補進源生成上下文，或在來源鏈後接 {nameof(ReflTypeInfoSrc)} 兜底。
+```csharp
+JsonOnly.TryGetInfo(typeof(PoUser), out var Info);   // true；Info 是型別元資料
+JsonOnly.TryGetInfo(typeof(PoNoCtor), out _);        // false：PoNoCtor 沒掛 [JsonSerializable]
+```
 
-實測：`typeof(PoUser)` 返回 true 且 `Info` 非 null；
-`typeof(PoNoCtor)` 返回 false 且 `Info` 為 null
-（測試裏那條「未註冊型別查不到」的用例就是釘這一條）。
+想讓沒掛的型別也查得到有兩條路：把它補進源生成上下文，
+或在來源鏈後接 {{nameof(ReflTypeInfoSrc)}} 兜底（{{nameof(MergedTypeInfoSrc)}} 就是這樣用的）。
 ]
-
-#See[{nameof(ITypeInfoSrc.TryGetInfo)}]
 """)]
 	public partial bool TryGetInfo(
 		[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] Type Type,

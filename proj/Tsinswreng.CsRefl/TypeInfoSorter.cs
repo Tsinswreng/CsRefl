@@ -22,7 +22,7 @@ Json 源：{nameof(System.Text.Json.Serialization.Metadata.JsonTypeInfo.Properti
 ]
 """)]
 internal static partial class TypeInfoSorter{
-	[Doc($"""
+	[Doc($$"""
 #Sum[規整成員表：先按契約序排序，再按名去重。]
 
 #Params([[Root, 成員表所屬的型別，即實例的型別], [Members, 待規整的成員表]])
@@ -30,17 +30,17 @@ internal static partial class TypeInfoSorter{
 #Rtn[規整後的只讀成員表]
 
 #Descr[
-去重時離實例最近的宣告勝出，且佔被遮蔽成員的位置。
+本包內部在建構子裏這樣調（不在對外門面上）：
 
-實測：`PoUser` 這條繼承鏈上基類 `PoUserBase` 宣告 `Id`、`Name`，
-子類宣告其餘成員，故輸出前兩位是基類那兩個；
-另一條鏈上子類用 `new` 再宣告 `Id`，輸出是 `Name`、`Id`、`Age` 三項，
-`Id` 只出現一次（位置仍是第 2 位），且按名查到的那份其宣告型別是子類。
+```csharp
+// TypeInfoBase 建構子內部：
+var Sorted = TypeInfoSorter.SortEtDedup(typeof(PoUser), Collected);
+// Sorted 依次是 Id、Name、Age、…、Note：基類 PoUserBase 宣告的 Id、Name 排在最前。
+// 另一條鏈上子類用 new 遮蔽了 Id：輸出是 Name、Id、Age，Id 只出現一次、仍在第 2 位。
+```
 
-實現是防禦性的：
-現行兩套來源實測都不產生重複名（{nameof(Type)} 的收集方法自帶隱藏語義、
-官方 {nameof(System.Text.Json.Serialization.Metadata.JsonTypeInfo.Properties)} 也不含重複名），
-但門面對外承諾「成員名唯一」，故不依賴來源剛好守規矩。
+去重時離實例最近的宣告勝出，且佔被遮蔽成員的位置；
+實現是防禦性的（現行兩套來源都不產生重複名，但門面對外承諾「成員名唯一」，不靠來源守規矩）。
 ]
 """)]
 	public static partial IReadOnlyList<obj?> SortEtDedup(Type Root, IReadOnlyList<obj?> Members);

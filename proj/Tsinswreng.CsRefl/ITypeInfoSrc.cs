@@ -27,22 +27,34 @@ using Tsinswreng.CsCore;
 ]
 """)]
 public interface ITypeInfoSrc{
-	[Doc($"""
+	[Doc($$"""
 #Sum[取指定型別的元資料；未知返回 false。]
 
 #Params([[Type, 要查的型別], [Info, 取到的元資料；未知時為 null]])
 
 #Descr[
+調用方這樣寫：
+
+```csharp
+var JsonOnly = new JsonTypeInfoSrc(TestJsonCtx.Default);
+if(JsonOnly.TryGetInfo(typeof(PoUser), out var Info)){
+	Info.Type;   // typeof(PoUser)
+}
+
+JsonOnly.TryGetInfo(typeof(PoNoCtor), out _);
+// false：PoNoCtor 沒掛 [JsonSerializable]，源生成來源答「未知」。
+// 同一個型別再查一次也直接 false（未註冊會被記進負面緩存，不反復走 resolver 鏈）。
+
+new ReflTypeInfoSrc().TryGetInfo(typeof(PoNoCtor), out _);
+// true：反射來源照樣查得到，這就是兜底的意義。
+```
+
 DAM 註解：反射來源需要被查型別保留
 接口、公共屬性、公共字段、無參構造函數 的元數據；
-JsonTypeInfo 來源不依賴它，但接口統一宣告了這個前置條件。
+{{nameof(JsonTypeInfoSrc)}} 不依賴它，但接口統一宣告了這個前置條件。
 
-實測：從 {nameof(JsonTypeInfoSrc)} 查 `typeof(PoUser)` 返回 true、`Info` 非 null；
-查沒掛過的 `typeof(PoNoCtor)` 返回 false、`Info` 為 null
-（未註冊的型別會被記進負面緩存，故重複查不會反復走 resolver 鏈）。
-從 {nameof(ReflTypeInfoSrc)} 查兩者都返回 true，這正是「兜底」的意義。
-
-要「查不到就拋異常」的便利版本用 {nameof(ITypeInfoSrcExtn)}.{nameof(ITypeInfoSrcExtn.GetMember)}。
+要「查不到就拋」的便利版本用 {{nameof(ITypeInfoSrcExtn.GetInfo)}}；
+要按名讀寫就用 {{nameof(ITypeInfoSrcExtn.TryGet)}}／{{nameof(ITypeInfoSrcExtn.AssignFromDict)}}。
 ]
 """)]
 	bool TryGetInfo(

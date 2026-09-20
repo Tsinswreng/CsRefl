@@ -222,7 +222,7 @@ Json 側是官方 {nameof(JsonPropertyInfo)}。
 """)]
 	IReadOnlyCollection<str> WritableNames{get;}
 
-	[Doc($"""
+	[Doc($$"""
 #Sum[按名（成員的官方名字）查成員。]
 
 #Params([[Name, 成員名], [M, 查到的官方成員物件；未命中為 null]])
@@ -230,30 +230,36 @@ Json 側是官方 {nameof(JsonPropertyInfo)}。
 #Rtn[命中返回 true；未命中或名字為 null 返回 false]
 
 #Descr[
-命中的 {nameof(M)} 是官方成員物件：反射側是 {nameof(MemberInfo)}、Json 側是 {nameof(JsonPropertyInfo)}；
-兩側取名字一律走 {nameof(MemberExtn.Name)}，不必自己分辨型別。
+調用方這樣寫：
 
-名字比較用 {nameof(StringComparer)}.{nameof(StringComparer.Ordinal)}
+```csharp
+var Info = Src.GetInfo(typeof(PoUser));
+
+if(Info.TryGetMember(nameof(PoUser.Age), out var M)){
+	MemberExtn.Name(M);           // "Age"
+	MemberExtn.DeclaringType(M);  // typeof(PoUser)
+	MemberExtn.CanRead(M);        // true
+	MemberExtn.CanWrite(M);       // true
+}
+
+Info.TryGetMember("NoSuch", out _);                  // false，M 為 null（不拋）
+Info.TryGetMember(nameof(PoUser.Token), out var Tk); // true；Token 只寫，CanRead(Tk) 為 false
+Info.TryGetMember(null!, out _);                     // false：名字傳 null 也不拋
+```
+
+命中的 {{nameof(M)}} 是官方成員物件：反射側是 {{nameof(MemberInfo)}}、Json 側是 {{nameof(JsonPropertyInfo)}}；
+兩側取名字一律走 {{nameof(MemberExtn.Name)}}，不必自己分辨型別。
+
+名字比較用 {{nameof(StringComparer)}}.{{nameof(StringComparer.Ordinal)}}
 （成員名是程式碼識別符，不該受當前文化影響）。
 
-#strong[本查詢必須 O(1)。] 實現要在第一次按名查時惰性建一份 {nameof(Dictionary<,>)} 索引，
-之後每次查都走索引；不得每次調用都線性掃 {nameof(Members)}。
-
-實測（`PoUser`，兩套來源一致）：
-
-+ `{nameof(TryGetMember)}("Age", out var M)` 返回 true，
-	`{nameof(MemberExtn.Name)}(M)` 是 "Age"、
-	`{nameof(MemberExtn.DeclaringType)}(M)` 是 `typeof(PoUser)`、
-	`{nameof(MemberExtn.CanRead)}(M)` 與 `{nameof(MemberExtn.CanWrite)}(M)` 都是 true；
-+ `"NoSuch"` 返回 false 且 `M` 為 null（不拋）；
-+ `"Token"`（只寫）返回 true 但 `{nameof(MemberExtn.CanRead)}(M)` 為 false。
-
-名字傳 null 返回 false 而不拋，故適合接外部傳來的名字。
+#strong[本查詢必須 O(1)。] 實現要在第一次按名查時惰性建一份 {{nameof(Dictionary<,>)}} 索引，
+之後每次查都走索引；不得每次調用都線性掃 {{nameof(Members)}}。
 ]
 """)]
 	bool TryGetMember(str Name, [NotNullWhen(true)] out obj? M);
 
-	[Doc($"""
+	[Doc($$"""
 #Sum[按名取成員；取不到就拋。]
 
 #Params([[Name, 成員名]])
@@ -261,11 +267,20 @@ Json 側是官方 {nameof(JsonPropertyInfo)}。
 #Rtn[命中的官方成員物件]
 
 #Descr[
-與 {nameof(TryGetMember)} 成對：未命中時拋 {nameof(KeyNotFoundException)}，
-訊息含可用成員清單（實測含 "Age" 這個子串可被斷言），故拼錯名字時不必自己去列成員。
+調用方這樣寫：
 
-實測：`{nameof(GetMember)}("Age")` 與 `{nameof(TryGetMember)}("Age", out var M)` 命中時
-返回的是同一實例（{nameof(ReferenceEquals)} 為 true），即共用同一份按名索引。
+```csharp
+var Info = Src.GetInfo(typeof(PoUser));
+
+var M = Info.GetMember(nameof(PoUser.Age));
+// M 是官方成員物件；與 Info.TryGetMember(nameof(PoUser.Age), out var M2) 拿到的是同一實例。
+
+Info.GetMember("NoSuch");
+// 拋 KeyNotFoundException，訊息列出可用成員名（實測含 "Age" 這個子串）——拼錯名字時不必自己去列成員。
+```
+
+與 {{nameof(TryGetMember)}} 成對：確定必須成功時用本方法，
+名字可能是外部來的就用 {{nameof(TryGetMember)}}（它返回 false 而不拋）。
 ]
 """)]
 	obj? GetMember(str Name);

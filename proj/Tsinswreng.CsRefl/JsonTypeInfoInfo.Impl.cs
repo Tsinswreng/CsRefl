@@ -31,23 +31,22 @@ public partial class JsonTypeInfoInfo{
 			KeyType: Json.KeyType
 		)
 	{
-		_json = Json;
+		// 官方本體直接落在屬性上（不再另存欄位轉發）；參數同名，故用 this.。
+		this.Json = Json;
 	}
 
 	[Doc($"""
 #Sum[見宣告處的說明。]
 
-#Descr[
-實測：`typeof(PoUser)` 建得出實例；沒有官方工廠的型別（如只有帶參構造函數的類）拋
-{nameof(NotSupportedException)}，訊息含型別全名。
-]
 """)]
 	public override partial obj? MkInst(){
 		// 錯誤訊息與 CanMkInst 用同一個判據：官方 CreateObject 是否為 null。
-		var F = _json.CreateObject;
+		// 本類的 CreateObject 是現讀官方本體，故這裡也現讀一次，免得兩邊判據走樣。
+		var J = Json!;
+		var F = J.CreateObject;
 		if(F is null){
 			throw new NotSupportedException(
-				$"型別 {_json.Type.FullName} 的官方元資料沒有 CreateObject，無法建立實例。"
+				$"型別 {J.Type.FullName} 的官方元資料沒有 CreateObject，無法建立實例。"
 			);
 		}
 		return F();

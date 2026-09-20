@@ -20,11 +20,10 @@ using Tsinswreng.CsCore;
 
 #Descr[
 存在的理由（代碼復用、以及把 O(1) 的按名索引與名清單緩存放一處，不是抽象）：
-抽象維度由 {nameof(ITypeInfo)} 接口承擔；
-本類不是它的替代品。
+抽象維度由 {nameof(ITypeInfo)} 接口承擔；本類不是它的替代品。
 
-{nameof(ITypeInfo)} 那一組屬性與按名查詢的說明見接口；
-此處只寫本類新增的聲明。
+構造期算出來的事實一律直接落在對應屬性上（自動屬性），不再另存一份欄位由屬性轉發；
+本類只留三個真正的緩存欄位：`_byName`、`_readable`、`_writable`。
 
 建構子與按名查詢的實現見 `TypeInfoBase.Impl.cs`。
 ]
@@ -39,7 +38,9 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 兩者是同一個 {nameof(Type)} 物件，`{nameof(ReferenceEquals)}` 為 true，故可用 `==` 比較。
 ]
 """)]
-	protected Type _type;
+	public Type Type{
+		get;
+	}
 
 	[Doc($"""
 #Sum[型別分類（官方 {nameof(JsonTypeInfoKind)}）。]
@@ -50,7 +51,9 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 `typeof(List<str>)` 兩邊都是 {nameof(JsonTypeInfoKind)}.{nameof(JsonTypeInfoKind.Enumerable)}，故兩套來源的取值可比。
 ]
 """)]
-	protected JsonTypeInfoKind _kind;
+	public JsonTypeInfoKind Kind{
+		get;
+	}
 
 	[Doc($"""
 #Sum[成員表（契約序，已去重：遮蔽成員只留最靠近實例的那份宣告）。]
@@ -61,32 +64,38 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 另一條鏈上子類用 `new` 遮蔽基類的 `Id`，這裡是 `Name`、`Id`、`Age` 三項，
 `Id` 只有一份、仍在第 2 位、按名查到的其宣告型別是子類。
 規整由 {nameof(TypeInfoSorter)}.{nameof(TypeInfoSorter.SortEtDedup)} 在建構子裏一次做完，
-構造後本欄位不再變動，故按名索引與名清單可以安全緩存。
+構造後本屬性不再變動，故按名索引與名清單可以安全緩存。
 ]
 """)]
-	protected IReadOnlyList<obj?> _members;
+	public IReadOnlyList<obj?> Members{
+		get;
+	}
 
 	[Doc($"""
 #Sum[集合的元素型別；非集合為 null。]
 
 #Descr[
-實測：`typeof(List<str>)` 的這個字段是 `typeof(str)`、`typeof(Dictionary<str, i32>)` 的是 `typeof(i32)`；
+實測：`typeof(List<str>)` 的這個屬性是 `typeof(str)`、`typeof(Dictionary<str, i32>)` 的是 `typeof(i32)`；
 `typeof(PoUser)` 這種物件型別為 null（不是集合）。
 ]
 """)]
-	protected Type? _elementType;
+	public Type? ElementType{
+		get;
+	}
 
 	[Doc($"""
 #Sum[字典的鍵型別；非字典為 null。]
 
 #Descr[
-實測：`typeof(Dictionary<str, i32>)` 的這個字段是 `typeof(str)`、`typeof(List<str>)` 的是 null；
-本欄位與 {nameof(ITypeInfo.ElementType)} 由同一份來源事實決定，互斥不衝突。
+實測：`typeof(Dictionary<str, i32>)` 的這個屬性是 `typeof(str)`、`typeof(List<str>)` 的是 null；
+本屬性與 {nameof(ElementType)} 由同一份來源事實決定，互斥不衝突。
 ]
 """)]
-//TswgNote 爲甚麼有這麼多脫褲子放屁的東西? 給我個理由?
-
-	protected Type? _keyType;
+	//TswgNote 爲甚麼有這麼多脫褲子放屁的東西? 給我個理由?
+	// 已按此清掉：構造期算出來的事實直接落在屬性上（自動屬性），不再另存欄位由屬性轉發。
+	public Type? KeyType{
+		get;
+	}
 
 	[Doc($"""
 #Sum[按名的成員索引緩存，首次查詢時建立。]
@@ -124,26 +133,42 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 """)]
 	private volatile IReadOnlyCollection<str>? _writable;
 
-	[Doc($"""
-#Sum[由派生類交出型別事實；{nameof(Members)} 會在此規整。]
+	[Doc($$"""
+#Sum[由派生類交出型別事實；{{nameof(Members)}} 會在此規整。]
 
 #Params([
 	[Type, 本元資料對應的型別],
-	[Kind, 型別分類（官方 {nameof(JsonTypeInfoKind)}）],
+	[Kind, 型別分類（官方 {{nameof(JsonTypeInfoKind)}}）],
 	[Members, 成員表；此處會排序去重成契約序],
 	[ElementType, 集合的元素型別；非集合傳 null],
 	[KeyType, 字典的鍵型別；非字典傳 null]
 ])
 
 #Descr[
-實測：{nameof(ReflTypeInfo)} 傳的成員表是「屬性段在前、字段段在後」的收集序，
-{nameof(JsonTypeInfoInfo)} 傳的是官方既有序；
-兩者進來都會被規整成同一份契約序，實測 `PoUser` 兩邊都是
-`Id`、`Name`、`Age`、`Email`、`Married`、`Tags`、`Extra`、`Secret`、`Level`、`Token`、`Note`，
-故調用方看到的順序一致。
+派生類是這樣交事實的（本包的 {{nameof(ReflTypeInfo)}} 與 {{nameof(JsonTypeInfoInfo)}} 就是這兩種寫法）：
+
+```csharp
+public partial class MyInfo:TypeInfoBase{
+	public partial MyInfo(Type T)
+		: base(
+			Type: T,
+			Kind: JsonTypeInfoKind.Object,
+			Members: new obj?[]{ typeof(MyInfo).GetProperty(nameof(MyInfo.Tag))! },
+			ElementType: null,
+			KeyType: null
+		){
+	}
+
+	public i32 Tag{get;set;}
+}
+// 進來之後 Members 已被規整成契約序：基類在前、同類內宣告序、同名只留最靠近實例的那份。
+```
+
+{{nameof(ReflTypeInfo)}} 傳的成員表是「屬性段在前、字段段在後」的收集序，
+{{nameof(JsonTypeInfoInfo)}} 傳的是官方既有序；兩者進來都會被規整成同一份契約序。
 ]
 
-#See[{nameof(TypeInfoBase)}]
+#See[{{nameof(TypeInfoBase)}}]
 """)]
 	protected partial TypeInfoBase(
 		Type Type,
@@ -152,61 +177,6 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 		Type? ElementType,
 		Type? KeyType
 	);
-
-	[Doc($"""
-#Sum[本元資料對應的型別。]
-
-#See[{nameof(ITypeInfo.Type)}]
-""")]
-	public Type Type{
-		get{
-			return _type;
-		}
-	}
-
-	[Doc($"""
-#Sum[型別分類，直接用官方 {nameof(JsonTypeInfoKind)}。]
-
-#See[{nameof(ITypeInfo.Kind)}]
-""")]
-	public JsonTypeInfoKind Kind{
-		get{
-			return _kind;
-		}
-	}
-
-	[Doc($"""
-#Sum[全部成員，順序 = 契約序。]
-
-#See[{nameof(ITypeInfo.Members)}]
-""")]
-	public IReadOnlyList<obj?> Members{
-		get{
-			return _members;
-		}
-	}
-
-	[Doc($"""
-#Sum[集合的元素型別；非集合為 null。]
-
-#See[{nameof(ITypeInfo.ElementType)}]
-""")]
-	public Type? ElementType{
-		get{
-			return _elementType;
-		}
-	}
-
-	[Doc($"""
-#Sum[字典的鍵型別；非字典為 null。]
-
-#See[{nameof(ITypeInfo.KeyType)}]
-""")]
-	public Type? KeyType{
-		get{
-			return _keyType;
-		}
-	}
 
 	[Doc($"""
 #Sum[無參實例工廠（官方 {nameof(JsonTypeInfo)}.{nameof(JsonTypeInfo.CreateObject)} 的形狀）；兩套來源各自提供。]

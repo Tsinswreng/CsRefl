@@ -44,15 +44,6 @@ public partial class JsonTypeInfoSrc{
 	[Doc($"""
 #Sum[取已註冊型別的元資料；未註冊返回 false。]
 
-#Descr[
-三級短路：先查命中緩存，再查負面緩存，最後才真正解析。
-
-實測：查未註冊的 `typeof(PoNoCtor)` 首次返回 false 且 `Info` 為 null；
-第二次直接返回 false，不再走 resolver 鏈；
-查已註冊的 `typeof(PoUser)` 返回 true，`Info.{nameof(ITypeInfo.Type)}` 是 `typeof(PoUser)`，
-且再查一次返回的 `Info` 與第一次 `{nameof(ReferenceEquals)}` 為 true（命中緩存）。
-]
-
 #See[{nameof(ITypeInfoSrc.TryGetInfo)}]
 """)]
 	public partial bool TryGetInfo(Type Type, out ITypeInfo? Info){

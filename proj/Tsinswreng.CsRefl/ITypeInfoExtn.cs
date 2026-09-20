@@ -11,8 +11,11 @@ using Tsinswreng.CsCore;
 本類只補中間那一格——手上有型別元資料、又只想要某個名字的值時，不必自己寫兩步。
 
 實測：不必先 {nameof(ITypeInfo.TryGetMember)} 再 {nameof(MemberExtn.TryGet)} 兩步，
-直接 `Info.{nameof(TryGet)}("Age", User, out var V)` 一次拿到值，
+直接 `Info.{nameof(TryGet)}(User, "Age", out var V)` 一次拿到值，
 當 `User.Age` 是 26 時 `V` 是 boxed 的 `i32` 26。
+
+參數序按範圍由大到小：實例 → 成員名 → 收值的那個出參。
+型別由擴展方法的受體（那個 {nameof(ITypeInfo)} 實例）本身承擔，故它已經在最前面。
 
 按名讀寫的判據是「成員自身能力」，不是「在不在某張鍵表裏」：
 只讀成員讀得到、寫不進；只寫成員寫得進、讀不到。
@@ -21,38 +24,62 @@ using Tsinswreng.CsCore;
 ]
 """)]
 public static partial class ITypeInfoExtn{
-	[Doc($"""
+	[Doc($$"""
 #Sum[按名讀值。]
 
-#Params([[z, 型別元資料], [Name, 成員名], [O, 實例], [V, 讀出的值；失敗時為 default]])
+#Params([[z, 型別元資料], [O, 實例], [Name, 成員名], [V, 讀出的值；失敗時為 default]])
 
 #Rtn[成員不存在、不可讀、實例為 null 或型別不符時返回 false]
 
 #Descr[
-實測（`PoUser`，`Age = 30`、`Secret = "s"`）：
+調用方這樣寫：
 
-+ `{nameof(TryGet)}(Info, "Age", User, out var V)` 返回 true 且 `V` 是 boxed 的 `i32` 30；
-+ `"Secret"`（只讀）返回 true 且 `V` 是 "s"；
-+ `"Token"`（只寫）返回 false；`"NoSuch"` 返回 false；傳 null 實例返回 false。
+```csharp
+var Info = Src.GetInfo(typeof(PoUser));
+var User = new PoUser{ Age = 26 };
+
+Info.TryGet(User, nameof(PoUser.Age), out var V);
+// true；V 是 boxed 的 i32 26。
+
+Info.TryGet(User, nameof(PoUser.Secret), out var S);
+// true；Secret 是只讀成員，讀得到——V 是 "s"。
+
+Info.TryGet(User, nameof(PoUser.Token), out _);   // false：只寫成員讀不到
+Info.TryGet(User, "NoSuch", out _);               // false：成員不存在
+Info.TryGet(null, nameof(PoUser.Age), out _);     // false：實例是 null
+```
 
 失敗一律用 false 表示（不拋），故適合按外部欄位名取值這類「能取就取」的場景。
 ]
 """)]
-	public static partial bool TryGet(this ITypeInfo z, str Name, obj? O, out obj? V);
+	public static partial bool TryGet(this ITypeInfo z, obj? O, str Name, out obj? V);
 
-	[Doc($"""
+	[Doc($$"""
 #Sum[按名寫值。]
 
-#Params([[z, 型別元資料], [Name, 成員名], [O, 實例], [V, 要寫入的值]])
+#Params([[z, 型別元資料], [O, 實例], [Name, 成員名], [V, 要寫入的值]])
 
 #Rtn[成員不存在、不可寫、實例為 null 或型別不符時返回 false]
 
 #Descr[
-值型別不符不返回 false，而是照常拋（那是調用方的 bug，不是「不可寫」）。
+調用方這樣寫：
 
-實測（`PoUser`）：`{nameof(TrySet)}(Info, "Age", User, 31)` 返回 true 且之後 `User.Age` 是 31；
-只讀的 `"Secret"` 返回 false 且不動實例。
+```csharp
+var Info = Src.GetInfo(typeof(PoUser));
+var User = new PoUser{ Age = 26 };
+
+Info.TrySet(User, nameof(PoUser.Age), 31);
+// true；之後 User.Age 是 31。
+
+Info.TrySet(User, nameof(PoUser.Secret), "x");
+// false：Secret 是只讀成員，且 User.Secret 仍是 "s"（不動實例）。
+
+Info.TrySet(User, nameof(PoUser.Age), "不是數字");
+// 拋（不是返回 false）：值型別不符是調用方的 bug。
+```
+
+參數序同 {{nameof(TryGet)}}：實例 → 成員名 → 值。
 ]
 """)]
-	public static partial bool TrySet(this ITypeInfo z, str Name, obj? O, obj? V);
+	public static partial bool TrySet(this ITypeInfo z, obj? O, str Name, obj? V);
 }

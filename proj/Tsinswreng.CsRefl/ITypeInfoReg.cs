@@ -17,24 +17,33 @@ using Tsinswreng.CsCore;
 ]
 """)]
 public interface ITypeInfoReg:ITypeInfoSrc{
-	[Doc($"""
+	[Doc($$"""
 #Sum[登記一個型別的元資料。]
 
 #Params([[Type, 要登記的型別], [Info, 該型別的元資料]])
 
 #Descr[
-重複登記同一型別拋 {nameof(InvalidOperationException)}
-（防止無意覆蓋；確要替換先 {nameof(Remove)} 再 {nameof(Add)}）。
+調用方這樣寫：
 
-實測：`Reg.{nameof(Add)}(typeof(PoUser), Info)` 之後，
-`Reg.{nameof(TryGetInfo)}(typeof(Xxx), out var Info)` 就命中；
-再 `Reg.{nameof(Add)}(typeof(Xxx), ...)` 一次會拋異常，
-這是有意為之：初始化期重複登記通常是配置寫錯了，靜默覆蓋會讓問題藏到很後面。
+```csharp
+var Reg = new TypeInfoReg();
+var Info = new ReflTypeInfo(typeof(PoUser));
+
+Reg.Add(typeof(PoUser), Info);
+Reg.TryGetInfo(typeof(PoUser), out var Got);
+// true；Got 就是剛才塞進去的那個實例（ReferenceEquals 為 true）。
+
+Reg.Add(typeof(PoUser), Info);
+// 拋 InvalidOperationException：重複登記是有意擋住的，
+// 因為初始化期重複登記通常是配置寫錯，靜默覆蓋會讓問題藏到很後面。
+```
+
+要替換已登記的元資料就先 {{nameof(Remove)}} 再 {{nameof(Add)}}。
 ]
 """)]
 	void Add(Type Type, ITypeInfo Info);
 
-	[Doc($"""
+	[Doc($$"""
 #Sum[移除一個型別。]
 
 #Params([[Type, 要移除的型別]])
@@ -42,10 +51,15 @@ public interface ITypeInfoReg:ITypeInfoSrc{
 #Rtn[原本不存在返回 false]
 
 #Descr[
-實測：`Reg.{nameof(Remove)}(typeof(PoUser))` 第一次返回 true，
-再調一次返回 false（本來就沒有了），之後 {nameof(TryGetInfo)} 也查不到。
+調用方這樣寫：
 
-要替換已登記的元資料時就是靠它：先 {nameof(Remove)} 再 {nameof(Add)}。
+```csharp
+Reg.Remove(typeof(PoUser));   // true：原本登記過，移掉
+Reg.Remove(typeof(PoUser));   // false：本來就沒有了
+Reg.TryGetInfo(typeof(PoUser), out _);   // false：移除之後查不到
+```
+
+要替換已登記的元資料就是靠它：先 {{nameof(Remove)}} 再 {{nameof(Add)}}。
 ]
 """)]
 	bool Remove(Type Type);

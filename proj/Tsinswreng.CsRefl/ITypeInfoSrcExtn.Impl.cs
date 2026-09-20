@@ -9,6 +9,8 @@ using Tsinswreng.CsCore;
 #Descr[
 只放函數實現：簽名與參數特性（DAM、{nameof(NotNullWhenAttribute)}）在 `ITypeInfoSrcExtn.cs`。
 `partial` 方法合併時重複標記特性會報 CS0579，故此處不重複。
+
+用法示例一律寫在聲明側（`ITypeInfoSrcExtn.cs`），此處只留實現要點。
 ]
 """)]
 public static partial class ITypeInfoSrcExtn{
@@ -16,12 +18,8 @@ public static partial class ITypeInfoSrcExtn{
 #Sum[見宣告處的說明。]
 
 #Descr[
-實測：本體只是原樣返回（`{nameof(RuntimeType)}(T)` 與 T 是同一實例），
-作用是在編譯期把 DAM 註解掛上，
-故調用方拿到的 {nameof(Type)} 在分析器眼裏就帶了成員元數據擔保。
+本體只是原樣返回，作用是在編譯期把 DAM 註解掛上。
 ]
-
-#See[{nameof(ITypeInfoSrcExtn.RuntimeType)}]
 """)]
 	private static partial Type RuntimeType(Type T){
 		return T;
@@ -31,9 +29,8 @@ public static partial class ITypeInfoSrcExtn{
 #Sum[見宣告處的說明。]
 
 #Descr[
-實測：型別在來源上時返回的就是來源自己那份元資料實例
-（{nameof(ReferenceEquals)} 為 true，緩存在來源裏）；
-型別未註冊時拋 {nameof(KeyNotFoundException)}，訊息指出型別與來源。
+三步：查型別（{nameof(ITypeInfoSrc.TryGetInfo)}），取到就原樣返回，
+取不到才付「拼錯誤訊息」的代價——那是錯誤路徑。
 ]
 """)]
 	public static partial ITypeInfo GetInfo(this ITypeInfoSrc z, Type Type){
@@ -47,15 +44,12 @@ public static partial class ITypeInfoSrcExtn{
 	}
 
 	[Doc($"""
-#Sum[取成員；型別未註冊或成員不存在都拋 {nameof(KeyNotFoundException)}（訊息含線索）。]
+#Sum[見宣告處的說明。]
 
 #Descr[
-實測：型別未註冊時訊息說明「未註冊到來源 Xxx」；
-型別在、成員名不存在時由 {nameof(ITypeInfo.GetMember)} 拋，訊息列出可用成員名。
-兩種失敗分得開，排查時不必猜是哪一種。
+型別未註冊時由本方法拋（訊息指出型別與來源）；
+型別在、成員名不存在時由 {nameof(ITypeInfo.GetMember)} 拋（訊息列出可用成員名）。
 ]
-
-#See[{nameof(ITypeInfoSrcExtn.GetMember)}]
 """)]
 	public static partial obj? GetMember(this ITypeInfoSrc z, Type Type, str Name){
 		ArgumentNullException.ThrowIfNull(z);
@@ -69,15 +63,12 @@ public static partial class ITypeInfoSrcExtn{
 	}
 
 	[Doc($"""
-#Sum[Try 版：型別未註冊、成員不存在、入參為 null 都返回 false。]
+#Sum[見宣告處的說明。]
 
 #Descr[
-實測：`Src.{nameof(TryGetMember)}(null, "Age", out _)` 返回 false 而不拋；
-型別未註冊、名字不存在也都返回 false（`M` 為 null），
-故可以放心接外部傳來的型別與名字。
+兩級短路：來源傳 null 直接 false；型別查不到也 false；
+型別內的按名查走 {nameof(ITypeInfo.TryGetMember)}（惰性索引，O(1)）。
 ]
-
-#See[{nameof(ITypeInfoSrcExtn.TryGetMember)}]
 """)]
 	public static partial bool TryGetMember(this ITypeInfoSrc z, Type Type, str Name, out obj? M){
 		M = null;
@@ -91,14 +82,12 @@ public static partial class ITypeInfoSrcExtn{
 	}
 
 	[Doc($"""
-#Sum[按名讀值。]
+#Sum[見宣告處的說明。]
 
 #Descr[
-實測（`PoUser`，`Age = 30`）：`Src.{nameof(TryGet)}(typeof(PoUser), User, "Age", out var V)` 返回 true 且 `V` 是 boxed 的 `i32` 30；
-`"Token"`（只寫）返回 false（成員在、可讀性不滿足）。
+查型別、按名取成員、讀值三步合一；
+成員自身的讀值判據（可讀性、實例型別）由 {nameof(MemberExtn)} 收口，兩套來源一條口徑。
 ]
-
-#See[{nameof(ITypeInfoSrcExtn.TryGet)}]
 """)]
 	public static partial bool TryGet(this ITypeInfoSrc z, Type Type, obj? O, str Name, out obj? R){
 		R = default;
@@ -111,14 +100,11 @@ public static partial class ITypeInfoSrcExtn{
 	}
 
 	[Doc($"""
-#Sum[按名寫值。]
+#Sum[見宣告處的說明。]
 
 #Descr[
-實測（`PoUser`）：`Src.{nameof(TrySet)}(typeof(PoUser), User, "Age", 31)` 返回 true 且 `User.Age` 變成 31；
-`"Secret"`（只讀）返回 false；值型別不符照常拋 {nameof(InvalidOperationException)}。
+同上三步合一；寫值判據由 {nameof(MemberExtn)} 收口（值型別不符照常拋）。
 ]
-
-#See[{nameof(ITypeInfoSrcExtn.TrySet)}]
 """)]
 	public static partial bool TrySet(this ITypeInfoSrc z, Type Type, obj? O, str Name, obj? V){
 		// 先按名取成員（含型別註冊檢查），成員取不到就沒必要再往下。
@@ -130,28 +116,22 @@ public static partial class ITypeInfoSrcExtn{
 	}
 
 	[Doc($"""
-#Sum[建淺字典視圖，型別取 `O.GetType()`。]
+#Sum[見宣告處的說明。]
 
 #Descr[
-實測：`Src.{nameof(ToInstDict)}(User)` 得到的視圖其 {nameof(IInstDict.TypeInfo)}.{nameof(ITypeInfo.Type)}
-與 `User.GetType()` 是同一個 `{nameof(Type)}`（即走運行期型別，不是變數的靜態型別）。
+轉調帶型別的那個重載（型別傳 null，即取 `O.GetType()`）。
 ]
-
-#See[{nameof(ITypeInfoSrcExtn.ToInstDict)}]
 """)]
 	public static partial IInstDict ToInstDict(this ITypeInfoSrc z, obj? O){
 		return ToInstDict(z, O, null);
 	}
 
 	[Doc($"""
-#Sum[建淺字典視圖，型別可由調用方顯式給。]
+#Sum[見宣告處的說明。]
 
 #Descr[
-實測：`Src.{nameof(ToInstDict)}(User, typeof(PoUserBase))` 建的視圖 {nameof(IInstDict.Count)} 是 2、鍵是 `Id` 與 `Name`；
-型別未註冊到來源時拋 {nameof(KeyNotFoundException)}，訊息說明是哪個型別與哪個來源。
+型別未註冊到來源時拋（訊息指出型別與來源），不留到讀寫時才暴露。
 ]
-
-#See[{nameof(ITypeInfoSrcExtn.ToInstDict)}]
 """)]
 	public static partial IInstDict ToInstDict(this ITypeInfoSrc z, obj? O, Type? Type){
 		ArgumentNullException.ThrowIfNull(z);
@@ -165,32 +145,25 @@ public static partial class ITypeInfoSrcExtn{
 	}
 
 	[Doc($"""
-#Sum[把字典寫回物件，型別取 `O.GetType()`。]
+#Sum[見宣告處的說明。]
 
 #Descr[
-實測：`Src.{nameof(AssignFromDict)}(User, Dict)` 傳的型別就是 `User.GetType()`（即 `typeof(PoUser)`），
-故 `Id`、`Name`、`Level` 三個鍵一次寫回。
+轉調帶型別的那個重載（型別傳 null，即取 `O.GetType()`）。
 ]
-
-#See[{nameof(ITypeInfoSrcExtn.AssignFromDict)}]
 """)]
-	public static partial void AssignFromDict(this ITypeInfoSrc z, obj? O, IReadOnlyDictionary<str, obj?> Dict){
+	public static partial void AssignFromDict(this ITypeInfoSrc z, obj? O, IEnumerable<KeyValuePair<str, obj?>> Dict){
 		AssignFromDict(z, O, Dict, null);
 	}
 
 	[Doc($"""
-#Sum[把字典寫回物件，型別可由調用方顯式給。]
+#Sum[見宣告處的說明。]
 
 #Descr[
-實測：字典裏有 `Level = 4` 與只讀的 `Secret = "改不掉"` 時，
-`User.Level` 變成 4、只讀那個被靜默跳過（`User.Secret` 仍是 "s"）；
-字典裏多一個型別上沒有的 `"NoSuch"` 時拋 {nameof(KeyNotFoundException)}，
-訊息同時列可寫名與可讀名，便於對照是哪邊對不上。
+逐鍵四步：查型別 → 按名取成員（未知鍵當場拋）→ 只讀成員跳過 → 寫入。
+未知鍵的報錯訊息同時列可寫名與可讀名，是因為「成員不存在」與「成員在但不可寫」是兩種錯。
 ]
-
-#See[{nameof(ITypeInfoSrcExtn.AssignFromDict)}]
 """)]
-	public static partial void AssignFromDict(this ITypeInfoSrc z, obj? O, IReadOnlyDictionary<str, obj?> Dict, Type? Type){
+	public static partial void AssignFromDict(this ITypeInfoSrc z, obj? O, IEnumerable<KeyValuePair<str, obj?>> Dict, Type? Type){
 		ArgumentNullException.ThrowIfNull(z);
 		ArgumentNullException.ThrowIfNull(O);
 		ArgumentNullException.ThrowIfNull(Dict);

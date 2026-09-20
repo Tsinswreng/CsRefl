@@ -17,27 +17,6 @@ internal static partial class TypeInfoSorter{
 
 #Rtn[規整後的只讀成員表]
 
-#Descr[
-為甚麼要按名去重（防禦性）：
-成員名就是字典鍵與 SQL 列名，同名兩份會讓
-{nameof(ITypeInfo.Members)}、{nameof(ITypeInfo.ReadableNames)}、按名索引三處口徑分裂
-（索引靜默取一份、清單裏卻有兩項）。
-
-實測事實：.NET 10 的 {nameof(Type)}.{nameof(Type.GetProperties)} 本身就不返回被 `new` 遮蔽的基類屬性，
-官方的 {nameof(System.Text.Json.Serialization.Metadata.JsonTypeInfo.Properties)} 也不含重複名——
-也就是說兩套現有來源目前都不產生重複項。
-這裡仍按契約去重：
-門面對外承諾「成員名唯一」，不依賴來源剛好守規矩。
-
-去重規則：同名的保留「離實例最近」的那份宣告（子類優先），
-並佔用被遮蔽成員原先的位置——
-如此非遮蔽成員的相對序完全不變。
-
-實測：`PoUser` 這條鏈的成員表依次是
-`Id`、`Name`、`Age`、`Email`、`Married`、`Tags`、`Extra`、`Secret`、`Level`、`Token`、`Note`；
-另一條鏈上子類用 `new` 遮蔽了基類的 `Id`，輸出是 `Name`、`Id`、`Age` 三項
-（`Id` 只出現一次、仍在第 2 位、按名查到的那份宣告型別是子類）。
-]
 """)]
 	public static partial IReadOnlyList<obj?> SortEtDedup(Type Root, IReadOnlyList<obj?> Members){
 		ArgumentNullException.ThrowIfNull(Root);

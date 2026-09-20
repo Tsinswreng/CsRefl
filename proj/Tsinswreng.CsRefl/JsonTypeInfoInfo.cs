@@ -26,51 +26,64 @@ using Tsinswreng.CsCore;
 ]
 """)]
 public partial class JsonTypeInfoInfo:TypeInfoBase{
-	[Doc($"""
-#Sum[官方型別元資料本體；對外由 {nameof(ITypeInfo.Json)} 原樣交出。]
-
-#Descr[
-不做任何拷貝：{nameof(CreateObject)}、{nameof(Members)} 的來源都是它。
-]
-""")]
-	private readonly JsonTypeInfo _json;
-
-	[Doc($"""
+	[Doc($$"""
 #Sum[用官方型別元資料建配接器。]
 
 #Params([[Json, 官方型別元資料；不允許 null]])
 
 #Descr[
-實測：`typeof(List<str>)` 的官方元資料包進來後，
-{nameof(ITypeInfo.Kind)} 是 {nameof(JsonTypeInfoKind)}.{nameof(JsonTypeInfoKind.Enumerable)}、
-{nameof(ITypeInfo.ElementType)} 是 `typeof(str)`、{nameof(ITypeInfo.Members)} 為空（標量與集合都沒有成員）；
-`typeof(PoUser)` 的則是 {nameof(JsonTypeInfoKind)}.{nameof(JsonTypeInfoKind.Object)} 與 11 個成員。
+調用方通常不直接 new，而是從 {{nameof(JsonTypeInfoSrc)}} 拿；
+要自己包時這樣寫：
 
-`Json` 傳 null 在構造期拋 {nameof(ArgumentNullException)}。
+```csharp
+var Json = TestJsonCtx.Default.GetTypeInfo(typeof(PoUser))!;
+var Info = new JsonTypeInfoInfo(Json);
+
+Info.Kind;            // JsonTypeInfoKind.Object
+Info.Members.Count;   // 11，每一項都是官方 JsonPropertyInfo
+Info.GetMember(nameof(PoUser.Age));
+
+new JsonTypeInfoInfo(null!);
+// 拋 ArgumentNullException（構造期就擋住，不留到查詢時）。
+```
+
+標量與集合沒有成員：包 `typeof(List<str>)` 時 {{nameof(ITypeInfo.Members)}} 為空、
+{{nameof(ITypeInfo.ElementType)}} 是 `typeof(str)`。
 ]
 """)]
 	public partial JsonTypeInfoInfo(JsonTypeInfo Json);
 
 	[Doc($"""
-#Sum[無參實例工廠；直接轉官方那條委託。]
+#Sum[無參實例工廠；每次現讀官方本體那條委託。]
+
+#Descr[
+這裡刻意是「現讀」而不是構造期快照：官方 {nameof(JsonTypeInfo)}.{nameof(JsonTypeInfo.CreateObject)}
+是可寫的，官方本體被換掉時門面要跟著變，才有資格叫薄配接器。
+
+實測：包裝完成後把官方 {nameof(JsonTypeInfo.CreateObject)} 換成別的委託，
+本屬性的取值立刻跟著變（與換上去的那個委託 `{nameof(ReferenceEquals)}` 為 true）。
+]
 
 #See[{nameof(ITypeInfo.CreateObject)}]
 """)]
 	public override Func<obj>? CreateObject{
 		get{
-			return _json.CreateObject;
+			return Json?.CreateObject;
 		}
 	}
 
 	[Doc($"""
-#Sum[官方本體，原樣交出。]
+#Sum[官方型別元資料本體；構造期賦值，之後不再改。]
+
+#Descr[
+就是構造時傳進來的那個官方實例（{nameof(ReferenceEquals)} 為 true），
+{nameof(Members)} 與 {nameof(CreateObject)} 都以它為源。
+]
 
 #See[{nameof(ITypeInfo.Json)}]
 """)]
 	public override JsonTypeInfo? Json{
-		get{
-			return _json;
-		}
+		get;
 	}
 
 	[Doc($"""

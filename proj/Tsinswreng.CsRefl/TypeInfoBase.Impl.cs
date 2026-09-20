@@ -14,12 +14,6 @@ public abstract partial class TypeInfoBase{
 	[Doc($"""
 #Sum[把派生類交出的型別事實落地，成員表在此規整成契約序。]
 
-#Descr[
-實測：派生類傳進來的成員表無論是「屬性段在前、字段段在後」還是官方既有序，
-都在這裡被規整成同一份契約序；以 `PoUser` 為例，出去都是
-`Id`、`Name`、`Age`、`Email`、`Married`、`Tags`、`Extra`、`Secret`、`Level`、`Token`、`Note`。
-]
-
 #See[{nameof(TypeInfoBase)}]
 """)]
 	protected partial TypeInfoBase(
@@ -31,22 +25,19 @@ public abstract partial class TypeInfoBase{
 	){
 		ArgumentNullException.ThrowIfNull(Type);
 		ArgumentNullException.ThrowIfNull(Members);
-		_type = Type;
-		_kind = Kind;
-		// step 1: 規整（排序 + 去重 + 只讀）：兩套來源都可能給出同名成員，
+		// step 1: 構造期算出來的事實直接落在屬性上（自動屬性），不另存欄位由屬性轉發。
+		// 參數名與屬性同名，故這裡必須用 this. 指定賦值目標。
+		this.Type = Type;
+		this.Kind = Kind;
+		// step 2: 規整（排序 + 去重 + 只讀）：兩套來源都可能給出同名成員，
 		// 詳見 TypeInfoSorter.SortEtDedup。
-		_members = TypeInfoSorter.SortEtDedup(Type, Members);
-		_elementType = ElementType;
-		_keyType = KeyType;
+		this.Members = TypeInfoSorter.SortEtDedup(Type, Members);
+		this.ElementType = ElementType;
+		this.KeyType = KeyType;
 	}
 
 	[Doc($"""
 #Sum[按名查成員；走惰性索引，O(1)。]
-
-#Descr[
-實測（`PoUser`）：`"Age"` 命中且 `{nameof(MemberExtn.Name)}` 是 "Age"；
-`"NoSuch"` 返回 false、`M` 為 null 且不拋；名字傳 null 也返回 false。
-]
 
 #See[{nameof(ITypeInfo.TryGetMember)}]
 """)]
@@ -63,11 +54,6 @@ public abstract partial class TypeInfoBase{
 
 	[Doc($"""
 #Sum[按名取成員；未知拋 {nameof(KeyNotFoundException)}。]
-
-#Descr[
-實測：命中時與 {nameof(TryGetMember)} 返回同一實例；
-未命中時訊息列出可用成員名（實測含 "Age" 這個子串可被斷言）。
-]
 
 #See[{nameof(ITypeInfo.GetMember)}]
 """)]
