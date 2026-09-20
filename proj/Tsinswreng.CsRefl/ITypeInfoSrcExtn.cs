@@ -58,6 +58,27 @@ JsonOnly.GetInfo(typeof(PoNoCtor));
 		[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] Type Type
 	);
 
+	[Doc($$"""
+#Sum[查型別元資料（泛型版：`T` 就是型別）。]
+
+#TParams[要查的型別]
+
+#Rtn[取到的型別元資料]
+
+#Descr[
+調用方這樣寫：
+
+```csharp
+var Info = Src.GetInfo<PoUser>();
+Info.Type;   // typeof(PoUser)
+```
+
+`T` 在編譯期就是已知型別，故剪裁器（DAM）看得見「這個型別需要成員元數據」，
+不必像 `GetInfo(Type)` 那樣要調用方自己記得傳 `typeof(T)`。
+]
+""")]
+	public static partial ITypeInfo GetInfo<[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] T>(this ITypeInfoSrc z);
+
 	[Doc($"""
 #Sum[運行期型別的 DAM 擔保。]
 
@@ -113,6 +134,28 @@ JsonOnly.GetMember(typeof(PoNoCtor), nameof(PoNoCtor.X));
 	);
 
 	[Doc($$"""
+#Sum[取成員（泛型版）。]
+
+#TParams[所屬型別]
+
+#Params([[z, 來源], [Name, 成員名]])
+
+#Rtn[命中的官方成員物件]
+
+#Descr[
+調用方這樣寫：
+
+```csharp
+var M = Src.GetMember<PoUser>(nameof(PoUser.Age));
+MemberExtn.PropertyType(M);   // typeof(i32)
+```
+
+等於 `Src.GetMember(typeof(PoUser), nameof(PoUser.Age))`。
+]
+""")]
+	public static partial obj? GetMember<[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] T>(this ITypeInfoSrc z, str Name);
+
+	[Doc($$"""
 #Sum[取成員的 Try 版：型別未註冊或成員不存在都返回 false。]
 
 #Params([[z, 來源], [Type, 要查的型別], [Name, 成員名], [M, 取到的成員；失敗時為 null]])
@@ -144,6 +187,28 @@ Src.TryGetMember(null, "Age", out _);
 		str Name,
 		[NotNullWhen(true)] out obj? M
 	);
+
+	[Doc($$"""
+#Sum[取成員的 Try 版（泛型版）。]
+
+#TParams[所屬型別]
+
+#Params([[z, 來源], [Name, 成員名], [M, 取到的成員；失敗時為 null]])
+
+#Rtn[型別未註冊或成員不存在都返回 false]
+
+#Descr[
+調用方這樣寫：
+
+```csharp
+if(Src.TryGetMember<PoUser>(nameof(PoUser.Age), out var M)){
+	MemberExtn.CanWrite(M);   // true
+}
+Src.TryGetMember<PoUser>("NoSuch", out _);   // false
+```
+]
+""")]
+	public static partial bool TryGetMember<[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] T>(this ITypeInfoSrc z, str Name, out obj? M);
 
 	[Doc($$"""
 #Sum[按名讀值；失敗返回 false（不拋）。]
@@ -188,6 +253,32 @@ Src.TryGet(typeof(PoColor), User, nameof(PoUser.Age), out _); // false：實例�
 	);
 
 	[Doc($$"""
+#Sum[按名讀值（泛型版）。]
+
+#TParams[物件的靜態型別]
+
+#Params([[z, 來源], [O, 實例], [Name, 成員名], [V, 讀出的值]])
+
+#Rtn[型別、成員、實例、可讀性任一不滿足返回 false]
+
+#Descr[
+調用方這樣寫：
+
+```csharp
+var User = new PoUser{ Age = 26 };
+
+Src.TryGet<PoUser>(User, nameof(PoUser.Age), out var V);
+// true；V 是 boxed 的 i32 26。
+
+Src.TryGet<PoUser>(User, nameof(PoUser.Token), out _);   // false：只寫成員讀不到
+```
+
+參數序同非泛型版：實例 → 成員名 → 收值的那個出參。
+]
+""")]
+	public static partial bool TryGet<T>(this ITypeInfoSrc z, T O, str Name, out obj? V);
+
+	[Doc($$"""
 #Sum[按名寫值；不可寫返回 false，值型別不符照常拋。]
 
 #Params([[z, 來源], [Type, 物件的型別], [O, 實例], [Name, 成員名], [V, 要寫入的值]])
@@ -225,6 +316,32 @@ Src.TrySet(typeof(PoUser), User, nameof(PoUser.Age), "不是數字");
 		str Name,
 		obj? V
 	);
+
+	[Doc($$"""
+#Sum[按名寫值（泛型版）。]
+
+#TParams[物件的靜態型別]
+
+#Params([[z, 來源], [O, 實例], [Name, 成員名], [V, 要寫入的值]])
+
+#Rtn[型別、成員、實例、可寫性任一不滿足返回 false]
+
+#Descr[
+調用方這樣寫：
+
+```csharp
+var User = new PoUser{ Age = 26 };
+
+Src.TrySet<PoUser>(User, nameof(PoUser.Age), 31);
+// true；之後 User.Age 是 31。
+
+Src.TrySet<PoUser>(User, nameof(PoUser.Secret), "x");   // false：只讀成員
+```
+
+值型別不符照常拋（與非泛型版同一條規矩）。
+]
+""")]
+	public static partial bool TrySet<T>(this ITypeInfoSrc z, T O, str Name, obj? V);
 
 	[Doc($$"""
 #Sum[建淺字典視圖，型別取 `O.GetType()`。]
@@ -286,6 +403,32 @@ foreach(var K in BaseDict.Keys){
 		obj? O,
 		[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] Type? Type
 	);
+
+	[Doc($$"""
+#Sum[建淺字典視圖（泛型版）。]
+
+#TParams[物件的靜態型別]
+
+#Params([[z, 來源], [O, 目標物件]])
+
+#Rtn[該物件的淺字典視圖]
+
+#Descr[
+`T` 是**靜態型別**，所以鍵表以 `typeof(T)` 為準——這與非泛型版（取執行期型別）不同：
+
+```csharp
+var User = new PoUser{ Id = 1, Name = "小明", Age = 26 };
+
+var D1 = Src.ToInstDict<PoUser>(User);        // 鍵 9 個（PoUser 的可讀可寫成員）
+PoUserBase B = User;
+var D2 = Src.ToInstDict<PoUserBase>(B);       // 鍵只有 Id、Name 兩個——按靜態型別走
+var D3 = Src.ToInstDict(B);                   // 非泛型版按執行期型別：仍是 9 個鍵
+```
+
+要「按執行期型別」就別用泛型版，用 `{{nameof(ToInstDict)}}(O)`。
+]
+""")]
+	public static partial IInstDict ToInstDict<T>(this ITypeInfoSrc z, T O);
 
 	[Doc($$"""
 #Sum[把鍵值對寫回物件（型別取 `O.GetType()`）。]
@@ -366,151 +509,6 @@ Src.AssignFromDict(User, new Dictionary<str, obj?>{ [nameof(PoUser.Level)] = 7 }
 		[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] Type? Type
 	);
 
-	// ---- 泛型平手版（照 Srefl 的作法：每個操作都給一份泛型版）----
-
-	[Doc($$"""
-#Sum[查型別元資料（泛型版：`T` 就是型別）。]
-
-#TParams[要查的型別]
-
-#Rtn[取到的型別元資料]
-
-#Descr[
-調用方這樣寫：
-
-```csharp
-var Info = Src.GetInfo<PoUser>();
-Info.Type;   // typeof(PoUser)
-```
-
-`T` 在編譯期就是已知型別，故剪裁器（DAM）看得見「這個型別需要成員元數據」，
-不必像 `GetInfo(Type)` 那樣要調用方自己記得傳 `typeof(T)`。
-]
-""")]
-	public static partial ITypeInfo GetInfo<[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] T>();
-
-	[Doc($$"""
-#Sum[取成員（泛型版）。]
-
-#TParams[所屬型別]
-
-#Params([[z, 來源], [Name, 成員名]])
-
-#Rtn[命中的官方成員物件]
-
-#Descr[
-調用方這樣寫：
-
-```csharp
-var M = Src.GetMember<PoUser>(nameof(PoUser.Age));
-MemberExtn.PropertyType(M);   // typeof(i32)
-```
-
-等於 `Src.GetMember(typeof(PoUser), nameof(PoUser.Age))`。
-]
-""")]
-	public static partial obj? GetMember<[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] T>(str Name);
-
-	[Doc($$"""
-#Sum[取成員的 Try 版（泛型版）。]
-
-#TParams[所屬型別]
-
-#Params([[z, 來源], [Name, 成員名], [M, 取到的成員；失敗時為 null]])
-
-#Rtn[型別未註冊或成員不存在都返回 false]
-
-#Descr[
-調用方這樣寫：
-
-```csharp
-if(Src.TryGetMember<PoUser>(nameof(PoUser.Age), out var M)){
-	MemberExtn.CanWrite(M);   // true
-}
-Src.TryGetMember<PoUser>("NoSuch", out _);   // false
-```
-]
-""")]
-	public static partial bool TryGetMember<[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] T>(str Name, out obj? M);
-
-	[Doc($$"""
-#Sum[按名讀值（泛型版）。]
-
-#TParams[物件的靜態型別]
-
-#Params([[z, 來源], [O, 實例], [Name, 成員名], [V, 讀出的值]])
-
-#Rtn[型別、成員、實例、可讀性任一不滿足返回 false]
-
-#Descr[
-調用方這樣寫：
-
-```csharp
-var User = new PoUser{ Age = 26 };
-
-Src.TryGet<PoUser>(User, nameof(PoUser.Age), out var V);
-// true；V 是 boxed 的 i32 26。
-
-Src.TryGet<PoUser>(User, nameof(PoUser.Token), out _);   // false：只寫成員讀不到
-```
-
-參數序同非泛型版：實例 → 成員名 → 收值的那個出參。
-]
-""")]
-	public static partial bool TryGet<T>(this ITypeInfoSrc z, T O, str Name, out obj? V);
-
-	[Doc($$"""
-#Sum[按名寫值（泛型版）。]
-
-#TParams[物件的靜態型別]
-
-#Params([[z, 來源], [O, 實例], [Name, 成員名], [V, 要寫入的值]])
-
-#Rtn[型別、成員、實例、可寫性任一不滿足返回 false]
-
-#Descr[
-調用方這樣寫：
-
-```csharp
-var User = new PoUser{ Age = 26 };
-
-Src.TrySet<PoUser>(User, nameof(PoUser.Age), 31);
-// true；之後 User.Age 是 31。
-
-Src.TrySet<PoUser>(User, nameof(PoUser.Secret), "x");   // false：只讀成員
-```
-
-值型別不符照常拋（與非泛型版同一條規矩）。
-]
-""")]
-	public static partial bool TrySet<T>(this ITypeInfoSrc z, T O, str Name, obj? V);
-
-	[Doc($$"""
-#Sum[建淺字典視圖（泛型版）。]
-
-#TParams[物件的靜態型別]
-
-#Params([[z, 來源], [O, 目標物件]])
-
-#Rtn[該物件的淺字典視圖]
-
-#Descr[
-`T` 是**靜態型別**，所以鍵表以 `typeof(T)` 為準——這與非泛型版（取執行期型別）不同：
-
-```csharp
-var User = new PoUser{ Id = 1, Name = "小明", Age = 26 };
-
-var D1 = Src.ToInstDict<PoUser>(User);        // 鍵 9 個（PoUser 的可讀可寫成員）
-PoUserBase B = User;
-var D2 = Src.ToInstDict<PoUserBase>(B);       // 鍵只有 Id、Name 兩個——按靜態型別走
-var D3 = Src.ToInstDict(B);                   // 非泛型版按執行期型別：仍是 9 個鍵
-```
-
-要「按執行期型別」就別用泛型版，用 `{{nameof(ToInstDict)}}(O)`。
-]
-""")]
-	public static partial IInstDict ToInstDict<T>(this ITypeInfoSrc z, T O);
-
 	[Doc($$"""
 #Sum[把鍵值對寫回物件（泛型版）。]
 
@@ -539,7 +537,9 @@ Src.AssignFromDict<PoUser>(User, new Dictionary<str, obj?>{ ["NoSuch"] = 1 });
 ]
 """)]
 	public static partial ResAssignFromDict AssignFromDict<T>(this ITypeInfoSrc z, T O, IEnumerable<KeyValuePair<str, obj?>> Dict);
+
 }
+
 
 
 

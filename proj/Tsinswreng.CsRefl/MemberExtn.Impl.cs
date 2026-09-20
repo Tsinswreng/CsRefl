@@ -117,4 +117,9 @@ public static partial class MemberExtn{
 				return false;
 		}
 	}
+
+	// 成員的宣告型別：先佔位，日後再填（反射側 PropertyInfo.PropertyType／FieldInfo.FieldType、Json 側 PropertyType）。
+	public static partial Type? PropertyType(this obj? M){
+		throw new NotImplementedException();
+	}
 }

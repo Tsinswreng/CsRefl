@@ -4,19 +4,18 @@ using Tsinswreng.CsRefl.Test.Domains.Models;
 
 namespace Tsinswreng.CsRefl.Test.Domains.Synthesis;
 
-/// 用法三：把物件當字典用（表單綁定、可視化、整體覆蓋既有成員）。
+/// 層四：視圖層 IInstDict／InstDict——把物件當字典用（表單綁定、可視化）。
+/// ToInstDict 的兩種寫法並排，並擺出「泛型版按靜態型別、非泛型版按執行期型別」這條差別。
 /// 只放函數實現：聲明在 _TestSynthesis.cs。
 public partial class TestSynthesis{
 	/// 見聲明處的說明。
-	public partial async Task<nil> ObjectAsDict(obj? O){
+	public partial async Task<nil> DictView(obj? O){
 		var T = Assert.IsTrue;
 
-		// 起點：門面。
 		var Src = new MergedTypeInfoSrc(
 			new JsonTypeInfoSrc(TestJsonCtx.Default),
 			new ReflTypeInfoSrc()
 		);
-
 		var U = new PoUser{Id = 1, Name = "小明", Age = 26};
 
 		// 視圖是物件的「淺字典外殼」：不複製成員值，讀寫都落在原物件上。
@@ -59,17 +58,23 @@ public partial class TestSynthesis{
 		T(BaseDict.Count == 2, $"基類視圖應只有 2 個鍵，實際 {BaseDict.Count}");
 		T(BaseDict.Keys.SequenceEqual([nameof(PoUserBase.Id), nameof(PoUserBase.Name)]), "基類視圖的鍵應是 Id、Name");
 
+		// 泛型版與非泛型版的差別：泛型版用 T 的靜態型別，非泛型版用執行期型別。
+		T(Src.ToInstDict<PoUser>(U).Count == 9, "ToInstDict<PoUser> 應有 9 個鍵");
+		PoUserBase B = U;
+		T(Src.ToInstDict<PoUserBase>(B).Count == 2, "ToInstDict<PoUserBase> 按靜態型別應只有 2 個鍵");
+		T(Src.ToInstDict(B).Count == 9, "非泛型版 ToInstDict(B) 按執行期型別應是 9 個鍵");
+
 		return NIL;
 	}
 
 	/// 見聲明處的說明。
-	public partial void RegisterDictView(ITestNode Node){
+	public partial void RegisterInstDict(ITestNode Node){
 		var reg = Node.MkTestFnRegister(
 			typeof(TestSynthesis),
 			[typeof(IInstDict), typeof(ITypeInfoSrcExtn)],
 			[nameof(ITypeInfoSrcExtn.ToInstDict), nameof(IInstDict.Keys)],
-			"綜合測試:物件當字典:"
+			"綜合測試:視圖層:"
 		);
-		reg.Register(nameof(ObjectAsDict), ObjectAsDict!);
+		reg.Register(nameof(DictView), DictView!);
 	}
 }

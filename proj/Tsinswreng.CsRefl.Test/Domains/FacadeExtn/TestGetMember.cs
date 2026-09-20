@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization.Metadata;
+using System.Reflection;
 using Tsinswreng.CsTreeTest;
 using Tsinswreng.CsRefl;
 using Tsinswreng.CsRefl.Test.Domains.Models;
@@ -17,7 +19,7 @@ public partial class TestFacadeExtn{
 		R("合成來源 取成員命中", async _ => {
 			var T = Assert.IsTrue;
 			var M = _merged.GetMember(typeof(PoUser), "Age");
-			T(M.Name == "Age" && M.PropertyType == typeof(i32), "應取到 Age 且型別正確");
+			T(MemberExtn.Name(M) == "Age" && MemberExtn.PropertyType(M) == typeof(i32), "應取到 Age 且型別正確");
 			return null;
 		});
 
@@ -52,3 +54,5 @@ public partial class TestFacadeExtn{
 		});
 	}
 }
+
+

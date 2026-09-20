@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization.Metadata;
+using System.Reflection;
 using Tsinswreng.CsTreeTest;
 using Tsinswreng.CsRefl;
 using Tsinswreng.CsRefl.Test.Domains.Models;
@@ -31,9 +32,9 @@ public partial class TestTypeInfo{
 		ITypeInfo Info, Type T2, JsonTypeInfoKind ExpectKind, Type? ExpectKey, Type? ExpectElem
 	){
 		var T = Assert.IsTrue;
-		T(Info.Kind == ExpectKind, $"{T2.Name} 應分類為 {ExpectKind}，實際 {Info.Kind}");
-		T(Info.KeyType == ExpectKey, $"{T2.Name} 的鍵型別應是 {ExpectKey?.Name ?? "null"}，實際 {Info.KeyType?.Name ?? "null"}");
-		T(Info.ElementType == ExpectElem, $"{T2.Name} 的元素型別應是 {ExpectElem?.Name ?? "null"}，實際 {Info.ElementType?.Name ?? "null"}");
+		T(Info.Kind == ExpectKind, $"{MemberExtn.Name(T2)} 應分類為 {ExpectKind}，實際 {Info.Kind}");
+		T(Info.KeyType == ExpectKey, $"{MemberExtn.Name(T2)} 的鍵型別應是 {ExpectKey?.Name ?? "null"}，實際 {Info.KeyType?.Name ?? "null"}");
+		T(Info.ElementType == ExpectElem, $"{MemberExtn.Name(T2)} 的元素型別應是 {ExpectElem?.Name ?? "null"}，實際 {Info.ElementType?.Name ?? "null"}");
 	}
 
 	/// 見聲明處的說明。
@@ -69,7 +70,7 @@ public partial class TestTypeInfo{
 			var Src = _srcs.First(X => X is ReflTypeInfoSrc);
 			Assert.IsTrue(Src.TryGetInfo(typeof(PoNoCtor), out var Info), "反射應能查 PoNoCtor");
 			Assert.IsTrue(Info!.Kind == JsonTypeInfoKind.Object, "PoNoCtor 應是 Object");
-			Assert.IsTrue(!Info.CanMkInst(), "PoNoCtor 沒有無參構造函數，應不可建");
+			Assert.IsTrue(!Info.CanMkInst, "PoNoCtor 沒有無參構造函數，應不可建");
 			Assert.IsTrue(Throws<NotSupportedException>(() => Info.MkInst()), "對不可建模型別 MkInst 應拋 NotSupportedException");
 			return null;
 		});
@@ -88,9 +89,9 @@ public partial class TestTypeInfo{
 			var JsonSrc = _srcs.First(X => X is JsonTypeInfoSrc);
 			Assert.IsTrue(JsonSrc.TryGetInfo(typeof(PoUser), out var JsonInfo), "Json 應能查 PoUser");
 			T(JsonInfo!.Json is not null, "Json 源應給出官方 JsonTypeInfo 本體");
-			T(JsonInfo.Json!.Type == typeof(PoUser), "官方本體的 Type 應相符");
+			T((JsonInfo!.Json)!.Type == typeof(PoUser), "官方本體的 Type 應相符");
 			// 官方本體就是成員表的來源，兩者口徑必須一致。
-			T(JsonInfo.Json.Properties.Count == JsonInfo.Members.Count,
+			T((JsonInfo.Json).Properties.Count == JsonInfo.Members.Count,
 				"官方 Properties 數應與 Members 數一致");
 			// 反射源沒有官方 JsonTypeInfo。
 			var ReflSrc = _srcs.First(X => X is ReflTypeInfoSrc);
@@ -114,3 +115,7 @@ public partial class TestTypeInfo{
 		return false;
 	}
 }
+
+
+
+

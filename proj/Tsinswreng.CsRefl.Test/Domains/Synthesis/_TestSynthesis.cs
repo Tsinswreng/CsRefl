@@ -6,53 +6,46 @@ namespace Tsinswreng.CsRefl.Test.Domains.Synthesis;
 
 /// 綜合測試：演示本庫的用法。這份檔案就是用法示例。
 ///
-/// 用例一律站在調用方那一側寫：調用方手上是一個 <see cref="ITypeInfoSrc"/>（門面），
-/// 他就是從這個門面調庫的，裏面是源生成、反射還是合成，與他無關。
-/// 因此用例裏不會出現「哪套實現」這種話，也不把來源存進類字段——
-/// 來源是每個用例自己建出來的，起點就擺在用例開頭。
+/// 用例一律站在調用方那一側寫：調用方手上是一個 ITypeInfoSrc（門面），
+/// 他就是從這個門面調庫的，裏面是源生成、反射還是合成與他無關。
+/// 來源是每個用例自己建出來的，起點就擺在用例開頭——不用類字段，也沒有自己封裝的 helper。
 ///
-/// 每一行都是庫的真 API 調用：<see cref="ITypeInfoSrcExtn.GetInfo"/>、
-/// <see cref="ITypeInfoSrcExtn.TryGet"/>、<see cref="ITypeInfoSrcExtn.TrySet"/>、
-/// <see cref="ITypeInfoSrcExtn.AssignFromDict"/>、<see cref="ITypeInfoSrcExtn.ToInstDict"/>、
-/// <see cref="ITypeInfo.WritableNames"/>、<see cref="ITypeInfoExtn.TryGet"/>、
-/// <see cref="ITypeInfo.GetMember"/>、<see cref="MemberExtn"/>。
-/// 用例裏沒有自己封裝的方法（沒有 `MkUser` 這類 helper，物件就地 `new`）。
+/// 分部文件按【庫的對外層級】劃分，一層一檔，檔內把同一操作的兩種寫法並排：
+/// + TestFacade——門面層 ITypeInfoSrcExtn（調用方的起點，GetInfo/GetMember/TryGet…）；
+/// + TestTypeInfo——型別元資料層 ITypeInfo／ITypeInfoExtn（拿到 Info 之後的讀寫）；
+/// + TestMemberExtn——成員層 MemberExtn（成員本體就是官方物件，這層沒有泛型版）；
+/// + TestInstDict——視圖層 IInstDict／InstDict（ToInstDict 的兩種寫法與讀寫口徑）；
+/// + TestBizFlow——端到端：把上面幾層串成一段業務流程（落庫與回填）。
 ///
-/// 四個用例：
-/// 一、起點——門面怎麼建（生產用合成、只用源生成、只用反射）；
-/// 二、落庫與回填——一段完整業務流程怎麼寫；
-/// 三、物件當字典用——表單綁定與可視化；
-/// 四、按名讀寫的邊界——只讀、只寫、未知名字分別會怎樣。
-///
-/// 分部文件（TestMkSrc／TestBizFlow／TestDictView／TestLookup）各自以 RegisterXxx 命名並在下面組裝；
-/// 它們只放函數實現，聲明都在本文件。
+/// 兩種寫法並排是刻意的：Type 顯式版給「型別運行期才知道」的場合（例如按 O.GetType() 查），
+/// 泛型版給「型別編譯期已知」的場合（DAM 掛在 T 上，剪裁器看得見需求）。
+/// 兩條路並存，不是替代。
 public partial class TestSynthesis:ITester{
 	/// 組裝本域用例。
 	public partial ITestNode RegisterTestsInto(ITestNode? Node);
 
-	/// 用法一：門面從哪來。
-	public partial Task<nil> MkSrc(obj? O);
-	/// 註冊用法一。
-	public partial void RegisterMkSrc(ITestNode Node);
+	/// 層一：門面層——起點與各操作（顯式型別版與泛型版並排）。
+	public partial Task<nil> FacadeOps(obj? O);
+	/// 註冊層一用例。
+	public partial void RegisterFacade(ITestNode Node);
 
-	/// 用法二：把業務物件落成一行、再從字典回填。
+	/// 層二：型別元資料層——成員表、名清單、按名讀寫、實例工廠。
+	public partial Task<nil> TypeInfoOps(obj? O);
+	/// 註冊層二用例。
+	public partial void RegisterTypeInfo(ITestNode Node);
+
+	/// 層三：成員層——成員本體（官方物件）上的操作。
+	public partial Task<nil> MemberOps(obj? O);
+	/// 註冊層三用例。
+	public partial void RegisterMemberExtn(ITestNode Node);
+
+	/// 層四：視圖層——把物件當字典用。
+	public partial Task<nil> DictView(obj? O);
+	/// 註冊層四用例。
+	public partial void RegisterInstDict(ITestNode Node);
+
+	/// 端到端：落庫與回填。
 	public partial Task<nil> BizRowAndFillBack(obj? O);
-	/// 註冊用法二。
+	/// 註冊端到端用例。
 	public partial void RegisterBizFlow(ITestNode Node);
-
-	/// 用法三：把物件當字典用。
-	public partial Task<nil> ObjectAsDict(obj? O);
-	/// 註冊用法三。
-	public partial void RegisterDictView(ITestNode Node);
-
-	/// 用法四：按名讀寫的邊界。
-	public partial Task<nil> ReadWriteEdges(obj? O);
-	/// 註冊用法四。
-	public partial void RegisterLookup(ITestNode Node);
-
-	/// 用法五：泛型入口——型別靜態已知時用泛型版（與非泛型版並存，不是替代）。
-	public partial Task<nil> GenericEntry(obj? O);
-	/// 註冊用法五。
-	public partial void RegisterGenericEntry(ITestNode Node);
 }
-

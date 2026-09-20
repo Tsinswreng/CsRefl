@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization.Metadata;
+using System.Reflection;
 using Tsinswreng.CsTreeTest;
 using Tsinswreng.CsRefl;
 using Tsinswreng.CsRefl.Test.Domains.Models;
@@ -18,14 +20,14 @@ public partial class TestTypeInfo{
 
 		T(Info.Members.Count == 3, $"應剩 3 個成員，實際 {Info.Members.Count}");
 		// 成員序：基類的 Name 在前，然後是派生類自己宣告的 Id、Age。
-		T(Info.Members[0].Name == "Name"
-			&& Info.Members[1].Name == "Id"
-			&& Info.Members[2].Name == "Age",
-			$"成員序應是 Name、Id、Age，實際 {string.Join(",", Info.Members.Select(M => M.Name))}");
+		T(MemberExtn.Name(Info.Members[0]) == "Name"
+			&& MemberExtn.Name(Info.Members[1]) == "Id"
+			&& MemberExtn.Name(Info.Members[2]) == "Age",
+			$"成員序應是 Name、Id、Age，實際 {string.Join(",", Info.Members.Select(M => MemberExtn.Name(M)))}");
 
 		// Id 只出現一次，且是派生類那份宣告。
 		var Id = Info.GetMember("Id");
-		T(Id.DeclaringType == typeof(PoUserExt), $"按名查到的 Id 應是派生類宣告，實際 {Id.DeclaringType?.Name ?? "null"}");
+		T(MemberExtn.DeclaringType(Id) == typeof(PoUserExt), $"按名查到的 Id 應是派生類宣告，實際 {MemberExtn.DeclaringType(Id)?.Name ?? "null"}");
 
 		// 去重後讀寫照常作用在實例上。
 		var Ext = new PoUserExt();
@@ -51,3 +53,8 @@ public partial class TestTypeInfo{
 		}
 	}
 }
+
+
+
+
+

@@ -4,7 +4,7 @@ using Tsinswreng.CsRefl.Test.Domains.Models;
 
 namespace Tsinswreng.CsRefl.Test.Domains.Synthesis;
 
-/// 用法二：落庫與回填——一段完整業務流程。
+/// 端到端：落庫與回填——把門面層、元資料層、視圖層串成一段業務流程。
 /// 只放函數實現：聲明在 _TestSynthesis.cs。
 public partial class TestSynthesis{
 	/// 見聲明處的說明。
@@ -12,7 +12,7 @@ public partial class TestSynthesis{
 		var T = Assert.IsTrue;
 
 		// 起點：調用方自己把門面建出來（生產是合成來源，注入進來的也是這一個）。
-		var Src = new MergedTypeInfoSrc(
+		ITypeInfoSrc Src = new MergedTypeInfoSrc(
 			new JsonTypeInfoSrc(TestJsonCtx.Default),
 			new ReflTypeInfoSrc()
 		);
@@ -21,7 +21,7 @@ public partial class TestSynthesis{
 
 		// 要落庫的列 = 可寫成員名，順序就是成員序，可直接當 SQL 的列序。
 		// 這份清單按實例緩存，故在業務代碼裏反復讀不會反復計算。
-		var Info = Src.GetInfo(typeof(PoUser));
+		var Info = Src.GetInfo<PoUser>();
 		var Cols = Info.WritableNames;
 		T(Cols.Count == 9, $"可寫成員應有 9 個，實際 {Cols.Count}");
 		T(Cols.SequenceEqual([
@@ -63,6 +63,13 @@ public partial class TestSynthesis{
 		}
 		T(Threw, "未知鍵應拋 KeyNotFoundException");
 
+		// ================= 泛型版（型別編譯期已知）=================
+		// 同一段回填用泛型版寫：只認 T 那張成員表。
+		Src.AssignFromDict<PoUser>(U, new Dictionary<str, obj?>{
+			[nameof(PoUser.Level)] = 7,
+		});
+		T(U.Level == 7, "泛型版 AssignFromDict<PoUser> 同樣寫得回物件");
+
 		return NIL;
 	}
 
@@ -81,3 +88,5 @@ public partial class TestSynthesis{
 		reg.Register(nameof(BizRowAndFillBack), BizRowAndFillBack!);
 	}
 }
+
+

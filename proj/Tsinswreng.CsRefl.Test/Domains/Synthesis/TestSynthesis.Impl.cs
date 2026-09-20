@@ -10,15 +10,14 @@ public partial class TestSynthesis{
 	/// 見聲明處的說明。新增用例時在這裡登記一行。
 	public partial ITestNode RegisterTestsInto(ITestNode? Node){
 		Node ??= new TestNode();
-		// 用例之間互不相干，可並行；組裝順序即閱讀順序。
+		// 用例之間互不相干，可並行；組裝順序即閱讀順序（由門面層往裡、最後端到端）。
 		Node.Ordered = false;
 		Node.IsParallelRecursive = false;
-		RegisterMkSrc(Node);
+		RegisterFacade(Node);
+		RegisterTypeInfo(Node);
+		RegisterMemberExtn(Node);
+		RegisterInstDict(Node);
 		RegisterBizFlow(Node);
-		RegisterDictView(Node);
-		RegisterLookup(Node);
-		RegisterGenericEntry(Node);
 		return Node;
 	}
 }
-

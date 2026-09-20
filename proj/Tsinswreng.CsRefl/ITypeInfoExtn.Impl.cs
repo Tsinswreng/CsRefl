@@ -27,6 +27,10 @@ public static partial class ITypeInfoExtn{
 		return MemberExtn.TryGet(M, O, out V);
 	}
 
+	public static partial bool TryGet<T>(this ITypeInfo z, T O, str Name, out obj? V){
+		throw new NotImplementedException();
+	}
+
 	[Doc($"""
 #Sum[見宣告處的說明。]
 
@@ -42,4 +46,11 @@ public static partial class ITypeInfoExtn{
 		// step 2: 寫值的判據由 MemberExtn 收口。
 		return MemberExtn.TrySet(M, O, V);
 	}
+
+	public static partial bool TrySet<T>(this ITypeInfo z, T O, str Name, obj? V){
+		throw new NotImplementedException();
+	}
+
+
 }
+

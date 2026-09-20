@@ -39,8 +39,13 @@ public static partial class ITypeInfoSrcExtn{
 		// step 1: 查得到就直接返回；查不到才付「拼錯誤訊息」的代價（錯誤路徑）。
 		if(z.TryGetInfo(Type, out var Info)){
 			return Info;
+
 		}
 		throw new KeyNotFoundException($"型別 {Type.FullName} 未註冊到來源 {z.GetType().Name}，取不到型別元資料。");
+	}
+
+	public static partial ITypeInfo GetInfo<T>(this ITypeInfoSrc z){
+		throw new NotImplementedException();
 	}
 
 	[Doc($"""
@@ -58,8 +63,13 @@ public static partial class ITypeInfoSrcExtn{
 		if(z.TryGetInfo(Type, out var Info)){
 			// step 2: 型別內的按名查詢交給類型元資料自己（它會給出可用成員名）。
 			return Info.GetMember(Name);
+
 		}
 		throw new KeyNotFoundException($"型別 {Type.FullName} 未註冊到來源 {z.GetType().Name}，無法取成員 {Name}。");
+	}
+
+	public static partial obj? GetMember<T>(this ITypeInfoSrc z, str Name){
+		throw new NotImplementedException();
 	}
 
 	[Doc($"""
@@ -74,11 +84,16 @@ public static partial class ITypeInfoSrcExtn{
 		M = null;
 		if(z is null || Type is null){
 			return false;
+
 		}
 		if(!z.TryGetInfo(Type, out var Info)){
 			return false;
 		}
 		return Info.TryGetMember(Name, out M);
+	}
+
+	public static partial bool TryGetMember<T>(this ITypeInfoSrc z, str Name, out obj? M){
+		throw new NotImplementedException();
 	}
 
 	[Doc($"""
@@ -94,9 +109,14 @@ public static partial class ITypeInfoSrcExtn{
 		// 先按名取成員（含型別註冊檢查），成員取不到就沒必要再往下。
 		if(!z.TryGetMember(Type, Name, out var M)){
 			return false;
+
 		}
 		// 成員自身的讀值判據由 MemberExtn 收口（兩套來源一條口徑）。
 		return MemberExtn.TryGet(M, O, out R);
+	}
+
+	public static partial bool TryGet<T>(this ITypeInfoSrc z, T O, str Name, out obj? V){
+		throw new NotImplementedException();
 	}
 
 	[Doc($"""
@@ -110,9 +130,14 @@ public static partial class ITypeInfoSrcExtn{
 		// 先按名取成員（含型別註冊檢查），成員取不到就沒必要再往下。
 		if(!z.TryGetMember(Type, Name, out var M)){
 			return false;
+
 		}
 		// 成員自身的寫值判據由 MemberExtn 收口（值型別不符照常拋）。
 		return MemberExtn.TrySet(M, O, V);
+	}
+
+	public static partial bool TrySet<T>(this ITypeInfoSrc z, T O, str Name, obj? V){
+		throw new NotImplementedException();
 	}
 
 	[Doc($"""
@@ -140,8 +165,13 @@ public static partial class ITypeInfoSrcExtn{
 		var T = Type ?? RuntimeType(O.GetType());
 		if(!z.TryGetInfo(T, out var Info)){
 			throw new KeyNotFoundException($"型別 {T.FullName} 未註冊到來源 {z.GetType().Name}，無法建字典視圖。");
+
 		}
 		return new InstDict(O, Info);
+	}
+
+	public static partial IInstDict ToInstDict<T>(this ITypeInfoSrc z, T O){
+		throw new NotImplementedException();
 	}
 
 	[Doc($"""
@@ -151,8 +181,8 @@ public static partial class ITypeInfoSrcExtn{
 轉調帶型別的那個重載（型別傳 null，即取 `O.GetType()`）。
 ]
 """)]
-	public static partial void AssignFromDict(this ITypeInfoSrc z, obj? O, IEnumerable<KeyValuePair<str, obj?>> Dict){
-		AssignFromDict(z, O, Dict, null);
+	public static partial ResAssignFromDict AssignFromDict(this ITypeInfoSrc z, obj? O, IEnumerable<KeyValuePair<str, obj?>> Dict){
+		return AssignFromDict(z, O, Dict, null);
 	}
 
 	[Doc($"""
@@ -163,7 +193,7 @@ public static partial class ITypeInfoSrcExtn{
 未知鍵的報錯訊息同時列可寫名與可讀名，是因為「成員不存在」與「成員在但不可寫」是兩種錯。
 ]
 """)]
-	public static partial void AssignFromDict(this ITypeInfoSrc z, obj? O, IEnumerable<KeyValuePair<str, obj?>> Dict, Type? Type){
+	public static partial ResAssignFromDict AssignFromDict(this ITypeInfoSrc z, obj? O, IEnumerable<KeyValuePair<str, obj?>> Dict, Type? Type){
 		ArgumentNullException.ThrowIfNull(z);
 		ArgumentNullException.ThrowIfNull(O);
 		ArgumentNullException.ThrowIfNull(Dict);
@@ -172,6 +202,7 @@ public static partial class ITypeInfoSrcExtn{
 		// step 1: 型別要能查到（訊息指出是哪個型別與哪個來源）。
 		if(!z.TryGetInfo(T, out var Info)){
 			throw new KeyNotFoundException($"型別 {T.FullName} 未註冊到來源 {z.GetType().Name}，無法執行字典寫回。");
+
 		}
 		foreach(var (K, V) in Dict){
 			// step 2: 未知鍵直接拋。
@@ -192,5 +223,14 @@ public static partial class ITypeInfoSrcExtn{
 				throw new InvalidOperationException($"寫入成員 {T.FullName}.{K} 失敗（值型別不符）。");
 			}
 		}
+		return new ResAssignFromDict();
 	}
+
+	public static partial ResAssignFromDict AssignFromDict<T>(this ITypeInfoSrc z, T O, IEnumerable<KeyValuePair<str, obj?>> Dict){
+		throw new NotImplementedException();
+	}
+
 }
+
+
+
