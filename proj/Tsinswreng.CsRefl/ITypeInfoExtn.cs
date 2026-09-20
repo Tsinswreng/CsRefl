@@ -82,4 +82,62 @@ Info.TrySet(User, nameof(PoUser.Age), "不是數字");
 ]
 """)]
 	public static partial bool TrySet(this ITypeInfo z, obj? O, str Name, obj? V);
+
+	// ---- 泛型平手版（照 Srefl 的作法：每個操作都給一份泛型版）----
+
+	[Doc($$"""
+#Sum[按名讀值（泛型版：實例的靜態型別就是 `T`）。]
+
+#TParams[實例的靜態型別]
+
+#Params([[z, 型別元資料], [O, 實例], [Name, 成員名], [V, 讀出的值；失敗時為 default]])
+
+#Rtn[成員不存在、不可讀、實例為 null 或型別不符時返回 false]
+
+#Descr[
+調用方這樣寫：
+
+```csharp
+var Info = Src.GetInfo<PoUser>();
+var User = new PoUser{ Age = 26 };
+
+Info.TryGet<PoUser>(User, nameof(PoUser.Age), out var V);
+// true；V 是 boxed 的 i32 26。
+
+Info.TryGet<PoUser>(User, nameof(PoUser.Token), out _);   // false：只寫成員讀不到
+```
+
+與非泛型版的差別只有一處：實例以 `T` 傳入，型別不符在編譯期就被擋住。
+]
+""")]
+	public static partial bool TryGet<T>(this ITypeInfo z, T O, str Name, out obj? V);
+
+	[Doc($$"""
+#Sum[按名寫值（泛型版：實例的靜態型別就是 `T`）。]
+
+#TParams[實例的靜態型別]
+
+#Params([[z, 型別元資料], [O, 實例], [Name, 成員名], [V, 要寫入的值]])
+
+#Rtn[成員不存在、不可寫、實例為 null 或型別不符時返回 false]
+
+#Descr[
+調用方這樣寫：
+
+```csharp
+var Info = Src.GetInfo<PoUser>();
+var User = new PoUser{ Age = 26 };
+
+Info.TrySet<PoUser>(User, nameof(PoUser.Age), 31);
+// true；之後 User.Age 是 31。
+
+Info.TrySet<PoUser>(User, nameof(PoUser.Secret), "x");
+// false：只讀成員，且 User.Secret 仍是 "s"。
+```
+
+值型別不符照常拋（與非泛型版同一條規矩）。
+]
+""")]
+	public static partial bool TrySet<T>(this ITypeInfo z, T O, str Name, obj? V);
 }
+

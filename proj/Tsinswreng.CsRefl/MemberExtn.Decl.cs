@@ -130,4 +130,29 @@ Info.GetMember(nameof(PoUser.Age)).TrySet(User, "不是數字");
 ]
 """)]
 	public static partial bool TrySet(this obj? M, obj? O, obj? V);
+
+	[Doc($$"""
+#Sum[成員的宣告型別；未知物件返回 null。]
+
+#Params([[M, 官方成員物件；null 或認不得的型別返回 null]])
+
+#Rtn[宣告型別；取不到為 null]
+
+#Descr[
+調用方這樣寫：
+
+```csharp
+var Info = Src.GetInfo<PoUser>();
+
+MemberExtn.PropertyType(Info.GetMember(nameof(PoUser.Age)));    // typeof(i32)
+MemberExtn.PropertyType(Info.GetMember(nameof(PoUser.Note)));   // typeof(str)：Note 是字段
+MemberExtn.PropertyType(Info.GetMember(nameof(PoUser.Tags)));   // typeof(List<str>)
+MemberExtn.PropertyType("不是成員");                            // null
+```
+
+兩側一條口徑：{{nameof(PropertyInfo)}} 與 {{nameof(JsonPropertyInfo)}} 取 `PropertyType`、
+{{nameof(FieldInfo)}} 取 `FieldType`，故調用方不必自己分辨來源與成員種類。
+]
+""")]
+	public static partial Type? PropertyType(this obj? M);
 }

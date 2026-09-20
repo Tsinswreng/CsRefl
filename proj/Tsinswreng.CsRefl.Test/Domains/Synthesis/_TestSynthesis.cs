@@ -49,4 +49,10 @@ public partial class TestSynthesis:ITester{
 	public partial Task<nil> ReadWriteEdges(obj? O);
 	/// 註冊用法四。
 	public partial void RegisterLookup(ITestNode Node);
+
+	/// 用法五：泛型入口——型別靜態已知時用泛型版（與非泛型版並存，不是替代）。
+	public partial Task<nil> GenericEntry(obj? O);
+	/// 註冊用法五。
+	public partial void RegisterGenericEntry(ITestNode Node);
 }
+

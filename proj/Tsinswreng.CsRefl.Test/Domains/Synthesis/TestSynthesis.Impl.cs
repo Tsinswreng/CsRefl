@@ -17,6 +17,8 @@ public partial class TestSynthesis{
 		RegisterBizFlow(Node);
 		RegisterDictView(Node);
 		RegisterLookup(Node);
+		RegisterGenericEntry(Node);
 		return Node;
 	}
 }
+

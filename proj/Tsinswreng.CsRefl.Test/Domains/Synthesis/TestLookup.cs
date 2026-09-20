@@ -32,7 +32,7 @@ public partial class TestSynthesis{
 			!Src.TryGet(typeof(PoUser), U, "NoSuch", out _),
 			"型別上沒有的名字返回 false"
 		);
-		
+
 		T(!Src.TryGet(typeof(PoUser), U, nameof(PoUser.Token), out _)
 			,"只寫成員讀不到"
 		);
@@ -46,12 +46,12 @@ public partial class TestSynthesis{
 			U.Age == 31,
 			"寫完物件應變成 31"
 		);
-		
+
 		T(
 			!Src.TrySet(typeof(PoUser), U, nameof(PoUser.Secret), "x"),
 			"只讀成員寫不進（返回 false）"
 		);
-		
+
 		T(U.Secret == "s", "只讀成員不該被改動");
 
 		// 已經有型別元資料在手時，不必再從來源查一次型別。
