@@ -37,12 +37,16 @@ public partial class InstDict{
 		// 鍵只收「可讀且可寫」的成員：只讀成員寫不進去、只寫成員讀不出來，
 		// 兩者放進字典視圖都會讓 IDictionary 的讀寫契約自相矛盾。
 		var Keys = new List<str>();
+		var KeySet = new HashSet<str>(StringComparer.Ordinal);
 		foreach(var M in _typeInfo.Members){
-			if(M.CanRead && M.CanWrite){
-				Keys.Add(M.Name);
+			if(MemberExtn.CanRead(M) && MemberExtn.CanWrite(M)){
+				var N = MemberExtn.Name(M);
+				Keys.Add(N);
+				KeySet.Add(N);
 			}
 		}
 		_keys = Keys;
+		_keySet = KeySet;
 		// step 3: 包成只讀視圖（不複製）：外部拿不到 List 的 Add/Remove，形狀改不動。
 		_keysView = new ReadOnlyCollection<str>(Keys);
 	}
@@ -83,16 +87,16 @@ public partial class InstDict{
 讀 `"Token"`（只寫）拋 {nameof(KeyNotFoundException)}，
 讀 `"NoSuch"` 也拋 {nameof(KeyNotFoundException)}；
 訊息裏列出的是可讀可寫那批鍵（實測含 "Level" 可被斷言），
-故「為甚麼這個成員讀不到」要回去看成員表的 {nameof(IMemberInfo.CanRead)}，不是看鍵表。
+故「為甚麼這個成員讀不到」要回去看成員表的 {nameof(MemberExtn.CanRead)}，不是看鍵表。
 ]
 """)]
 	private partial obj? ReadCell(str Key){
 		// step 1: 成員必須存在且可讀（判據是成員表，不看鍵表）。
-		if(!_typeInfo.TryGetMember(Key, out var M) || !M.CanRead){
+		if(!_typeInfo.TryGetMember(Key, out var M) || !MemberExtn.CanRead(M)){
 			throw new KeyNotFoundException($"鍵 {Key} 不在字典視圖裏（不存在或不可讀）。可用鍵：{string.Join(", ", _keys)}");
 		}
 		// step 2: 真正取值；實例型別不符時 TryGet 返回 false。
-		if(!M.TryGet(_target, out var R)){
+		if(!MemberExtn.TryGet(M, _target, out var R)){
 			throw new KeyNotFoundException($"讀取成員 {Key} 失敗（實例型別不符）。");
 		}
 		return R;
@@ -122,11 +126,11 @@ public partial class InstDict{
 			throw new KeyNotFoundException($"鍵 {Key} 不在字典視圖裏（不存在）。可用鍵：{string.Join(", ", _keys)}");
 		}
 		// step 2: 成員必須可寫（只讀成員到這裡就被擋住，不會撞到底層異常）。
-		if(!M.CanWrite){
+		if(!MemberExtn.CanWrite(M)){
 			throw new InvalidOperationException($"成員 {Key} 不可寫。");
 		}
 		// step 3: 真正寫入；實例型別或值型別不符時 TrySet 返回 false。
-		if(!M.TrySet(_target, Value)){
+		if(!MemberExtn.TrySet(M, _target, Value)){
 			throw new InvalidOperationException($"寫入成員 {Key} 失敗（實例型別或值型別不符）。");
 		}
 	}
@@ -165,7 +169,8 @@ null、false、空列表、空字典、boxed 的 `i32` 0、`str` "n"；
 #See[{nameof(InstDict.ContainsKey)}]
 """)]
 	public partial bool ContainsKey(str Key){
-		return _keys.Contains(Key);
+		// 走 _keySet（O(1)），不掃 _keys（那是 O(n)，鍵一多就變貴）。
+		return _keySet.Contains(Key);
 	}
 
 	[Doc($"""
@@ -182,8 +187,8 @@ null、false、空列表、空字典、boxed 的 `i32` 0、`str` "n"；
 """)]
 	public partial bool TryGetValue(str Key, out obj? Value){
 		if(_typeInfo.TryGetMember(Key, out var M)
-			&& M.CanRead
-			&& M.TryGet(_target, out var R))
+			&& MemberExtn.CanRead(M)
+			&& MemberExtn.TryGet(M, _target, out var R))
 		{
 			Value = R;
 			return true;
@@ -244,7 +249,7 @@ null、false、空列表、空字典、boxed 的 `i32` 0、`str` "n"；
 #Descr[
 實測：`Dict.{nameof(Clear)}()` 恆拋 {nameof(NotSupportedException)}；
 視圖的鍵就是型別的成員，清不掉（真要「全部歸零」得逐個成員
-{nameof(IMemberInfo)}.{nameof(IMemberInfo.TrySet)} 成默認值）。
+{nameof(MemberExtn)}.{nameof(MemberExtn.TrySet)} 成默認值）。
 ]
 
 #See[{nameof(InstDict.Clear)}]

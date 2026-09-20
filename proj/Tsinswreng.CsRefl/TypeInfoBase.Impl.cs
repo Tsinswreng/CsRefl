@@ -1,6 +1,5 @@
 namespace Tsinswreng.CsRefl;
 
-using System.Reflection;
 using System.Text.Json.Serialization.Metadata;
 using Tsinswreng.CsCore;
 
@@ -42,6 +41,48 @@ public abstract partial class TypeInfoBase{
 	}
 
 	[Doc($"""
+#Sum[按名查成員；走惰性索引，O(1)。]
+
+#Descr[
+實測（`PoUser`）：`"Age"` 命中且 `{nameof(MemberExtn.Name)}` 是 "Age"；
+`"NoSuch"` 返回 false、`M` 為 null 且不拋；名字傳 null 也返回 false。
+]
+
+#See[{nameof(ITypeInfo.TryGetMember)}]
+""")]
+	public partial bool TryGetMember(str Name, out obj? M){
+		M = null;
+		// step 1: 名字為 null 時直接返回 false（成員名不可能是 null，故這不是「查不到」而是「沒法查」）。
+		if(Name is null){
+			return false;
+		}
+		// step 2: 走索引（第一次調用時才建，見 EnsureByName）。
+		EnsureByName();
+		return _byName!.TryGetValue(Name, out M);
+	}
+
+	[Doc($"""
+#Sum[按名取成員；未知拋 {nameof(KeyNotFoundException)}。]
+
+#Descr[
+實測：命中時與 {nameof(TryGetMember)} 返回同一實例；
+未命中時訊息列出可用成員名（實測含 "Age" 這個子串可被斷言）。
+]
+
+#See[{nameof(ITypeInfo.GetMember)}]
+""")]
+	public partial obj? GetMember(str Name){
+		ArgumentNullException.ThrowIfNull(Name);
+		// step 1: 命中就返回；未命中才付「列可用名」的代價（錯誤路徑）。
+		if(TryGetMember(Name, out var M)){
+			return M;
+		}
+		throw new KeyNotFoundException(
+			$"型別 {Type.FullName} 沒有成員 {Name}。可用成員：{string.Join(", ", AllNames())}"
+		);
+	}
+
+	[Doc($"""
 #Sum[惰性建立按名索引。]
 
 #Descr[
@@ -55,7 +96,7 @@ public abstract partial class TypeInfoBase{
 成員名是程式碼識別符，Ordinal 才是正確語義，也不受當前文化影響。
 ]
 """)]
-	internal partial void EnsureByName(){
+	private partial void EnsureByName(){
 		if(_byName is not null){
 			return;
 		}
@@ -67,27 +108,13 @@ public abstract partial class TypeInfoBase{
 	}
 
 	[Doc($"""
-#Sum[按名查成員；未知返回 false。]
+#Sum[按成員序列出全部成員名，供未命中時的錯誤訊息用。]
 
 #Descr[
-實測（`PoUser`）：`"Age"` 命中且 `{nameof(MemberExtn.Name)}` 是 "Age"；
-`"NoSuch"` 返回 false、`M` 為 null 且不拋。
+實測（`PoUser`）：11 個名，與成員表同序。
 ]
-
-#See[{nameof(ITypeInfoExtn.TryGetMember)}]
 """)]
-	internal partial bool TryGetByName(str Name, out obj? M){
-		EnsureByName();
-		M = null;
-		return _byName!.TryGetValue(Name, out M);
-	}
-
-	[Doc($"""
-#Sum[按名的可用成員名清單，供未命中時的錯誤訊息用。]
-
-#Descr[實測（`PoUser`）：11 個名，與成員表同序。]
-""")]
-	internal partial IEnumerable<str> AllNames(){
+	private partial IEnumerable<str> AllNames(){
 		return Members.Select(M => MemberExtn.Name(M));
 	}
 }

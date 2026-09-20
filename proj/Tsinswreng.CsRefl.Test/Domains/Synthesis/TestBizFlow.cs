@@ -8,7 +8,7 @@ namespace Tsinswreng.CsRefl.Test.Domains.Synthesis;
 /// 只放函數實現：聲明在 _TestSynthesis.cs。
 public partial class TestSynthesis{
 	/// 見聲明處的說明。
-	public partial Task<nil> BizRowAndFillBack(obj? O){
+	public partial async Task<nil> BizRowAndFillBack(obj? O){
 		var T = Assert.IsTrue;
 
 		// 起點：調用方自己把門面建出來（生產是合成來源，注入進來的也是這一個）。
@@ -20,8 +20,9 @@ public partial class TestSynthesis{
 		var U = new PoUser{Id = 1, Name = "小明", Age = 26};
 
 		// 要落庫的列 = 可寫成員名，順序就是成員序，可直接當 SQL 的列序。
+		// 這份清單按實例緩存，故在業務代碼裏反復讀不會反復計算。
 		var Info = Src.GetInfo(typeof(PoUser));
-		var Cols = Info.WritableNames();
+		var Cols = Info.WritableNames;
 		T(Cols.Count == 9, $"可寫成員應有 9 個，實際 {Cols.Count}");
 		T(Cols.SequenceEqual([
 			nameof(PoUser.Id), nameof(PoUser.Name), nameof(PoUser.Age), nameof(PoUser.Email),
@@ -67,10 +68,10 @@ public partial class TestSynthesis{
 	public partial void RegisterBizFlow(ITestNode Node){
 		var reg = Node.MkTestFnRegister(
 			typeof(TestSynthesis),
-			[typeof(ITypeInfoSrcExtn), typeof(ITypeInfoExtn)],
+			[typeof(ITypeInfoSrcExtn), typeof(ITypeInfo)],
 			[
 				nameof(ITypeInfoSrcExtn.GetInfo),
-				nameof(ITypeInfoExtn.WritableNames),
+				nameof(ITypeInfo.WritableNames),
 				nameof(ITypeInfoSrcExtn.AssignFromDict),
 			],
 			"綜合測試:落庫與回填:"

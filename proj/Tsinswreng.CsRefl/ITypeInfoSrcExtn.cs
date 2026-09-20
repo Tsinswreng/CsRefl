@@ -87,14 +87,14 @@ public static partial class ITypeInfoSrcExtn{
 `Type` 的 DAM 註解：
 後端會把型別交給來源查元資料（反射來源需要成員元數據）。
 
-實測：`Src.{nameof(GetMember)}(typeof(PoUser), "Age")` 返回的
-{nameof(IMemberInfo.PropertyType)} 是 `typeof(i32)`、{nameof(IMemberInfo.DeclaringType)} 是 `typeof(PoUser)`；
+實測：`Src.{nameof(GetMember)}(typeof(PoUser), "Age")` 返回的官方成員物件上，
+{nameof(MemberExtn.DeclaringType)} 是 `typeof(PoUser)`、{nameof(MemberExtn.Name)} 是 "Age"；
 成員名拼錯成 `"NoSuch"` 拋 {nameof(KeyNotFoundException)}，訊息含成員名、可直接拿去排查；
 型別沒註冊到這個來源（如 {nameof(JsonTypeInfoSrc)} 查 `typeof(PoNoCtor)`）拋的也是
 {nameof(KeyNotFoundException)}，但訊息指出的是型別未註冊，兩種錯分得開。
 ]
 """)]
-	public static partial IMemberInfo GetMember(
+	public static partial obj? GetMember(
 		this ITypeInfoSrc z,
 		[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] Type Type,
 		str Name
@@ -120,18 +120,23 @@ public static partial class ITypeInfoSrcExtn{
 		this ITypeInfoSrc z,
 		[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] Type Type,
 		str Name,
-		[NotNullWhen(true)] out IMemberInfo? M
+		[NotNullWhen(true)] out obj? M
 	);
 
 	[Doc($"""
 #Sum[按名讀值。]
 
-#Params([[z, 來源], [Type, 物件的型別], [Name, 成員名], [O, 實例], [R, 讀出的值]])
+#Params([[z, 來源], [Type, 物件的型別], [O, 實例], [Name, 成員名], [R, 讀出的值]])
 
 #Rtn[型別、成員、實例、可讀性任一不滿足返回 false]
 
 #Descr[
-實測（`PoUser`，`Age = 30`、`Secret = "s"`）：`Src.{nameof(TryGet)}(typeof(PoUser), "Age", User, out var V)` 返回 true 且 `V` 是 boxed 的 `i32` 30；
+參數序按範圍由大到小：型別 → 實例 → 成員名 → 收值的那個出參，
+與同類的 {nameof(AssignFromDict)}／{nameof(ToInstDict)}（實例在前）一致。
+
+實測（`PoUser`，`Age = 30`、`Secret = "s"`）：
+`Src.{nameof(TryGet)}(typeof(PoUser), User, "Age", out var V)` 
+返回 true 且 `V` 是 boxed 的 `i32` 30；
 `"Secret"`（只讀）也返回 true 且 `V` 是 "s"；
 `"Token"`（只寫）返回 false；傳 `new PoColor()` 返回 false（實例型別不符）。
 
@@ -139,23 +144,27 @@ public static partial class ITypeInfoSrcExtn{
 故適合批量回填、按外部欄位名取值這類「能取就取」的場景。
 ]
 """)]
+	//TswgNote 爲甚麼Name在O前面? 不覺得很反直覺嗎? 範圍不應該都是從大到小嗎?
+	// 已按此改：參數序改為 Type → O → Name（範圍大→小），與 AssignFromDict／ToInstDict 的「實例在前」一致。
 	public static partial bool TryGet(
 		this ITypeInfoSrc z,
 		[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] Type Type,
-		str Name,
 		obj? O,
+		str Name,
 		out obj? R
 	);
 
 	[Doc($"""
 #Sum[按名寫值。]
 
-#Params([[z, 來源], [Type, 物件的型別], [Name, 成員名], [O, 實例], [V, 要寫入的值]])
+#Params([[z, 來源], [Type, 物件的型別], [O, 實例], [Name, 成員名], [V, 要寫入的值]])
 
 #Rtn[型別、成員、實例、可寫性任一不滿足返回 false]
 
 #Descr[
-實測（`PoUser`）：`Src.{nameof(TrySet)}(typeof(PoUser), "Age", User, 31)` 返回 true，之後 `User.Age` 是 31；
+參數序同 {nameof(TryGet)}：型別 → 實例 → 成員名 → 值。
+
+實測（`PoUser`）：`Src.{nameof(TrySet)}(typeof(PoUser), User, "Age", 31)` 返回 true，之後 `User.Age` 是 31；
 `"Secret"`（只讀）返回 false 且 `User.Secret` 仍是 "s"（不動實例）；
 拿 `str` 當 `i32` 寫不返回 false，而是拋 {nameof(InvalidOperationException)}。
 
@@ -166,8 +175,8 @@ public static partial class ITypeInfoSrcExtn{
 	public static partial bool TrySet(
 		this ITypeInfoSrc z,
 		[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] Type Type,
-		str Name,
 		obj? O,
+		str Name,
 		obj? V
 	);
 

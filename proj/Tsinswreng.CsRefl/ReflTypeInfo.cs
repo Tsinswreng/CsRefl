@@ -84,7 +84,7 @@ NativeAOT 下表達式樹不能 Compile（會拋 {nameof(PlatformNotSupportedExc
 #Descr[
 DAM 註解：
 反射建立元資料需要 接口、公共屬性、公共字段、無參構造函數 的元數據被保留
-（AOT 剪裁的前提，見 {nameof(ReflMemberInfo)} 的說明）。
+（AOT 剪裁的前提，見 {nameof(ReflDam)} 的說明）。
 
 實測：`new {nameof(ReflTypeInfo)}(typeof(PoUser))` 一次做完分類、收集成員、找鍵值型別、建無參工廠；
 之後 {nameof(Members)} 與 {nameof(GetMember)} 都直接用這份結果，不會每次重算
@@ -252,7 +252,7 @@ DAM 註解：
 同型別上的 `StaticNote`（靜態）、`Hidden`（私有）、`this[i32]`（索引器）都不收。
 ]
 """)]
-	private static partial IReadOnlyList<IMemberInfo> CollectMembers(
+	private static partial IReadOnlyList<obj?> CollectMembers(
 		Type T
 	);
 

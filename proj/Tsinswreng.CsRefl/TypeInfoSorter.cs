@@ -43,7 +43,7 @@ internal static partial class TypeInfoSorter{
 但門面對外承諾「成員名唯一」，故不依賴來源剛好守規矩。
 ]
 """)]
-	public static partial IReadOnlyList<IMemberInfo> SortEtDedup(Type Root, IReadOnlyList<IMemberInfo> Members);
+	public static partial IReadOnlyList<obj?> SortEtDedup(Type Root, IReadOnlyList<obj?> Members);
 
 	// ---- 私有輔助（實現見 TypeInfoSorter.Impl.cs）----
 

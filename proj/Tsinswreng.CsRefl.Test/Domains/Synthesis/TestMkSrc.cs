@@ -8,7 +8,7 @@ namespace Tsinswreng.CsRefl.Test.Domains.Synthesis;
 /// 只放函數實現：聲明在 _TestSynthesis.cs。
 public partial class TestSynthesis{
 	/// 見聲明處的說明。
-	public partial Task<nil> MkSrc(obj? O){
+	public partial async Task<nil> MkSrc(obj? O){
 		var T = Assert.IsTrue;
 
 		// 生產用它：合成的門面，源生成優先、反射兜底。

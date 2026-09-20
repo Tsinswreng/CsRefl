@@ -9,7 +9,7 @@ using Tsinswreng.CsCore;
 兩條口徑（職責不同，不可混為一談）：
 
 + 出現口徑（{nameof(Keys)}、{nameof(Count)}、{nameof(Values)}、枚舉）：
-	{nameof(IMemberInfo.CanRead)} 與 {nameof(IMemberInfo.CanWrite)} 都為 true 的成員，
+	{nameof(MemberExtn.CanRead)} 與 {nameof(MemberExtn.CanWrite)} 都為 true 的成員，
 	順序 = 成員序；
 + 訪問口徑（索引器、{nameof(TryGetValue)}、{nameof(ContainsKey)}）：
 	讀只要求可讀、寫只要求可寫，判據都是成員表而不是鍵表。
@@ -99,6 +99,21 @@ public partial class InstDict:IInstDict{
 ]
 """)]
 	private readonly ICollection<str> _keysView;
+
+	[Doc($"""
+#Sum[{nameof(ContainsKey)} 用的鍵索引：與 {nameof(_keys)} 同一批名字，只為把存在性判斷做成 O(1)。]
+
+#Descr[
+{nameof(_keys)} 是 {nameof(List<>)}{nameof(Keys)} 的順序載體，順序是契約的一部分，
+但拿它做 {nameof(ICollection<string>.Contains)} 是 O(n)——
+鍵表按成員數可能很長，故另存一份 {nameof(HashSet<>)}{nameof(Keys)} 專供查存在性。
+比較用 {nameof(StringComparer)}.{nameof(StringComparer.Ordinal)}（成員名是程式碼識別符）。
+
+實測（`PoUser`）：這份索引是 9 個名，與 {nameof(_keys)} 逐項相同；
+`Dict.{nameof(ContainsKey)}("Age")` 為 true、`"NoSuch"` 與 `"Secret"` 都為 false。
+]
+""")]
+	private readonly HashSet<str> _keySet;
 
 	[Doc($"""
 #Sum[讀寫各按成員能力放行。]

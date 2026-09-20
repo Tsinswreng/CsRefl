@@ -9,7 +9,7 @@ using Tsinswreng.CsCore;
 
 #Descr[
 AOT 下可用——前提是查詢目標的成員元數據已被保留
-（見 {nameof(ReflMemberInfo)} 的說明）。
+（見 {nameof(ReflTypeInfo.ReflDam)} 的說明）。
 
 {nameof(RegisteredTypes)} 返回 null：
 反射來源能查任意型別，無法也無需列舉。

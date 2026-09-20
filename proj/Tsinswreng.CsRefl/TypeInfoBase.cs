@@ -1,5 +1,6 @@
 namespace Tsinswreng.CsRefl;
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Metadata;
 using Tsinswreng.CsCore;
 
@@ -18,9 +19,9 @@ using Tsinswreng.CsCore;
 ]
 
 #Descr[
-存在的理由（代碼復用，不是抽象）：
+存在的理由（代碼復用、以及把 O(1) 的按名索引與名清單緩存放一處，不是抽象）：
 抽象維度由 {nameof(ITypeInfo)} 接口承擔；
-本類不是它的替代品，只是把兩套來源共用的成員索引緩存寫一遍。
+本類不是它的替代品。
 
 {nameof(ITypeInfo)} 那一組屬性與按名查詢的說明見接口；
 此處只寫本類新增的聲明。
@@ -60,10 +61,10 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 另一條鏈上子類用 `new` 遮蔽基類的 `Id`，這裡是 `Name`、`Id`、`Age` 三項，
 `Id` 只有一份、仍在第 2 位、按名查到的其宣告型別是子類。
 規整由 {nameof(TypeInfoSorter)}.{nameof(TypeInfoSorter.SortEtDedup)} 在建構子裏一次做完，
-構造後本欄位不再變動，故按名索引可以安全緩存。
+構造後本欄位不再變動，故按名索引與名清單可以安全緩存。
 ]
 """)]
-	protected IReadOnlyList<IMemberInfo> _members;
+	protected IReadOnlyList<obj?> _members;
 
 	[Doc($"""
 #Sum[集合的元素型別；非集合為 null。]
@@ -91,7 +92,7 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 #Sum[按名的成員索引緩存，首次查詢時建立。]
 
 #Descr[
-實測：第一次 {nameof(TryGetMember)} 時才建這份 `Dictionary`，
+實測：第一次 {nameof(TryGetMember)} 時才建這份 {nameof(Dictionary<,>)}，
 之後每次按名查都是 O(1)（不是 O(n)）——O(n) 的只有枚舉 {nameof(Members)} 本身；
 {nameof(GetMember)}("Age") 與 {nameof(TryGetMember)}("Age", out _) 返回的實例
 `{nameof(ReferenceEquals)}` 為 true，即共用這份索引。
@@ -100,7 +101,7 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 不會看到半成品字典。
 ]
 """)]
-	private volatile Dictionary<str, IMemberInfo>? _byName;
+	private volatile Dictionary<str, obj?>? _byName;
 
 	[Doc($"""
 #Sum[可讀名清單緩存。]
@@ -147,7 +148,7 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 	protected partial TypeInfoBase(
 		Type Type,
 		JsonTypeInfoKind Kind,
-		IReadOnlyList<IMemberInfo> Members,
+		IReadOnlyList<obj?> Members,
 		Type? ElementType,
 		Type? KeyType
 	);
@@ -179,7 +180,7 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 
 #See[{nameof(ITypeInfo.Members)}]
 """)]
-	public IReadOnlyList<IMemberInfo> Members{
+	public IReadOnlyList<obj?> Members{
 		get{
 			return _members;
 		}
@@ -196,7 +197,11 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 		}
 	}
 
-	[Impl]
+	[Doc($"""
+#Sum[字典的鍵型別；非字典為 null。]
+
+#See[{nameof(ITypeInfo.KeyType)}]
+""")]
 	public Type? KeyType{
 		get{
 			return _keyType;
@@ -248,14 +253,18 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 #Descr[
 實測（`PoUser`）：`Secret` 只讀、`Token` 只寫，
 故這裡是 10 個名、含 `Secret` 不含 `Token`；
-第一次讀時現算並緩存，第二次讀返回同一份清單實例。
+第一次讀時現算並緩存，第二次讀返回同一份清單實例，故在循環裏反復讀不會反復計算。
 ]
 
 #See[{nameof(ITypeInfo.ReadableNames)}]
 """)]
 	public IReadOnlyCollection<str> ReadableNames{
 		get{
-			return _readable ??= Members.Where(M => M.CanRead).Select(M => M.Name).ToList();
+			// 惰性算一次並緩存：成員表構造後不變，故緩存安全（見 _readable）。
+			return _readable ??= Members
+				.Where(M => MemberExtn.CanRead(M))
+				.Select(M => MemberExtn.Name(M))
+				.ToList();
 		}
 	}
 
@@ -271,23 +280,31 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 """)]
 	public IReadOnlyCollection<str> WritableNames{
 		get{
-			return _writable ??= Members.Where(M => M.CanWrite).Select(M => M.Name).ToList();
+			// 同上，惰性算一次並緩存（見 _writable）。
+			return _writable ??= Members
+				.Where(M => MemberExtn.CanWrite(M))
+				.Select(M => MemberExtn.Name(M))
+				.ToList();
 		}
 	}
 
 	[Doc($"""
 #Sum[按名查成員；未知返回 false。]
 
+#Descr[
+走 {nameof(_byName)} 那份惰性索引，是 O(1)（見 {nameof(_byName)}），不掃 {nameof(Members)}。
+]
+
 #See[{nameof(ITypeInfo.TryGetMember)}]
 """)]
-	public partial bool TryGetMember(str Name, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out IMemberInfo? M);
+	public partial bool TryGetMember(str Name, [NotNullWhen(true)] out obj? M);
 
 	[Doc($"""
 #Sum[按名取成員；未知拋 {nameof(KeyNotFoundException)}，訊息含可用名清單。]
 
 #See[{nameof(ITypeInfo.GetMember)}]
 """)]
-	public partial IMemberInfo GetMember(str Name);
+	public partial obj? GetMember(str Name);
 
 	// ---- 私有輔助（實現見 TypeInfoBase.Impl.cs）----
 
@@ -295,7 +312,7 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 #Sum[惰性建按名索引；已建過則直接返回。]
 
 #Descr[
-O(n) 只發生在第一次（建一次 {nameof(Dictionary<string, IMemberInfo>)}），
+O(n) 只發生在第一次（建一次 {nameof(Dictionary<,>)}），
 之後 {nameof(TryGetMember)} 與 {nameof(GetMember)} 都是 O(1)。
 
 實測：`{nameof(GetMember)}("Age")` 與 `{nameof(TryGetMember)}("Age", out _)` 返回的
@@ -304,4 +321,13 @@ O(n) 只發生在第一次（建一次 {nameof(Dictionary<string, IMemberInfo>)}
 ]
 """)]
 	private partial void EnsureByName();
+
+	[Doc($"""
+#Sum[按成員序列出全部成員名，供未命中時的錯誤訊息用。]
+
+#Descr[
+實測（`PoUser`）：11 個名，與成員表同序，首位是 `Id`、末位是 `Note`。
+]
+""")]
+	private partial IEnumerable<str> AllNames();
 }

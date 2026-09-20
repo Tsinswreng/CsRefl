@@ -8,7 +8,7 @@ namespace Tsinswreng.CsRefl.Test.Domains.Synthesis;
 /// 只放函數實現：聲明在 _TestSynthesis.cs。
 public partial class TestSynthesis{
 	/// 見聲明處的說明。
-	public partial Task<nil> ObjectAsDict(obj? O){
+	public partial async Task<nil> ObjectAsDict(obj? O){
 		var T = Assert.IsTrue;
 
 		// 起點：門面。

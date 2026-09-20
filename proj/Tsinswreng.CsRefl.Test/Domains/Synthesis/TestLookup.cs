@@ -8,7 +8,7 @@ namespace Tsinswreng.CsRefl.Test.Domains.Synthesis;
 /// 只放函數實現：聲明在 _TestSynthesis.cs。
 public partial class TestSynthesis{
 	/// 見聲明處的說明。
-	public partial Task<nil> ReadWriteEdges(obj? O){
+	public partial async Task<nil> ReadWriteEdges(obj? O){
 		var T = Assert.IsTrue;
 
 		// 起點：門面。
@@ -47,11 +47,11 @@ public partial class TestSynthesis{
 	public partial void RegisterLookup(ITestNode Node){
 		var reg = Node.MkTestFnRegister(
 			typeof(TestSynthesis),
-			[typeof(ITypeInfoSrcExtn), typeof(ITypeInfoExtn), typeof(MemberExtn)],
+			[typeof(ITypeInfoSrcExtn), typeof(ITypeInfo), typeof(MemberExtn)],
 			[
 				nameof(ITypeInfoSrcExtn.TryGet),
 				nameof(ITypeInfoSrcExtn.TrySet),
-				nameof(ITypeInfoExtn.GetMember),
+				nameof(ITypeInfo.GetMember),
 			],
 			"綜合測試:按名讀寫:"
 		);

@@ -47,10 +47,10 @@ using Tsinswreng.CsCore;
 調用方必須保證命名策略為 null 且無 `[JsonPropertyName]`
 （Ngan.Dict 現狀即如此）。
 
-注意：若開了駝峯命名策略，成員 `Age` 的 {nameof(IMemberInfo.Name)} 可能變成 "age"，
+注意：若開了駝峯命名策略，成員 `Age` 的 {nameof(MemberExtn.Name)} 可能變成 "age"，
 此時拿它當列名就會與 C# 屬性名對不上，故本包刻意不碰命名策略、把前提交給調用方。
 
-實測（本庫測試用的來源）：成員 `Age` 的 {nameof(IMemberInfo.Name)} 就是 "Age"，
+實測（本庫測試用的來源）：成員 `Age` 的 {nameof(MemberExtn.Name)} 就是 "Age"，
 與反射來源一致，故兩套來源的按名查詢可以互換。
 
 建構子與 {nameof(TryGetInfo)} 實現見 `JsonTypeInfoSrc.Impl.cs`。

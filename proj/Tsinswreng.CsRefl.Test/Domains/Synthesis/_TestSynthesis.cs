@@ -14,8 +14,8 @@ namespace Tsinswreng.CsRefl.Test.Domains.Synthesis;
 /// 每一行都是庫的真 API 調用：<see cref="ITypeInfoSrcExtn.GetInfo"/>、
 /// <see cref="ITypeInfoSrcExtn.TryGet"/>、<see cref="ITypeInfoSrcExtn.TrySet"/>、
 /// <see cref="ITypeInfoSrcExtn.AssignFromDict"/>、<see cref="ITypeInfoSrcExtn.ToInstDict"/>、
-/// <see cref="ITypeInfoExtn.WritableNames"/>、<see cref="ITypeInfoExtn.TryGet"/>、
-/// <see cref="ITypeInfoExtn.GetMember"/>、<see cref="MemberExtn"/>。
+/// <see cref="ITypeInfo.WritableNames"/>、<see cref="ITypeInfoExtn.TryGet"/>、
+/// <see cref="ITypeInfo.GetMember"/>、<see cref="MemberExtn"/>。
 /// 用例裏沒有自己封裝的方法（沒有 `MkUser` 這類 helper，物件就地 `new`）。
 ///
 /// 四個用例：
