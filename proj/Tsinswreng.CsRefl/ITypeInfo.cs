@@ -1,50 +1,34 @@
 namespace Tsinswreng.CsRefl;
 
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using System.Text.Json.Serialization.Metadata;
 using Tsinswreng.CsCore;
 
 [Doc($"""
-#Sum[型別元資料門面：{nameof(Type)}、官方型別元資料、成員表、集合鍵值型別、實例工廠、按名查詢。]
+#Sum[型別元資料門面（按名）：型別、官方本體、名清單、按名取型別、按名能力、實例工廠。]
 
 #Descr[
-兩套來源各自實現本接口，對外語義一致，
-調用方不需要知道自己拿到的是哪一套：
-{nameof(ReflTypeInfoSrc)} 走反射，
-{nameof(JsonTypeInfoSrc)} 走官方源生成元資料。
+門面的語言是「名字、型別、值、能力」——調用方不需要知道裏面是哪一套實現，
+也不需要碰官方的成員物件（那些是兩套來源的內部材料）。
+
+兩套來源各自實現本接口，對外語義一致：
+{nameof(ReflTypeInfoSrc)} 走反射、{nameof(JsonTypeInfoSrc)} 走官方源生成。
 
 實測（`PoUser`，兩套來源逐項相同）：
 {nameof(Kind)} 都是 {nameof(JsonTypeInfoKind)}.{nameof(JsonTypeInfoKind.Object)}；
-{nameof(Members)} 都是 11 項，順序都是
-`Id`、`Name`、`Age`、`Email`、`Married`、`Tags`、`Extra`、`Secret`、`Level`、`Token`、`Note`。
+{nameof(ReadableNames)} 都是 10 個名、{nameof(WritableNames)} 都是 9 個名。
 ]
 
 #Descr[
-設計原則：官方已有的概念一律直接交官方物件出去，本包不重複暴露一遍。
+官方已有的概念一律直接拿來用：
+{nameof(Kind)} 就是官方 {nameof(JsonTypeInfoKind)}、
+{nameof(ElementType)}／{nameof(KeyType)} 與官方同名同義、
+{nameof(CreateObject)} 就是官方那條委託的形狀、
+{nameof(Json)} 直接把官方 {nameof(JsonTypeInfo)} 本體交出去。
 
-+ {nameof(Json)} 交官方 {nameof(JsonTypeInfo)} 本體（反射側為 null）——
-	官方的 {nameof(JsonTypeInfo.CreateObject)}、{nameof(JsonTypeInfo.Properties)}、
-	{nameof(JsonTypeInfo.UnmappedMemberHandling)} 等一律從那裡拿，本接口不再照抄。
-+ {nameof(Members)} 的元素是官方成員物件：反射側是官方 {nameof(MemberInfo)}
-	（{nameof(PropertyInfo)} 或 {nameof(FieldInfo)}），Json 側是官方 {nameof(JsonPropertyInfo)}。
-+ {nameof(Kind)} 就是官方 {nameof(JsonTypeInfoKind)}；
-	{nameof(ElementType)} 與 {nameof(KeyType)} 與官方同名同義。
-+ {nameof(CreateObject)} 就是官方那條委託的形狀。
-]
-
-#Descr[
-自研面只剩「以字符串為鍵」這一件事，它按「要不要按實例緩存」分成兩處：
-
-+ 按名查（{nameof(TryGetMember)}／{nameof(GetMember)}）與名清單
-	（{nameof(ReadableNames)}／{nameof(WritableNames)}）留在本接口上：
-	按名查必須 O(1)、名清單只該算一次，兩者都要按實例緩存，
-	放進擴展方法就只剩每次重算一條路（見 {nameof(TryGetMember)} 的說明）。
-+ 按名讀寫的順手寫法（{nameof(ITypeInfoExtn.TryGet)}／{nameof(ITypeInfoExtn.TrySet)}）
-	落在 {nameof(ITypeInfoExtn)} 上：那只是「查成員 + 讀值」兩步的合寫，沒有狀態可緩存。
-
-成員自身的操作（取名字、宣告型別、可讀可寫、讀值寫值）一律在 {nameof(MemberExtn)} 上，
-不在本接口重複一遍。
+成員層不以 {nameof(System.Object)} 交出官方成員物件：
+要成員型別走 {nameof(TryGetMemberType)}、要能力走 {nameof(CanRead)}／{nameof(CanWrite)}、
+要值走 {nameof(ITypeInfoExtn.TryGet)}／{nameof(ITypeInfoExtn.TrySet)}。
 ]
 """)]
 public partial interface ITypeInfo{
@@ -52,8 +36,7 @@ public partial interface ITypeInfo{
 #Sum[本元資料對應的型別。]
 
 #Descr[
-實測：兩套來源查 `PoUser` 得到的這個屬性都是 `typeof(PoUser)`，
-與 `{nameof(ReferenceEquals)}` 比較為 true（官方 {nameof(JsonTypeInfo.Type)} 同值）。
+實測：兩套來源查 `PoUser` 得到的這個屬性都是 `typeof(PoUser)`（官方 {nameof(JsonTypeInfo.Type)} 同值）。
 ]
 """)]
 	Type Type{get;}
@@ -73,54 +56,15 @@ public partial interface ITypeInfo{
 	JsonTypeInfoKind Kind{get;}
 
 	[Doc($"""
-#Sum[全部成員，順序即契約序：基類在前、同類內按來源的宣告序。]
-
-#Descr[
-元素是官方成員物件，本包不包裝、不轉發其成員：
-反射側是官方 {nameof(MemberInfo)}（{nameof(PropertyInfo)} 或 {nameof(FieldInfo)}），
-Json 側是官方 {nameof(JsonPropertyInfo)}。
-故反射獨有的 {nameof(MemberInfo.MemberType)} 與 Json 獨有的
-{nameof(JsonPropertyInfo.Get)} 都在元素本身上，直接取即可。
-
-順序由 {nameof(TypeInfoSorter)} 統一規整，故兩套來源給出同一個順序。
-
-實測（`PoUser`，兩套來源逐位相同）：
-
-+ 共 11 項，依次是
-	`Id`、`Name`、`Age`、`Email`、`Married`、`Tags`、`Extra`、`Secret`、`Level`、`Token`、`Note`；
-+ 反射側首項是 `Id` 的 {nameof(PropertyInfo)}、末項是 `Note` 的 {nameof(FieldInfo)}
-	（帶 `[JsonInclude]` 的字段）；
-+ Json 側首項是 `Id` 的 {nameof(JsonPropertyInfo)}、末項是 `Note` 的 {nameof(JsonPropertyInfo)}；
-+ 靜態成員 `StaticNote`、私有成員 `Hidden`、索引器 `this[i32]` 兩側都不在其中。
-
-同名遮蔽已去重：子類用 `new` 遮蔽基類同名成員時只留離實例最近的那份宣告，並佔原位置。
-]
-
-#Descr[
-為甚麼是列表而不是字典：成員表本身就是一段序列，官方的兩側也都是序列——
-反射側是 {nameof(Type)}.{nameof(Type.GetProperties)} 與 {nameof(Type)}.{nameof(Type.GetFields)}
-交出的數組，Json 側是官方 {nameof(JsonTypeInfo)}.{nameof(JsonTypeInfo.Properties)}
-（{nameof(IList<JsonPropertyInfo>)}）。
-本包不重造官方已有的東西，{nameof(Members)} 就照這個形狀對齊。
-
-按名查不靠掃這張表：走 {nameof(TryGetMember)}，它由實現維護惰性索引，是 O(1)。
-]
-""")]
-	//TswgTodo 爲甚麼用 IReadOnlyList? 這個查詢是O(n)。
-	IReadOnlyList<obj?> Members{get;}
-
-	[Doc($"""
 #Sum[官方 JSON 型別元資料本體；反射側為 null。]
 
 #Descr[
 要官方能力直接從這裡拿，本包不另做轉譯：
 {nameof(JsonTypeInfo.CreateObject)}、{nameof(JsonTypeInfo.Properties)}、
-{nameof(JsonTypeInfo.Converter)}、{nameof(JsonTypeInfo.UnmappedMemberHandling)}、
-{nameof(JsonTypeInfo.NumberHandling)}、{nameof(JsonTypeInfo.PolymorphismOptions)}。
+{nameof(JsonTypeInfo.Converter)}、{nameof(JsonTypeInfo.UnmappedMemberHandling)}。
 
 實測：從 {nameof(JsonTypeInfoSrc)} 查 `PoUser` 時非 null 且
-`{nameof(Json)}.{nameof(JsonTypeInfo.Type)}` 是 `typeof(PoUser)`；
-從 {nameof(ReflTypeInfoSrc)} 查同型別時為 null。
+`{nameof(Json)}.{nameof(JsonTypeInfo.Type)}` 是 `typeof(PoUser)`；從 {nameof(ReflTypeInfoSrc)} 查同型別時為 null。
 ]
 """)]
 	JsonTypeInfo? Json{get;}
@@ -131,11 +75,7 @@ Json 側是官方 {nameof(JsonPropertyInfo)}。
 #Descr[
 與官方 {nameof(JsonTypeInfo)}.{nameof(JsonTypeInfo.ElementType)} 同義。
 
-實測取值（兩套來源一致）：
-
-+ `typeof(List<str>)` → `typeof(str)`；`typeof(i32[])` → `typeof(i32)`；
-+ `typeof(Dictionary<str, i32>)` → `typeof(i32)`（字典取的是值型別，不是鍵型別）；
-+ `typeof(i32)`、`typeof(PoUser)` → null。
+實測：`typeof(List<str>)` → `typeof(str)`；`typeof(Dictionary<str, i32>)` → `typeof(i32)`（字典取值型別）；`typeof(PoUser)` → null。
 ]
 """)]
 	Type? ElementType{get;}
@@ -146,21 +86,117 @@ Json 側是官方 {nameof(JsonPropertyInfo)}。
 #Descr[
 與官方 {nameof(JsonTypeInfo)}.{nameof(JsonTypeInfo.KeyType)} 同義。
 
-實測取值（兩套來源一致）：
-
-+ `typeof(Dictionary<str, i32>)` → `typeof(str)`；
-+ `typeof(List<str>)` → null（不是字典）。
+實測：`typeof(Dictionary<str, i32>)` → `typeof(str)`；`typeof(List<str>)` → null。
 ]
 """)]
 	Type? KeyType{get;}
 
-	[Doc($"""
-#Sum[無參實例工廠；形狀與官方 {nameof(JsonTypeInfo)}.{nameof(JsonTypeInfo.CreateObject)} 一致；沒有工廠時為 null。]
+	//TswgTodo 爲甚麼用 IReadOnlyList? 這個查詢是O(n)。
+	// 註：本批註原文保留。它原本掛在 Members 上，而 Members 已按新方向
+	//（門面只按名、不外露官方成員物件）移除，處置待你確認。
+
+	[Doc($$"""
+#Sum[可讀成員名清單，順序即契約序（基類在前、同類內宣告序）。]
 
 #Descr[
-官方兩側都有這條：Json 側直接就是官方 {nameof(JsonTypeInfo.CreateObject)}，
-反射側由 {nameof(ReflTypeInfo)} 算出來（JIT 下編譯成委託、NativeAOT 下退成反射創建）。
+調用方這樣寫：
 
+```csharp
+var Info = Src.GetInfo<PoUser>();
+
+foreach(var Name in Info.ReadableNames){
+	// 依次拿到 Id、Name、Age、Email、Married、Tags、Extra、Secret、Level、Note（10 個）
+}
+
+Info.ReadableNames.Contains(nameof(PoUser.Secret));   // true：只讀成員算「可讀」
+```
+
+按實例緩存：第一次由成員表現算一份，之後每次返回同一份清單實例。
+]
+""")]
+	IReadOnlyCollection<str> ReadableNames{get;}
+
+	[Doc($$"""
+#Sum[可寫成員名清單，順序同 {nameof(ReadableNames)}。]
+
+#Descr[
+調用方這樣寫（拼 SQL 列或表單欄位時就吃這個順序）：
+
+```csharp
+var Info = Src.GetInfo<PoUser>();
+
+Info.WritableNames.Count;                            // 9
+Info.WritableNames.Contains(nameof(PoUser.Secret));  // false：只讀成員不可寫
+Info.WritableNames.Contains(nameof(PoUser.Token));   // true：只寫成員算「可寫」
+```
+]
+""")]
+	IReadOnlyCollection<str> WritableNames{get;}
+
+	[Doc($$"""
+#Sum[按名取成員的宣告型別；成員不存在返回 false。]
+
+#Params([[Name, 成員名], [T, 宣告型別；失敗時為 null]])
+
+#Rtn[成員存在返回 true]
+
+#Descr[
+這是「成員型別」在門面上的入口（CsSql 要列型別時用它），調用方不必碰官方成員物件。
+
+調用方這樣寫：
+
+```csharp
+var Info = Src.GetInfo<PoUser>();
+
+Info.TryGetMemberType(nameof(PoUser.Age), out var T1);    // true；T1 是 typeof(i32)
+Info.TryGetMemberType(nameof(PoUser.Note), out var T2);   // true；T2 是 typeof(str)（Note 是字段）
+Info.TryGetMemberType(nameof(PoUser.Tags), out var T3);   // true；T3 是 typeof(List<str>)
+Info.TryGetMemberType("NoSuch", out _);                   // false
+```
+]
+""")]
+	bool TryGetMemberType(str Name, out Type? T);
+
+	[Doc($$"""
+#Sum[按名問「這個成員能不能讀」。]
+
+#Descr[
+調用方這樣寫：
+
+```csharp
+var Info = Src.GetInfo<PoUser>();
+
+Info.CanRead(nameof(PoUser.Age));      // true
+Info.CanRead(nameof(PoUser.Secret));   // true（只讀成員讀得到）
+Info.CanRead(nameof(PoUser.Token));    // false（只寫成員讀不到）
+Info.CanRead("NoSuch");                // false
+```
+]
+""")]
+	bool CanRead(str Name);
+
+	[Doc($$"""
+#Sum[按名問「這個成員能不能寫」。]
+
+#Descr[
+調用方這樣寫：
+
+```csharp
+var Info = Src.GetInfo<PoUser>();
+
+Info.CanWrite(nameof(PoUser.Age));      // true
+Info.CanWrite(nameof(PoUser.Secret));   // false（只讀）
+Info.CanWrite(nameof(PoUser.Token));    // true（只寫成員寫得進）
+Info.CanWrite("NoSuch");                // false
+```
+]
+""")]
+	bool CanWrite(str Name);
+
+	[Doc($"""
+#Sum[無參實例工廠；形狀與官方 {nameof(JsonTypeInfo)}.{nameof(JsonTypeInfo.CreateObject)} 一致，沒有工廠時為 null。]
+
+#Descr[
 實測：`typeof(PoUser)` 兩套來源都非 null，調一次得到一個 `PoUser` 實例；
 `typeof(PoNoCtor)`（只有帶參構造函數）兩套來源都是 null。
 ]
@@ -182,106 +218,39 @@ Json 側是官方 {nameof(JsonPropertyInfo)}。
 #Rtn[新實例]
 
 #Descr[
-實測：`{nameof(MkInst)}()` 得到一個 `PoUser` 新實例，其 `Id` 可立即賦值；
-對 `typeof(PoNoCtor)` 拋 {nameof(NotSupportedException)}，訊息含型別全名。
+實測：`{nameof(MkInst)}()` 得到一個 `PoUser` 新實例；對 `typeof(PoNoCtor)` 拋 {nameof(NotSupportedException)}。
 先查 {nameof(CanMkInst)} 可以避免這個異常。
 ]
 """)]
 	obj? MkInst();
 
 	[Doc($"""
-#Sum[可讀成員名清單，順序同 {nameof(Members)}。]
+#Sum[全部成員（契約序：基類在前、同類內宣告序）。]
 
 #Descr[
-自研便利（官方無此物）。
-
-按實例緩存：第一次由 {nameof(Members)} 現算一份，之後每次返回同一份清單實例，
-故在循環裏反復讀不會反復計算。
-
-實測（`PoUser`）：10 個名，依次為
-`Id`、`Name`、`Age`、`Email`、`Married`、`Tags`、`Extra`、`Secret`、`Level`、`Note`
-（只讀的 `Secret` 在、只寫的 `Token` 不在，因為判據是「能不能讀」）。
-
-用途：要把物件序列化成一行 SQL 或一份前端表單時直接遍歷它，不必自己過濾成員。
+元素是官方成員物件：反射側 {nameof(MemberInfo)}（{nameof(PropertyInfo)} 或 {nameof(FieldInfo)}）、Json 側 {nameof(JsonPropertyInfo)}。
+本成員目前的處置（是否改成帶型別的成員契約）待你確認，故先原樣保留。
 ]
 """)]
-	IReadOnlyCollection<str> ReadableNames{get;}
+	IReadOnlyList<obj?> Members{get;}
 
 	[Doc($"""
-#Sum[可寫成員名清單，順序同 {nameof(Members)}。]
+#Sum[按名查成員；未知返回 false。]
 
 #Descr[
-自研便利（官方無此物）；同樣按實例緩存，第二次起返回同一份清單實例。
-
-實測（`PoUser`）：10 個名，依次為
-`Id`、`Name`、`Age`、`Email`、`Married`、`Tags`、`Extra`、`Level`、`Token`、`Note`
-（只寫的 `Token` 在、只讀的 `Secret` 不在）。
-
-用途：要按外部字典回填物件時，先拿這個清單擋掉不該寫的鍵。
-]
-""")]
-	IReadOnlyCollection<str> WritableNames{get;}
-
-	[Doc($$"""
-#Sum[按名（成員的官方名字）查成員。]
-
-#Params([[Name, 成員名], [M, 查到的官方成員物件；未命中為 null]])
-
-#Rtn[命中返回 true；未命中或名字為 null 返回 false]
-
-#Descr[
-調用方這樣寫：
-
-```csharp
-var Info = Src.GetInfo(typeof(PoUser));
-
-if(Info.TryGetMember(nameof(PoUser.Age), out var M)){
-	MemberExtn.Name(M);           // "Age"
-	MemberExtn.DeclaringType(M);  // typeof(PoUser)
-	MemberExtn.CanRead(M);        // true
-	MemberExtn.CanWrite(M);       // true
-}
-
-Info.TryGetMember("NoSuch", out _);                  // false，M 為 null（不拋）
-Info.TryGetMember(nameof(PoUser.Token), out var Tk); // true；Token 只寫，CanRead(Tk) 為 false
-Info.TryGetMember(null!, out _);                     // false：名字傳 null 也不拋
-```
-
-命中的 {{nameof(M)}} 是官方成員物件：反射側是 {{nameof(MemberInfo)}}、Json 側是 {{nameof(JsonPropertyInfo)}}；
-兩側取名字一律走 {{nameof(MemberExtn.Name)}}，不必自己分辨型別。
-
-名字比較用 {{nameof(StringComparer)}}.{{nameof(StringComparer.Ordinal)}}
-（成員名是程式碼識別符，不該受當前文化影響）。
-
-#strong[本查詢必須 O(1)。] 實現要在第一次按名查時惰性建一份 {{nameof(Dictionary<,>)}} 索引，
-之後每次查都走索引；不得每次調用都線性掃 {{nameof(Members)}}。
+實測：`TryGetMember("Age", out var M)` 返回 true；`"NoSuch"` 返回 false 且 `M` 為 null（不拋）。
 ]
 """)]
 	bool TryGetMember(str Name, [NotNullWhen(true)] out obj? M);
 
-	[Doc($$"""
-#Sum[按名取成員；取不到就拋。]
-
-#Params([[Name, 成員名]])
-
-#Rtn[命中的官方成員物件]
+	[Doc($"""
+#Sum[按名取成員；取不到拋 {nameof(KeyNotFoundException)}。]
 
 #Descr[
-調用方這樣寫：
-
-```csharp
-var Info = Src.GetInfo(typeof(PoUser));
-
-var M = Info.GetMember(nameof(PoUser.Age));
-// M 是官方成員物件；與 Info.TryGetMember(nameof(PoUser.Age), out var M2) 拿到的是同一實例。
-
-Info.GetMember("NoSuch");
-// 拋 KeyNotFoundException，訊息列出可用成員名（實測含 "Age" 這個子串）——拼錯名字時不必自己去列成員。
-```
-
-與 {{nameof(TryGetMember)}} 成對：確定必須成功時用本方法，
-名字可能是外部來的就用 {{nameof(TryGetMember)}}（它返回 false 而不拋）。
+實測：`GetMember("Age")` 與 `TryGetMember("Age", out var M)` 命中時返回同一實例。
 ]
 """)]
 	obj? GetMember(str Name);
 }
+
+

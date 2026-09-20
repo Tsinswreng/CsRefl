@@ -5,14 +5,14 @@ using System.Text.Json.Serialization.Metadata;
 using Tsinswreng.CsCore;
 
 [Doc($"""
-#Sum[{nameof(AttrProviderExtn)} 的函數實現。]
+#Sum[{nameof(AttrProvider)} 的函數實現。]
 
 #Descr[
-只放函數實現：簽名在 `AttrProviderExtn.Decl.cs`。
+只放函數實現：簽名在 `AttrProvider.Decl.cs`。
 ]
 """)]
-public static partial class AttrProviderExtn{
-	public static partial TAttr? GetCustomAttribute<TAttr>(this ICustomAttributeProvider? z) where TAttr:Attribute{
+public static partial class AttrProvider{
+	public static partial TAttr? GetCustomAttribute<TAttr>(ICustomAttributeProvider? Provider) where TAttr:Attribute{
 		// step 1: 提供者缺失（成員沒有元資料或沒給提供者）→ null，不拋。
 		if(z is null){
 			return null;
@@ -27,3 +27,4 @@ public static partial class AttrProviderExtn{
 		return null;
 	}
 }
+

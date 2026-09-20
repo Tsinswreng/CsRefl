@@ -85,3 +85,4 @@ ReflTypeInfoSrc.Inst.TryGetInfo(typeof(PoUser), out _);
 		[NotNullWhen(true)] out ITypeInfo? Info
 	);
 }
+

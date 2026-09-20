@@ -79,3 +79,4 @@ public partial class JsonTypeInfoSrc{
 		return new JsonTypeInfoInfo(JsonInfo);
 	}
 }
+

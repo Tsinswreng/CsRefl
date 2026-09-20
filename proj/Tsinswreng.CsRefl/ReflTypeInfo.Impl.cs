@@ -132,7 +132,7 @@ public partial class ReflTypeInfo{
 				continue;
 			}
 			// 直接收官方 PropertyInfo：成員就是官方物件，本包不包一層
-			//（取名字、宣告型別、可讀可寫一律由 MemberExtn 收口）。
+			//（取名字、宣告型別、可讀可寫一律由 Member 收口）。
 			R.Add(Prop);
 		}
 		// step 2: 公開實例字段；排在屬性段之後，構成「屬性在前、字段在後」的收集序。
@@ -175,3 +175,4 @@ public partial class ReflTypeInfo{
 		}
 	}
 }
+

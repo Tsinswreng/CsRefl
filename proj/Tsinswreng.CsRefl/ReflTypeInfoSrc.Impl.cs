@@ -30,3 +30,4 @@ public partial class ReflTypeInfoSrc{
 		return true;
 	}
 }
+

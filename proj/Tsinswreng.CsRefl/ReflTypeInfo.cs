@@ -286,3 +286,4 @@ NativeAOT 不支持動態編譯
 		Type T
 	);
 }
+

@@ -59,3 +59,4 @@ public partial class MergedTypeInfoSrc{
 		return R;
 	}
 }
+

@@ -232,8 +232,8 @@ public partial class MyInfo:TypeInfoBase{
 		get{
 			// 惰性算一次並緩存：成員表構造後不變，故緩存安全（見 _readable）。
 			return _readable ??= Members
-				.Where(M => MemberExtn.CanRead(M))
-				.Select(M => MemberExtn.Name(M))
+				.Where(M => Member.CanRead(M))
+				.Select(M => Member.Name(M))
 				.ToList();
 		}
 	}
@@ -252,8 +252,8 @@ public partial class MyInfo:TypeInfoBase{
 		get{
 			// 同上，惰性算一次並緩存（見 _writable）。
 			return _writable ??= Members
-				.Where(M => MemberExtn.CanWrite(M))
-				.Select(M => MemberExtn.Name(M))
+				.Where(M => Member.CanWrite(M))
+				.Select(M => Member.Name(M))
 				.ToList();
 		}
 	}
@@ -300,4 +300,19 @@ O(n) 只發生在第一次（建一次 {nameof(Dictionary<,>)}），
 ]
 """)]
 	private partial IEnumerable<str> AllNames();
+
+	[Doc($"""
+#Sum[見接口說明。]
+""")]
+	public partial bool TryGetMemberType(str Name, out Type? T);
+	[Doc($"""
+#Sum[見接口說明。]
+""")]
+	public partial bool CanRead(str Name);
+	[Doc($"""
+#Sum[見接口說明。]
+""")]
+	public partial bool CanWrite(str Name);
 }
+
+

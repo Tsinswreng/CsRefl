@@ -28,15 +28,15 @@ internal static partial class TypeInfoSorter{
 		// DeclaringType 為 null（畸形元資料，官方 JsonPropertyInfo.DeclaringType 本來就可空）
 		// 時按 0 處理，即「當作 Root 自己宣告」，排在最前。
 		var Sorted = Members
-			.OrderByDescending(M => MemberExtn.DeclaringType(M) is null ? 0 : DepthOf(Root, MemberExtn.DeclaringType(M)!))
+			.OrderByDescending(M => Member.DeclaringType(M) is null ? 0 : DepthOf(Root, Member.DeclaringType(M)!))
 			.ToList();
 
 		// step 2: 挑勝出者。
 		// 正序掃一遍、首見者勝出即得「離實例最近」的那份宣告：降序排列下派生類成員在前。
-		// 名字由 MemberExtn 從官方成員物件取，兩側同一條口徑。
+		// 名字由 Member 從官方成員物件取，兩側同一條口徑。
 		var ByName = new Dictionary<str, obj?>(Sorted.Count, StringComparer.Ordinal);
 		foreach(var M in Sorted){
-			ByName.TryAdd(MemberExtn.Name(M), M);
+			ByName.TryAdd(Member.Name(M), M);
 		}
 
 		// step 3: 按「首次出現」的位置輸出。
@@ -46,7 +46,7 @@ internal static partial class TypeInfoSorter{
 		var Placed = new HashSet<str>(ByName.Count, StringComparer.Ordinal);
 		var R = new List<obj?>(ByName.Count);
 		foreach(var M in Sorted){
-			var N = MemberExtn.Name(M);
+			var N = Member.Name(M);
 			if(Placed.Add(N)){
 				R.Add(ByName[N]);
 			}
@@ -65,3 +65,4 @@ internal static partial class TypeInfoSorter{
 		return D;
 	}
 }
+

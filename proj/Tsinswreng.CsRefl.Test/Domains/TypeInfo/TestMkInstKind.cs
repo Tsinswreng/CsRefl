@@ -32,9 +32,9 @@ public partial class TestTypeInfo{
 		ITypeInfo Info, Type T2, JsonTypeInfoKind ExpectKind, Type? ExpectKey, Type? ExpectElem
 	){
 		var T = Assert.IsTrue;
-		T(Info.Kind == ExpectKind, $"{MemberExtn.Name(T2)} 應分類為 {ExpectKind}，實際 {Info.Kind}");
-		T(Info.KeyType == ExpectKey, $"{MemberExtn.Name(T2)} 的鍵型別應是 {ExpectKey?.Name ?? "null"}，實際 {Info.KeyType?.Name ?? "null"}");
-		T(Info.ElementType == ExpectElem, $"{MemberExtn.Name(T2)} 的元素型別應是 {ExpectElem?.Name ?? "null"}，實際 {Info.ElementType?.Name ?? "null"}");
+		T(Info.Kind == ExpectKind, $"{Member.Name(T2)} 應分類為 {ExpectKind}，實際 {Info.Kind}");
+		T(Info.KeyType == ExpectKey, $"{Member.Name(T2)} 的鍵型別應是 {ExpectKey?.Name ?? "null"}，實際 {Info.KeyType?.Name ?? "null"}");
+		T(Info.ElementType == ExpectElem, $"{Member.Name(T2)} 的元素型別應是 {ExpectElem?.Name ?? "null"}，實際 {Info.ElementType?.Name ?? "null"}");
 	}
 
 	/// 見聲明處的說明。
@@ -115,6 +115,7 @@ public partial class TestTypeInfo{
 		return false;
 	}
 }
+
 
 
 

@@ -24,7 +24,7 @@ using Tsinswreng.CsCore;
 以及實例可空、型別不符時返回 false 的 {nameof(TryGet)}／{nameof(TrySet)}。
 ]
 """)]
-public static partial class MemberExtn{
+public static partial class Member{
 	[Doc($"""
 #Sum[成員名。]
 
@@ -34,7 +34,7 @@ public static partial class MemberExtn{
 實測（`PoUser`）：`Age` 兩側都是 "Age"、`Note` 兩側都是 "Note"。
 ]
 """)]
-	public static partial str Name(this obj? M);
+	public static partial str Name(obj? M);
 
 	[Doc($"""
 #Sum[宣告本成員的型別。]
@@ -44,7 +44,7 @@ public static partial class MemberExtn{
 繼承成員 `Id` 兩側都是 `typeof(PoUserBase)`。
 ]
 """)]
-	public static partial Type? DeclaringType(this obj? M);
+	public static partial Type? DeclaringType(obj? M);
 
 	[Doc($"""
 #Sum[本成員可否讀取。]
@@ -58,7 +58,7 @@ Json 側看官方 {nameof(JsonPropertyInfo.Get)} 是否為 null；
 實測（`PoUser`）：`Age` 兩側都是 true；只讀的 `Secret` 兩側都是 true；只寫的 `Token` 兩側都是 false。
 ]
 """)]
-	public static partial bool CanRead(this obj? M);
+	public static partial bool CanRead(obj? M);
 
 	[Doc($"""
 #Sum[本成員可否寫入。]
@@ -70,7 +70,7 @@ Json 側看官方 {nameof(JsonPropertyInfo.Set)} 是否為 null；
 實測（`PoUser`）：`Age` 兩側都是 true；只讀的 `Secret` 兩側都是 false；只寫的 `Token` 兩側都是 true。
 ]
 """)]
-	public static partial bool CanWrite(this obj? M);
+	public static partial bool CanWrite(obj? M);
 
 	[Doc($$"""
 #Sum[讀取實例上的本成員；失敗返回 false。]
@@ -99,7 +99,7 @@ Info.GetMember(nameof(PoUser.Age)).TryGet(new PoColor(), out _); // false：實�
 兩套來源同一條口徑：反射側的 `PropertyInfo`/`FieldInfo` 與 Json 側的 `JsonPropertyInfo` 都走本方法。
 ]
 """)]
-	public static partial bool TryGet(this obj? M, obj? O, out obj? V);
+	public static partial bool TryGet(obj? M, obj? O, out obj? V);
 
 	[Doc($$"""
 #Sum[寫入實例上的本成員；失敗返回 false。]
@@ -129,7 +129,7 @@ Info.GetMember(nameof(PoUser.Age)).TrySet(User, "不是數字");
 ```
 ]
 """)]
-	public static partial bool TrySet(this obj? M, obj? O, obj? V);
+	public static partial bool TrySet(obj? M, obj? O, obj? V);
 
 	[Doc($$"""
 #Sum[成員的宣告型別；未知物件返回 null。]
@@ -144,15 +144,17 @@ Info.GetMember(nameof(PoUser.Age)).TrySet(User, "不是數字");
 ```csharp
 var Info = Src.GetInfo<PoUser>();
 
-MemberExtn.PropertyType(Info.GetMember(nameof(PoUser.Age)));    // typeof(i32)
-MemberExtn.PropertyType(Info.GetMember(nameof(PoUser.Note)));   // typeof(str)：Note 是字段
-MemberExtn.PropertyType(Info.GetMember(nameof(PoUser.Tags)));   // typeof(List<str>)
-MemberExtn.PropertyType("不是成員");                            // null
+Member.PropertyType(Info.GetMember(nameof(PoUser.Age)));    // typeof(i32)
+Member.PropertyType(Info.GetMember(nameof(PoUser.Note)));   // typeof(str)：Note 是字段
+Member.PropertyType(Info.GetMember(nameof(PoUser.Tags)));   // typeof(List<str>)
+Member.PropertyType("不是成員");                            // null
 ```
 
 兩側一條口徑：{{nameof(PropertyInfo)}} 與 {{nameof(JsonPropertyInfo)}} 取 `PropertyType`、
 {{nameof(FieldInfo)}} 取 `FieldType`，故調用方不必自己分辨來源與成員種類。
 ]
 """)]
-	public static partial Type? PropertyType(this obj? M);
+	public static partial Type? PropertyType(obj? M);
 }
+
+

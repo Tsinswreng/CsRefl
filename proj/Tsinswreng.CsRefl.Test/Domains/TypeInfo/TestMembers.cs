@@ -22,36 +22,36 @@ public partial class TestTypeInfo{
 		T(Info.Members.Count == 11, $"應有 11 個成員，實際 {Info.Members.Count}");
 		for(var I = 0; I < ExpectOrder.Length; I++){
 			var M = Info.Members[I];
-			T(MemberExtn.Name(M) == ExpectOrder[I], $"第 {I} 個成員應是 {ExpectOrder[I]}，實際 {MemberExtn.Name(M)}");
+			T(Member.Name(M) == ExpectOrder[I], $"第 {I} 個成員應是 {ExpectOrder[I]}，實際 {Member.Name(M)}");
 		}
 
 		var Age = Info.Members[2];
-		T(MemberExtn.Name(Age) == "Age", "Age 應在自分類的第 3 位");
-		T(MemberExtn.PropertyType(Age) == typeof(i32), "Age 型別應是 int");
-		T(MemberExtn.DeclaringType(Age) == typeof(PoUser), "Age 聲明型別應是 PoUser");
-		T(MemberExtn.CanRead(Age) && MemberExtn.CanWrite(Age), "Age 應可讀可寫");
+		T(Member.Name(Age) == "Age", "Age 應在自分類的第 3 位");
+		T(Member.PropertyType(Age) == typeof(i32), "Age 型別應是 int");
+		T(Member.DeclaringType(Age) == typeof(PoUser), "Age 聲明型別應是 PoUser");
+		T(Member.CanRead(Age) && Member.CanWrite(Age), "Age 應可讀可寫");
 		// 可讀/可寫與官方委託同一判據（官方 JsonPropertyInfo 就是用 Get/Set 表示）。
 		T(((Age as JsonPropertyInfo)?.Get) is not null && ((Age as JsonPropertyInfo)?.Set) is not null, "Age 應同時給出官方 Get 與 Set 委託");
 		T(((MemberInfo)Age!).MemberType == MemberTypes.Property, "Age 的官方成員種類應是 Property");
 		T(((Age as JsonPropertyInfo)?.AttributeProvider) is not null, "Age 應給出官方特性提供者");
 
 		var Id = Info.Members[0];
-		T(MemberExtn.DeclaringType(Id) == typeof(PoUserBase), "Id 聲明型別應是基類 PoUserBase（繼承成員在前）");
+		T(Member.DeclaringType(Id) == typeof(PoUserBase), "Id 聲明型別應是基類 PoUserBase（繼承成員在前）");
 
 		var Secret = Info.Members[7];
-		T(MemberExtn.Name(Secret) == "Secret", "Secret 應在第 8 位");
-		T(MemberExtn.PropertyType(Secret) == typeof(str), "Secret 型別應是 string");
-		T(MemberExtn.CanRead(Secret) && !MemberExtn.CanWrite(Secret), "Secret 應只讀不可寫");
+		T(Member.Name(Secret) == "Secret", "Secret 應在第 8 位");
+		T(Member.PropertyType(Secret) == typeof(str), "Secret 型別應是 string");
+		T(Member.CanRead(Secret) && !Member.CanWrite(Secret), "Secret 應只讀不可寫");
 		T(((Secret as JsonPropertyInfo)?.Set) is null, "只讀成員的官方 Set 委託應為 null");
 
 		var Token = Info.Members[9];
-		T(MemberExtn.Name(Token) == "Token", "Token 應在第 10 位");
-		T(MemberExtn.CanWrite(Token) && !MemberExtn.CanRead(Token), "Token 應只寫不可讀");
+		T(Member.Name(Token) == "Token", "Token 應在第 10 位");
+		T(Member.CanWrite(Token) && !Member.CanRead(Token), "Token 應只寫不可讀");
 		T(((Token as JsonPropertyInfo)?.Get) is null, "只寫成員的官方 Get 委託應為 null");
 
 		var Note = Info.Members[10];
-		T(MemberExtn.Name(Note) == "Note", "Note 應在第 11 位");
-		T(MemberExtn.CanRead(Note) && MemberExtn.CanWrite(Note), "Note 應可讀可寫");
+		T(Member.Name(Note) == "Note", "Note 應在第 11 位");
+		T(Member.CanRead(Note) && Member.CanWrite(Note), "Note 應可讀可寫");
 
 		// 官方出口：反射源給 MemberInfo、Json 源給 JsonPropertyInfo，兩者互斥。
 		var First = Info.Members[0];
@@ -70,7 +70,7 @@ public partial class TestTypeInfo{
 
 		// 靜態成員 / 私有字段 / 索引器都不得進成員表。
 		foreach(var M in Info.Members){
-			T(MemberExtn.Name(M) is not ("StaticNote" or "Hidden" or "Item"), $"成員 {MemberExtn.Name(M)} 不應出現（靜態/私有/索引器被排除）");
+			T(Member.Name(M) is not ("StaticNote" or "Hidden" or "Item"), $"成員 {Member.Name(M)} 不應出現（靜態/私有/索引器被排除）");
 		}
 	}
 
@@ -88,6 +88,7 @@ public partial class TestTypeInfo{
 		}
 	}
 }
+
 
 
 

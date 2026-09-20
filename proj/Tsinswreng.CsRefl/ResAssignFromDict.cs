@@ -14,3 +14,4 @@ using Tsinswreng.CsCore;
 """)]
 public partial class ResAssignFromDict{
 }
+

@@ -14,7 +14,7 @@ public static partial class ITypeInfoExtn{
 #Sum[見宣告處的說明。]
 
 #Descr[
-兩步：按名查成員（走 {nameof(ITypeInfo.TryGetMember)} 的惰性索引，O(1)）→ 讀值判據交給 {nameof(MemberExtn)}。
+兩步：按名查成員（走 {nameof(ITypeInfo.TryGetMember)} 的惰性索引，O(1)）→ 讀值判據交給 {nameof(Member)}。
 ]
 """)]
 	public static partial bool TryGet(this ITypeInfo z, obj? O, str Name, out obj? V){
@@ -23,8 +23,8 @@ public static partial class ITypeInfoExtn{
 		if(z is null || !z.TryGetMember(Name, out var M)){
 			return false;
 		}
-		// step 2: 讀值的判據（成員自身能力、實例型別、實例可空）由 MemberExtn 收口。
-		return MemberExtn.TryGet(M, O, out V);
+		// step 2: 讀值的判據（成員自身能力、實例型別、實例可空）由 Member 收口。
+		return Member.TryGet(M, O, out V);
 	}
 
 	public static partial bool TryGet<T>(this ITypeInfo z, T O, str Name, out obj? V){
@@ -35,7 +35,7 @@ public static partial class ITypeInfoExtn{
 #Sum[見宣告處的說明。]
 
 #Descr[
-同上兩步；寫值判據交給 {nameof(MemberExtn)}，值型別不符照常拋、不吞成 false。
+同上兩步；寫值判據交給 {nameof(Member)}，值型別不符照常拋、不吞成 false。
 ]
 """)]
 	public static partial bool TrySet(this ITypeInfo z, obj? O, str Name, obj? V){
@@ -43,8 +43,8 @@ public static partial class ITypeInfoExtn{
 		if(z is null || !z.TryGetMember(Name, out var M)){
 			return false;
 		}
-		// step 2: 寫值的判據由 MemberExtn 收口。
-		return MemberExtn.TrySet(M, O, V);
+		// step 2: 寫值的判據由 Member 收口。
+		return Member.TrySet(M, O, V);
 	}
 
 	public static partial bool TrySet<T>(this ITypeInfo z, T O, str Name, obj? V){
@@ -53,4 +53,5 @@ public static partial class ITypeInfoExtn{
 
 
 }
+
 

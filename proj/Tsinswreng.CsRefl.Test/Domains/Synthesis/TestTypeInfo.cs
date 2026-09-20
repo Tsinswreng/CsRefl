@@ -30,7 +30,7 @@ public partial class TestSynthesis{
 
 		// 按名查成員：TryGetMember / GetMember。
 		T(Info.TryGetMember(nameof(PoUser.Age), out var MAge), "TryGetMember 命中");
-		T(MemberExtn.Name(Info.GetMember(nameof(PoUser.Age))) == nameof(PoUser.Age), "GetMember 取到 Age");
+		T(Member.Name(Info.GetMember(nameof(PoUser.Age))) == nameof(PoUser.Age), "GetMember 取到 Age");
 		T(!Info.TryGetMember("NoSuch", out _), "未知名字返回 false");
 
 		// 實例工廠：判據就是 CreateObject 是否為 null。
@@ -67,4 +67,5 @@ public partial class TestSynthesis{
 		reg.Register(nameof(TypeInfoOps), TypeInfoOps!);
 	}
 }
+
 

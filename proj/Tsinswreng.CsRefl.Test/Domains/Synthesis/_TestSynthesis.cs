@@ -13,7 +13,7 @@ namespace Tsinswreng.CsRefl.Test.Domains.Synthesis;
 /// 分部文件按【庫的對外層級】劃分，一層一檔，檔內把同一操作的兩種寫法並排：
 /// + TestFacade——門面層 ITypeInfoSrcExtn（調用方的起點，GetInfo/GetMember/TryGet…）；
 /// + TestTypeInfo——型別元資料層 ITypeInfo／ITypeInfoExtn（拿到 Info 之後的讀寫）；
-/// + TestMemberExtn——成員層 MemberExtn（成員本體就是官方物件，這層沒有泛型版）；
+/// + TestMember——成員層 Member（成員本體就是官方物件，這層沒有泛型版）；
 /// + TestInstDict——視圖層 IInstDict／InstDict（ToInstDict 的兩種寫法與讀寫口徑）；
 /// + TestBizFlow——端到端：把上面幾層串成一段業務流程（落庫與回填）。
 ///
@@ -37,7 +37,7 @@ public partial class TestSynthesis:ITester{
 	/// 層三：成員層——成員本體（官方物件）上的操作。
 	public partial Task<nil> MemberOps(obj? O);
 	/// 註冊層三用例。
-	public partial void RegisterMemberExtn(ITestNode Node);
+	public partial void RegisterMember(ITestNode Node);
 
 	/// 層四：視圖層——把物件當字典用。
 	public partial Task<nil> DictView(obj? O);
@@ -49,3 +49,4 @@ public partial class TestSynthesis:ITester{
 	/// 註冊端到端用例。
 	public partial void RegisterBizFlow(ITestNode Node);
 }
+

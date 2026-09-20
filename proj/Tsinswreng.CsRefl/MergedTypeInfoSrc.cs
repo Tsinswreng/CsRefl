@@ -138,3 +138,4 @@ Src.TryGetInfo(typeof(SomeUnregisteredType), out _);
 """)]
 	private partial IReadOnlyCollection<Type>? SnapshotTypes();
 }
+

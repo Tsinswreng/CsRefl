@@ -5,18 +5,18 @@ using System.Text.Json.Serialization.Metadata;
 using Tsinswreng.CsCore;
 
 [Doc($"""
-#Sum[{nameof(MemberExtn)} 的函數實現。]
+#Sum[{nameof(Member)} 的函數實現。]
 
 #Descr[
-只放函數實現：簽名在 `MemberExtn.Decl.cs`。
+只放函數實現：簽名在 `Member.Decl.cs`。
 
 這裡是全包唯一「分辨兩套來源成員」的地方：
 官方兩側沒有共同成員型別，故用 {nameof(MemberInfo)} 與 {nameof(JsonPropertyInfo)} 的模式匹配收口，
 調用方因此不必自己判來源。
 ]
 """)]
-public static partial class MemberExtn{
-	public static partial str Name(this obj? M){
+public static partial class Member{
+	public static partial str Name(obj? M){
 		// step 1: 兩側官方成員名不同，這裡是唯一的統一入口。
 		return M switch{
 			MemberInfo R => R.Name,
@@ -25,7 +25,7 @@ public static partial class MemberExtn{
 		};
 	}
 
-	public static partial Type? DeclaringType(this obj? M){
+	public static partial Type? DeclaringType(obj? M){
 		// step 1: 同上，宣告型別也各取各的。
 		return M switch{
 			MemberInfo R => R.DeclaringType,
@@ -34,7 +34,7 @@ public static partial class MemberExtn{
 		};
 	}
 
-	public static partial bool CanRead(this obj? M){
+	public static partial bool CanRead(obj? M){
 		// 兩側各用官方自己的那條判據，不引入第二套口徑。
 		return M switch{
 			// Json 側：官方本來就用 Get 是否為 null 表示可讀。
@@ -48,7 +48,7 @@ public static partial class MemberExtn{
 		};
 	}
 
-	public static partial bool CanWrite(this obj? M){
+	public static partial bool CanWrite(obj? M){
 		return M switch{
 			JsonPropertyInfo J => J.Set is not null,
 			PropertyInfo P => P.GetSetMethod() is not null,
@@ -57,7 +57,7 @@ public static partial class MemberExtn{
 		};
 	}
 
-	public static partial bool TryGet(this obj? M, obj? O, out obj? V){
+	public static partial bool TryGet(obj? M, obj? O, out obj? V){
 		V = default;
 		// step 1: 前置檢查——不可讀或沒有實例就沒有可讀的東西。
 		if(O is null || !M.CanRead()){
@@ -88,7 +88,7 @@ public static partial class MemberExtn{
 		}
 	}
 
-	public static partial bool TrySet(this obj? M, obj? O, obj? V){
+	public static partial bool TrySet(obj? M, obj? O, obj? V){
 		// step 1: 前置檢查——不可寫或沒有實例就沒有可寫的目標。
 		if(O is null || !M.CanWrite()){
 			return false;
@@ -119,7 +119,9 @@ public static partial class MemberExtn{
 	}
 
 	// 成員的宣告型別：先佔位，日後再填（反射側 PropertyInfo.PropertyType／FieldInfo.FieldType、Json 側 PropertyType）。
-	public static partial Type? PropertyType(this obj? M){
+	public static partial Type? PropertyType(obj? M){
 		throw new NotImplementedException();
 	}
 }
+
+

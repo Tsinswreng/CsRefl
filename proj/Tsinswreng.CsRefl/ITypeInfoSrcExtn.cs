@@ -114,7 +114,7 @@ Info.Type;   // typeof(PoUser)
 
 ```csharp
 var M = Src.GetMember(typeof(PoUser), nameof(PoUser.Age));
-// M 是官方成員物件；MemberExtn.Name(M) 是 "Age"、MemberExtn.DeclaringType(M) 是 typeof(PoUser)。
+// M 是官方成員物件；Member.Name(M) 是 "Age"、Member.DeclaringType(M) 是 typeof(PoUser)。
 
 Src.GetMember(typeof(PoUser), "NoSuch");
 // 拋 KeyNotFoundException，訊息含該型別的可用成員名（可直接拿去排查拼錯的名字）。
@@ -147,7 +147,7 @@ JsonOnly.GetMember(typeof(PoNoCtor), nameof(PoNoCtor.X));
 
 ```csharp
 var M = Src.GetMember<PoUser>(nameof(PoUser.Age));
-MemberExtn.PropertyType(M);   // typeof(i32)
+Member.PropertyType(M);   // typeof(i32)
 ```
 
 等於 `Src.GetMember(typeof(PoUser), nameof(PoUser.Age))`。
@@ -167,7 +167,7 @@ MemberExtn.PropertyType(M);   // typeof(i32)
 
 ```csharp
 if(Src.TryGetMember(typeof(PoUser), Name, out var M)){
-	// 命中：M 是官方成員物件，直接交給 MemberExtn 問名字/型別/可讀可寫。
+	// 命中：M 是官方成員物件，直接交給 Member 問名字/型別/可讀可寫。
 }
 
 Src.TryGetMember(typeof(PoUser), "NoSuch", out _);
@@ -202,7 +202,7 @@ Src.TryGetMember(null, "Age", out _);
 
 ```csharp
 if(Src.TryGetMember<PoUser>(nameof(PoUser.Age), out var M)){
-	MemberExtn.CanWrite(M);   // true
+	Member.CanWrite(M);   // true
 }
 Src.TryGetMember<PoUser>("NoSuch", out _);   // false
 ```
@@ -539,6 +539,7 @@ Src.AssignFromDict<PoUser>(User, new Dictionary<str, obj?>{ ["NoSuch"] = 1 });
 	public static partial ResAssignFromDict AssignFromDict<T>(this ITypeInfoSrc z, T O, IEnumerable<KeyValuePair<str, obj?>> Dict);
 
 }
+
 
 
 

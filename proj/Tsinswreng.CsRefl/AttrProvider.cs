@@ -17,10 +17,10 @@ using Tsinswreng.CsCore;
 （反射側成員本身就是它，Json 側取官方 {nameof(JsonPropertyInfo.AttributeProvider)}），
 名字與「取不到返回 null」的約定都照官方。
 
-實現見 `AttrProviderExtn.Impl.cs`。
+實現見 `AttrProvider.Impl.cs`。
 ]
 """)]
-public static partial class AttrProviderExtn{
+public static partial class AttrProvider{
 	[Doc($"""
 #Sum[取本提供者上第一個 `TAttr` 型別的特性；沒有返回 null。]
 
@@ -41,5 +41,6 @@ public static partial class AttrProviderExtn{
 `Age` 上沒標故返回 null。
 ]
 """)]
-	public static partial TAttr? GetCustomAttribute<TAttr>(this ICustomAttributeProvider? z) where TAttr:Attribute;
+	public static partial TAttr? GetCustomAttribute<TAttr>(ICustomAttributeProvider? Provider) where TAttr:Attribute;
 }
+

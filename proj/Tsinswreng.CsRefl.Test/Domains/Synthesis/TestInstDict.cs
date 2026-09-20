@@ -78,3 +78,4 @@ public partial class TestSynthesis{
 		reg.Register(nameof(DictView), DictView!);
 	}
 }
+

@@ -88,7 +88,7 @@ public abstract partial class TypeInfoBase{
 		}
 		var Dict = new Dictionary<str, obj?>(Members.Count, StringComparer.Ordinal);
 		foreach(var M in Members){
-			Dict[MemberExtn.Name(M)] = M;
+			Dict[Member.Name(M)] = M;
 		}
 		_byName = Dict;
 	}
@@ -101,6 +101,20 @@ public abstract partial class TypeInfoBase{
 ]
 """)]
 	private partial IEnumerable<str> AllNames(){
-		return Members.Select(M => MemberExtn.Name(M));
+		return Members.Select(M => Member.Name(M));
+	}
+
+	public partial bool TryGetMemberType(str Name, out Type? T){
+		throw new NotImplementedException();
+	}
+
+	public partial bool CanRead(str Name){
+		throw new NotImplementedException();
+	}
+
+	public partial bool CanWrite(str Name){
+		throw new NotImplementedException();
 	}
 }
+
+

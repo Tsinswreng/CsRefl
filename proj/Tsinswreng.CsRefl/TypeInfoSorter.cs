@@ -68,3 +68,4 @@ var Sorted = TypeInfoSorter.SortEtDedup(typeof(PoUser), Collected);
 """)]
 	private static partial int DepthOf(Type Root, Type Declaring);
 }
+

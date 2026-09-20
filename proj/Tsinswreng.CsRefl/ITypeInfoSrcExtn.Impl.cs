@@ -101,7 +101,7 @@ public static partial class ITypeInfoSrcExtn{
 
 #Descr[
 查型別、按名取成員、讀值三步合一；
-成員自身的讀值判據（可讀性、實例型別）由 {nameof(MemberExtn)} 收口，兩套來源一條口徑。
+成員自身的讀值判據（可讀性、實例型別）由 {nameof(Member)} 收口，兩套來源一條口徑。
 ]
 """)]
 	public static partial bool TryGet(this ITypeInfoSrc z, Type Type, obj? O, str Name, out obj? R){
@@ -111,8 +111,8 @@ public static partial class ITypeInfoSrcExtn{
 			return false;
 
 		}
-		// 成員自身的讀值判據由 MemberExtn 收口（兩套來源一條口徑）。
-		return MemberExtn.TryGet(M, O, out R);
+		// 成員自身的讀值判據由 Member 收口（兩套來源一條口徑）。
+		return Member.TryGet(M, O, out R);
 	}
 
 	public static partial bool TryGet<T>(this ITypeInfoSrc z, T O, str Name, out obj? V){
@@ -123,7 +123,7 @@ public static partial class ITypeInfoSrcExtn{
 #Sum[見宣告處的說明。]
 
 #Descr[
-同上三步合一；寫值判據由 {nameof(MemberExtn)} 收口（值型別不符照常拋）。
+同上三步合一；寫值判據由 {nameof(Member)} 收口（值型別不符照常拋）。
 ]
 """)]
 	public static partial bool TrySet(this ITypeInfoSrc z, Type Type, obj? O, str Name, obj? V){
@@ -132,8 +132,8 @@ public static partial class ITypeInfoSrcExtn{
 			return false;
 
 		}
-		// 成員自身的寫值判據由 MemberExtn 收口（值型別不符照常拋）。
-		return MemberExtn.TrySet(M, O, V);
+		// 成員自身的寫值判據由 Member 收口（值型別不符照常拋）。
+		return Member.TrySet(M, O, V);
 	}
 
 	public static partial bool TrySet<T>(this ITypeInfoSrc z, T O, str Name, obj? V){
@@ -215,11 +215,11 @@ public static partial class ITypeInfoSrcExtn{
 				);
 			}
 			// step 3: 只讀成員按已定語義跳過，不算錯。
-			if(!MemberExtn.CanWrite(M)){
+			if(!Member.CanWrite(M)){
 				continue;
 			}
 			// step 4: 寫入；值型別不符時拋（那是調用方的 bug，不是「不可寫」）。
-			if(!MemberExtn.TrySet(M, O, V)){
+			if(!Member.TrySet(M, O, V)){
 				throw new InvalidOperationException($"寫入成員 {T.FullName}.{K} 失敗（值型別不符）。");
 			}
 		}
@@ -231,6 +231,7 @@ public static partial class ITypeInfoSrcExtn{
 	}
 
 }
+
 
 
 

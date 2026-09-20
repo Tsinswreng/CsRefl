@@ -93,3 +93,4 @@ new JsonTypeInfoInfo(null!);
 """)]
 	public override partial obj? MkInst();
 }
+

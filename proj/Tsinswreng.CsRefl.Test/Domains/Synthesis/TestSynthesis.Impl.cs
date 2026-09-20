@@ -15,9 +15,10 @@ public partial class TestSynthesis{
 		Node.IsParallelRecursive = false;
 		RegisterFacade(Node);
 		RegisterTypeInfo(Node);
-		RegisterMemberExtn(Node);
+		RegisterMember(Node);
 		RegisterInstDict(Node);
 		RegisterBizFlow(Node);
 		return Node;
 	}
 }
+

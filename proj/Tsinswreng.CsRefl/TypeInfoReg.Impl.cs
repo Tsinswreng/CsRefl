@@ -51,3 +51,4 @@ public partial class TypeInfoReg{
 		return _map.TryRemove(Type, out _);
 	}
 }
+
