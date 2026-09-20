@@ -44,3 +44,4 @@ public static partial class AttrProvider{
 	public static partial TAttr? GetCustomAttribute<TAttr>(ICustomAttributeProvider? Provider) where TAttr:Attribute;
 }
 
+

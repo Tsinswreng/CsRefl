@@ -31,7 +31,7 @@ public partial class TestTypeInfo{
 
 		// 去重後讀寫照常作用在實例上。
 		var Ext = new PoUserExt();
-		T(Id.TrySet(Ext, 42L) && Ext.Id == 42, "去重後的 Id 應能寫回實例");
+		T(Member.TrySet(Id, Ext, 42L) && Ext.Id == 42, "去重後的 Id 應能寫回實例");
 
 		// 名清單不得出現重複鍵。
 		T(Info.ReadableNames.Count == 3, $"可讀名應有 3 個，實際 {Info.ReadableNames.Count}");
@@ -53,6 +53,7 @@ public partial class TestTypeInfo{
 		}
 	}
 }
+
 
 
 

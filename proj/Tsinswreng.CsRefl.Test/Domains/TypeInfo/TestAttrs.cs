@@ -27,7 +27,7 @@ public partial class TestTypeInfo{
 
 		T(((Level as JsonPropertyInfo)?.AttributeProvider) is not null, "每個成員都應給出官方特性提供者");
 
-		var Attr = ((Level as JsonPropertyInfo)?.AttributeProvider ?? (Level as MemberInfo)).GetCustomAttribute<MyDemoAttr>();
+		var Attr = AttrProvider.GetCustomAttribute<MyDemoAttr>((Level as JsonPropertyInfo)?.AttributeProvider ?? (Level as MemberInfo));
 		T(Attr is not null, $"{(IsRefl ? "反射" : "Json")}源應能取到 Level 上的 MyDemoAttr");
 		T(Attr!.Tag == "優等級", $"特性的 Tag 應是 優等級，實際 {Attr.Tag}");
 		T(Attr.Rank == 2, $"特性的 Rank 應是 2，實際 {Attr.Rank}");
@@ -36,8 +36,8 @@ public partial class TestTypeInfo{
 		T(((Level as JsonPropertyInfo)?.AttributeProvider)!.IsDefined(typeof(MyDemoAttr), false), "IsDefined 應為 true");
 		T(((Level as JsonPropertyInfo)?.AttributeProvider)!.GetCustomAttributes(typeof(MyDemoAttr), false).Length == 1,
 			"應恰好取到 1 個 MyDemoAttr");
-		T(((Level as JsonPropertyInfo)?.AttributeProvider ?? (Level as MemberInfo)).GetCustomAttribute<ObsoleteAttribute>() is null, "不存在的特性應取到 null");
-		T(((Info.GetMember("Age") as JsonPropertyInfo)?.AttributeProvider ?? (Info.GetMember("Age") as MemberInfo)).GetCustomAttribute<MyDemoAttr>() is null,
+		T(AttrProvider.GetCustomAttribute<ObsoleteAttribute>((Level as JsonPropertyInfo)?.AttributeProvider ?? (Level as MemberInfo)) is null, "不存在的特性應取到 null");
+		T(AttrProvider.GetCustomAttribute<MyDemoAttr>((Info.GetMember("Age") as JsonPropertyInfo)?.AttributeProvider ?? (Info.GetMember("Age") as MemberInfo)) is null,
 			"沒標特性的成員應取到 null");
 
 		// 反射源還可從官方成員本體直接拿（同一份提供者）。
@@ -61,6 +61,7 @@ public partial class TestTypeInfo{
 		}
 	}
 }
+
 
 
 

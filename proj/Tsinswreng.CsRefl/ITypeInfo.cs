@@ -1,6 +1,7 @@
 namespace Tsinswreng.CsRefl;
 
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Text.Json.Serialization.Metadata;
 using Tsinswreng.CsCore;
 
@@ -252,5 +253,6 @@ Info.CanWrite("NoSuch");                // false
 """)]
 	obj? GetMember(str Name);
 }
+
 
 

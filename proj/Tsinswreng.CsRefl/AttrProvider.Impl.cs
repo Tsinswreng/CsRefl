@@ -14,12 +14,12 @@ using Tsinswreng.CsCore;
 public static partial class AttrProvider{
 	public static partial TAttr? GetCustomAttribute<TAttr>(ICustomAttributeProvider? Provider) where TAttr:Attribute{
 		// step 1: 提供者缺失（成員沒有元資料或沒給提供者）→ null，不拋。
-		if(z is null){
+		if(Provider is null){
 			return null;
 		}
 		// step 2: 直接轉官方 ICustomAttributeProvider.GetCustomAttributes；
 		// 第二個實參 false 與官方 MemberInfo.GetCustomAttribute<T>() 一致（不繼承）。
-		foreach(var A in z.GetCustomAttributes(typeof(TAttr), false)){
+		foreach(var A in Provider.GetCustomAttributes(typeof(TAttr), false)){
 			if(A is TAttr T){
 				return T;
 			}
@@ -27,4 +27,6 @@ public static partial class AttrProvider{
 		return null;
 	}
 }
+
+
 

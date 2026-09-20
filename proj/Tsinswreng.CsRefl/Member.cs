@@ -87,7 +87,7 @@ var Info = Src.GetInfo(typeof(PoUser));
 var User = new PoUser{ Age = 26 };
 
 var M = Info.GetMember(nameof(PoUser.Age));
-M.TryGet(User, out var V);
+TryGet(M, User, out var V);
 // true；V 是 boxed 的 i32 26。
 
 Info.GetMember(nameof(PoUser.Secret)).TryGet(User, out var S);   // true；V 是 "s"（只讀成員讀得到）
@@ -156,5 +156,6 @@ Member.PropertyType("不是成員");                            // null
 """)]
 	public static partial Type? PropertyType(obj? M);
 }
+
 
 

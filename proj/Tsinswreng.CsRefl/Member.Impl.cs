@@ -60,11 +60,11 @@ public static partial class Member{
 	public static partial bool TryGet(obj? M, obj? O, out obj? V){
 		V = default;
 		// step 1: 前置檢查——不可讀或沒有實例就沒有可讀的東西。
-		if(O is null || !M.CanRead()){
+		if(O is null || !CanRead(M)){
 			return false;
 		}
 		// step 2: 成員宣告在基類而實例是子類時判定為合格（繼承場景的正常用法）。
-		var D = M.DeclaringType();
+		var D = DeclaringType(M);
 		if(D is not null && !D.IsInstanceOfType(O)){
 			return false;
 		}
@@ -90,11 +90,11 @@ public static partial class Member{
 
 	public static partial bool TrySet(obj? M, obj? O, obj? V){
 		// step 1: 前置檢查——不可寫或沒有實例就沒有可寫的目標。
-		if(O is null || !M.CanWrite()){
+		if(O is null || !CanWrite(M)){
 			return false;
 		}
 		// step 2: 同上，繼承成員對子類實例合法。
-		var D = M.DeclaringType();
+		var D = DeclaringType(M);
 		if(D is not null && !D.IsInstanceOfType(O)){
 			return false;
 		}
@@ -123,5 +123,6 @@ public static partial class Member{
 		throw new NotImplementedException();
 	}
 }
+
 
 
