@@ -36,14 +36,12 @@ internal static partial class TypeInfoSorter{
 // TypeInfoBase 建構子內部：
 var Sorted = TypeInfoSorter.SortEtDedup(typeof(PoUser), Collected);
 // Sorted 依次是 Id、Name、Age、…、Note：基類 PoUserBase 宣告的 Id、Name 排在最前。
-// 另一條鏈上子類用 new 遮蔽了 Id：輸出是 Name、Id、Age，Id 只出現一次、仍在第 2 位。
 ```
 
-去重時離實例最近的宣告勝出，且佔被遮蔽成員的位置；
-實現是防禦性的（現行兩套來源都不產生重複名，但門面對外承諾「成員名唯一」，不靠來源守規矩）。
+去重時離實例最近的宣告勝出，且佔被遮蔽成員的位置。
 ]
 """)]
-	public static partial IReadOnlyList<obj?> SortEtDedup(Type Root, IReadOnlyList<obj?> Members);
+	public static partial IReadOnlyList<IMemberInfo> SortEtDedup(Type Root, IReadOnlyList<IMemberInfo> Members);
 
 	// ---- 私有輔助（實現見 TypeInfoSorter.Impl.cs）----
 
@@ -55,17 +53,13 @@ var Sorted = TypeInfoSorter.SortEtDedup(typeof(PoUser), Collected);
 #Rtn[繼承深度]
 
 #Descr[
-聲明型別若不是 `Root` 本身也不是它的基類
-（例如手工註冊表塞入的畸形元資料、或成員聲明在接口上），
-繼承鏈走不到 `Root`，此時返回整條鏈的長度——
-順序因此不可靠，但不會死循環
-（接口與根型別的 {nameof(Type.BaseType)} 為 null，走一步即退出）。
-
 實測：查 `PoUser` 時，基類 `PoUserBase` 宣告的 `Id` 與 `Name` 得 1，
-`PoUser` 自己宣告的 `Age` 得 0，故降序排列後 `Id`、`Name` 排在 `Age` 之前；
-直接以 `PoUserBase` 為 `Root` 時，`Id` 得 0。
+`PoUser` 自己宣告的 `Age` 得 0，故降序排列後 `Id`、`Name` 排在 `Age` 之前。
 ]
 """)]
 	private static partial int DepthOf(Type Root, Type Declaring);
 }
+
+
+
 

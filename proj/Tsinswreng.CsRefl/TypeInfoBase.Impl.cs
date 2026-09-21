@@ -19,7 +19,7 @@ public abstract partial class TypeInfoBase{
 	protected partial TypeInfoBase(
 		Type Type,
 		JsonTypeInfoKind Kind,
-		IReadOnlyList<obj?> Members,
+		IReadOnlyList<IMemberInfo> Members,
 		Type? ElementType,
 		Type? KeyType
 	){
@@ -41,7 +41,7 @@ public abstract partial class TypeInfoBase{
 
 #See[{nameof(ITypeInfo.TryGetMember)}]
 """)]
-	public partial bool TryGetMember(str Name, out obj? M){
+	public partial bool TryGetMember(str Name, out IMemberInfo? M){
 		M = null;
 		// step 1: 名字為 null 時直接返回 false（成員名不可能是 null，故這不是「查不到」而是「沒法查」）。
 		if(Name is null){
@@ -57,7 +57,7 @@ public abstract partial class TypeInfoBase{
 
 #See[{nameof(ITypeInfo.GetMember)}]
 """)]
-	public partial obj? GetMember(str Name){
+	public partial IMemberInfo GetMember(str Name){
 		ArgumentNullException.ThrowIfNull(Name);
 		// step 1: 命中就返回；未命中才付「列可用名」的代價（錯誤路徑）。
 		if(TryGetMember(Name, out var M)){
@@ -86,9 +86,9 @@ public abstract partial class TypeInfoBase{
 		if(_byName is not null){
 			return;
 		}
-		var Dict = new Dictionary<str, obj?>(Members.Count, StringComparer.Ordinal);
+		var Dict = new Dictionary<str, IMemberInfo>(Members.Count, StringComparer.Ordinal);
 		foreach(var M in Members){
-			Dict[Member.Name(M)] = M;
+			Dict[M.Name] = M;
 		}
 		_byName = Dict;
 	}
@@ -101,7 +101,7 @@ public abstract partial class TypeInfoBase{
 ]
 """)]
 	private partial IEnumerable<str> AllNames(){
-		return Members.Select(M => Member.Name(M));
+		return Members.Select(M => M.Name);
 	}
 
 	public partial bool TryGetMemberType(str Name, out Type? T){
@@ -116,5 +116,12 @@ public abstract partial class TypeInfoBase{
 		throw new NotImplementedException();
 	}
 }
+
+
+
+
+
+
+
 
 

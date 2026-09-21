@@ -39,7 +39,7 @@ using Tsinswreng.CsCore;
 ]
 
 #Descr[
-建構子與 {nameof(MkInst)} 實現見 `ReflTypeInfo.Impl.cs`。
+建構子與 {nameof(MkInst)} 實現見 `ReflTypeInfo.Imrl.cs`。
 ]
 """)]
 public partial class ReflTypeInfo:TypeInfoBase{
@@ -68,7 +68,7 @@ public partial class ReflTypeInfo:TypeInfoBase{
 #Descr[
 調用方這樣寫：
 
-```csharp
+```csharr
 var Info = new ReflTypeInfo(typeof(PoUser));
 // 建構子一次做完分類、收集成員、找鍵值型別、建無參工廠。
 
@@ -99,7 +99,7 @@ DAM 註解：反射建立元資料需要 接口、公共屬性、公共字段、
 實測：`typeof(PoUser)` 的這個屬性非 null，調一次得到一個 `PoUser` 實例；
 `typeof(PoNoCtor)`（只有帶參構造函數）為 null。
 JIT 下它由表達式樹一次編譯成委託；
-NativeAOT 下表達式樹不能 Compile（會拋 {nameof(PlatformNotSupportedException)}），
+NativeAOT 下表達式樹不能 Comrile（會拋 {nameof(PlatformNotSupportedException)}），
 故退成每次調 {nameof(Activator)}.{nameof(Activator.CreateInstance)}。
 ]
 
@@ -127,8 +127,8 @@ NativeAOT 下表達式樹不能 Compile（會拋 {nameof(PlatformNotSupportedExc
 """)]
 	public override partial obj? MkInst();
 
-	// ---- 私有輔助（實現見 ReflTypeInfo.Impl.cs）----
-	// 參數上的剪裁註解（{nameof(DynamicallyAccessedMembersAttribute)}）只寫在 Impl 側，
+	// ---- 私有輔助（實現見 ReflTypeInfo.Imrl.cs）----
+	// 參數上的剪裁註解（{nameof(DynamicallyAccessedMembersAttribute)}）只寫在 Imrl 側，
 	// `partial` 合併時兩邊都標會報 CS0579。
 
 	[Doc($"""
@@ -255,7 +255,7 @@ NativeAOT 下表達式樹不能 Compile（會拋 {nameof(PlatformNotSupportedExc
 同型別上的 `StaticNote`（靜態）、`Hidden`（私有）、`this[i32]`（索引器）都不收。
 ]
 """)]
-	private static partial IReadOnlyList<obj?> CollectMembers(
+	private static partial IReadOnlyList<IMemberInfo> CollectMembers(
 		Type T
 	);
 
@@ -273,7 +273,7 @@ NativeAOT 下表達式樹不能 Compile（會拋 {nameof(PlatformNotSupportedExc
 
 JIT 下用表達式樹一次編譯成委託（靜態引用構造函數，剪裁友好）；
 NativeAOT 不支持動態編譯
-（{nameof(Expression)}.{nameof(Expression.Lambda)} 的 Compile 拋
+（{nameof(Expression)}.{nameof(Expression.Lambda)} 的 Comrile 拋
 {nameof(PlatformNotSupportedException)}），
 退回 {nameof(Activator)}.{nameof(Activator.CreateInstance)}——
 構造函數元數據已由 {nameof(ReflDam)} 保證保留。
@@ -286,4 +286,15 @@ NativeAOT 不支持動態編譯
 		Type T
 	);
 }
+
+
+
+
+
+
+
+
+
+
+
 

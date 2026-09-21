@@ -38,7 +38,7 @@ public partial class TestSynthesis{
 
 		// GetMember / TryGetMember。
 		var M1 = Src.GetMember(typeof(PoUser), nameof(PoUser.Age));
-		T(Member.Name(M1) == nameof(PoUser.Age), "GetMember 應取到 Age 成員");
+		T(M1.Name == nameof(PoUser.Age), "GetMember 應取到 Age 成員");
 		T(Src.TryGetMember(typeof(PoUser), nameof(PoUser.Level), out _), "TryGetMember 命中");
 		T(!Src.TryGetMember(typeof(PoUser), "NoSuch", out _), "TryGetMember 未命中返回 false");
 
@@ -69,7 +69,7 @@ public partial class TestSynthesis{
 		T(ReferenceEquals(Info1, Info2), "同一來源上兩種寫法取到同一份實例（來源自己緩存）");
 
 		var M2 = Src.GetMember<PoUser>(nameof(PoUser.Age));
-		T(Member.Name(M2) == nameof(PoUser.Age), "GetMember<PoUser> 應取到 Age 成員");
+		T(M2.Name == nameof(PoUser.Age), "GetMember<PoUser> 應取到 Age 成員");
 		T(Src.TryGetMember<PoUser>(nameof(PoUser.Level), out _), "TryGetMember<T> 命中");
 		T(!Src.TryGetMember<PoUser>("NoSuch", out _), "TryGetMember<T> 未命中返回 false");
 
@@ -94,4 +94,9 @@ public partial class TestSynthesis{
 		reg.Register(nameof(FacadeOps), FacadeOps!);
 	}
 }
+
+
+
+
+
 

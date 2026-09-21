@@ -29,28 +29,28 @@ public partial class TestTypeInfo{
 		var User = new PoUser{ Id = 7, Name = "小明", Age = 30 };
 
 		// 讀：Age=30、Email=null（可空未賦值）。
-		T(Member.TryGet(Info.GetMember("Age"), User, out var AgeR), "讀 Age 應成功");
+		T(Info.GetMember("Age").TryGet(User, out var AgeR), "讀 Age 應成功");
 		T((i32)AgeR! == 30, "Age 讀值應為 30");
-		T(Member.TryGet(Info.GetMember("Email"), User, out var EmailR), "讀 Email 應成功");
+		T(Info.GetMember("Email").TryGet(User, out var EmailR), "讀 Email 應成功");
 		T(EmailR is null, "Email 未賦值應讀到 null");
-		T(Member.TryGet(Info.GetMember("Secret"), User, out var SecretR), "讀 Secret 應成功");
+		T(Info.GetMember("Secret").TryGet(User, out var SecretR), "讀 Secret 應成功");
 		T((str)SecretR! == "s", "Secret 讀值應為初始值 s");
 
 		// 寫：Age、Name（繼承成員也寫得動）。
-		T(Member.TrySet(Info.GetMember("Age"), User, 31), "寫 Age 應成功");
-		T(Member.TryGet(Info.GetMember("Age"), User, out var AgeR2) && (i32)AgeR2! == 31, "寫後 Age 應為 31");
-		T(Member.TrySet(Info.GetMember("Name"), User, "阿強"), "寫繼承成員 Name 應成功");
+		T(Info.GetMember("Age").TrySet(User, 31), "寫 Age 應成功");
+		T(Info.GetMember("Age").TryGet(User, out var AgeR2) && (i32)AgeR2! == 31, "寫後 Age 應為 31");
+		T(Info.GetMember("Name").TrySet(User, "阿強"), "寫繼承成員 Name 應成功");
 		T(User.Name == "阿強", "Name 應已寫回物件");
 
 		// 只讀成員寫不動。
-		T(!Member.TrySet(Info.GetMember("Secret"), User, "x"), "寫只讀 Secret 應返回 false");
+		T(!Info.GetMember("Secret").TrySet(User, "x"), "寫只讀 Secret 應返回 false");
 
 		// 只寫成員讀不到（它照樣在成員表與 WritableNames 裏）。
-		T(!Member.TryGet(Info.GetMember("Token"), User, out _), "讀只寫 Token 應返回 false");
+		T(!Info.GetMember("Token").TryGet(User, out _), "讀只寫 Token 應返回 false");
 
 		// 實例型別不符 / null 實例。
-		T(!Member.TryGet(Info.GetMember("Age"), null, out _), "null 實例讀應返回 false");
-		T(!Member.TryGet(Info.GetMember("Age"), new PoColor(), out _), "錯誤型別實例讀應返回 false");
+		T(!Info.GetMember("Age").TryGet(null, out _), "null 實例讀應返回 false");
+		T(!Info.GetMember("Age").TryGet(new PoColor(), out _), "錯誤型別實例讀應返回 false");
 	}
 
 	/// 見聲明處的說明。
@@ -72,4 +72,10 @@ public partial class TestTypeInfo{
 		}
 	}
 }
+
+
+
+
+
+
 

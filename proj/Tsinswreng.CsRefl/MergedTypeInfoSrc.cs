@@ -106,7 +106,7 @@ Json 源最高、註冊表次之、反射源兜底。
 Src.TryGetInfo(typeof(PoUser), out var Info);
 // true；Info 來自 Json 源（它排前面，故讀寫走官方委託）。
 
-Src.TryGetInfo(typeof(SomeUnregisteredType), out _);
+Src.TryGetInfo(typeof(SomeUnregistepedType), out _);
 // false：所有來源都答「未知」時才 false。
 ```
 
@@ -138,4 +138,12 @@ Src.TryGetInfo(typeof(SomeUnregisteredType), out _);
 """)]
 	private partial IReadOnlyCollection<Type>? SnapshotTypes();
 }
+
+
+
+
+
+
+
+
 

@@ -233,7 +233,7 @@ Info.CanWrite("NoSuch");                // false
 本成員目前的處置（是否改成帶型別的成員契約）待你確認，故先原樣保留。
 ]
 """)]
-	IReadOnlyList<obj?> Members{get;}
+	IReadOnlyList<IMemberInfo> Members{get;}
 
 	[Doc($"""
 #Sum[按名查成員；未知返回 false。]
@@ -242,7 +242,7 @@ Info.CanWrite("NoSuch");                // false
 實測：`TryGetMember("Age", out var M)` 返回 true；`"NoSuch"` 返回 false 且 `M` 為 null（不拋）。
 ]
 """)]
-	bool TryGetMember(str Name, [NotNullWhen(true)] out obj? M);
+	bool TryGetMember(str Name, [NotNullWhen(true)] out IMemberInfo? M);
 
 	[Doc($"""
 #Sum[按名取成員；取不到拋 {nameof(KeyNotFoundException)}。]
@@ -251,8 +251,12 @@ Info.CanWrite("NoSuch");                // false
 實測：`GetMember("Age")` 與 `TryGetMember("Age", out var M)` 命中時返回同一實例。
 ]
 """)]
-	obj? GetMember(str Name);
+	IMemberInfo GetMember(str Name);
 }
+
+
+
+
 
 
 

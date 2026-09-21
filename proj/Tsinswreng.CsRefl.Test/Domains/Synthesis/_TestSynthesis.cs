@@ -13,7 +13,7 @@ namespace Tsinswreng.CsRefl.Test.Domains.Synthesis;
 /// 分部文件按【庫的對外層級】劃分，一層一檔，檔內把同一操作的兩種寫法並排：
 /// + TestFacade——門面層 ITypeInfoSrcExtn（調用方的起點，GetInfo/GetMember/TryGet…）；
 /// + TestTypeInfo——型別元資料層 ITypeInfo／ITypeInfoExtn（拿到 Info 之後的讀寫）；
-/// + TestMember——成員層 Member（成員本體就是官方物件，這層沒有泛型版）；
+/// + TestMember——成員層 IMemberInfo（成員物件是官方成員物件的配接器，這層沒有泛型版）；
 /// + TestInstDict——視圖層 IInstDict／InstDict（ToInstDict 的兩種寫法與讀寫口徑）；
 /// + TestBizFlow——端到端：把上面幾層串成一段業務流程（落庫與回填）。
 ///

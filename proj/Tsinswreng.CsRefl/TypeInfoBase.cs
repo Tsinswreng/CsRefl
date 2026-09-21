@@ -67,7 +67,7 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 構造後本屬性不再變動，故按名索引與名清單可以安全緩存。
 ]
 """)]
-	public IReadOnlyList<obj?> Members{
+	public IReadOnlyList<IMemberInfo> Members{
 		get;
 	}
 
@@ -110,7 +110,7 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 不會看到半成品字典。
 ]
 """)]
-	private volatile Dictionary<str, obj?>? _byName;
+	private volatile Dictionary<str, IMemberInfo>? _byName;
 
 	[Doc($"""
 #Sum[可讀名清單緩存。]
@@ -173,7 +173,7 @@ public partial class MyInfo:TypeInfoBase{
 	protected partial TypeInfoBase(
 		Type Type,
 		JsonTypeInfoKind Kind,
-		IReadOnlyList<obj?> Members,
+		IReadOnlyList<IMemberInfo> Members,
 		Type? ElementType,
 		Type? KeyType
 	);
@@ -232,8 +232,8 @@ public partial class MyInfo:TypeInfoBase{
 		get{
 			// 惰性算一次並緩存：成員表構造後不變，故緩存安全（見 _readable）。
 			return _readable ??= Members
-				.Where(M => Member.CanRead(M))
-				.Select(M => Member.Name(M))
+				.Where(M => M.CanRead)
+				.Select(M => M.Name)
 				.ToList();
 		}
 	}
@@ -252,8 +252,8 @@ public partial class MyInfo:TypeInfoBase{
 		get{
 			// 同上，惰性算一次並緩存（見 _writable）。
 			return _writable ??= Members
-				.Where(M => Member.CanWrite(M))
-				.Select(M => Member.Name(M))
+				.Where(M => M.CanWrite)
+				.Select(M => M.Name)
 				.ToList();
 		}
 	}
@@ -267,14 +267,14 @@ public partial class MyInfo:TypeInfoBase{
 
 #See[{nameof(ITypeInfo.TryGetMember)}]
 """)]
-	public partial bool TryGetMember(str Name, [NotNullWhen(true)] out obj? M);
+	public partial bool TryGetMember(str Name, [NotNullWhen(true)] out IMemberInfo? M);
 
 	[Doc($"""
 #Sum[按名取成員；未知拋 {nameof(KeyNotFoundException)}，訊息含可用名清單。]
 
 #See[{nameof(ITypeInfo.GetMember)}]
 """)]
-	public partial obj? GetMember(str Name);
+	public partial IMemberInfo GetMember(str Name);
 
 	// ---- 私有輔助（實現見 TypeInfoBase.Impl.cs）----
 
@@ -314,5 +314,12 @@ O(n) 只發生在第一次（建一次 {nameof(Dictionary<,>)}），
 """)]
 	public partial bool CanWrite(str Name);
 }
+
+
+
+
+
+
+
 
 

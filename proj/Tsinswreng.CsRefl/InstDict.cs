@@ -9,7 +9,7 @@ using Tsinswreng.CsCore;
 兩條口徑（職責不同，不可混為一談）：
 
 + 出現口徑（{nameof(Keys)}、{nameof(Count)}、{nameof(Values)}、枚舉）：
-	{nameof(Member.CanRead)} 與 {nameof(Member.CanWrite)} 都為 true 的成員，
+	{nameof(IMemberInfo.CanRead)} 與 {nameof(IMemberInfo.CanWrite)} 都為 true 的成員，
 	順序 = 成員序；
 + 訪問口徑（索引器、{nameof(TryGetValue)}、{nameof(ContainsKey)}）：
 	讀只要求可讀、寫只要求可寫，判據都是成員表而不是鍵表。
@@ -440,3 +440,10 @@ new InstDict(User, null!);
 """)]
 	public partial InstDict(obj Target, ITypeInfo TypeInfo);
 }
+
+
+
+
+
+
+

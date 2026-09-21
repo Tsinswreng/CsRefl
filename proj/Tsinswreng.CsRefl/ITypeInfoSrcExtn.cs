@@ -114,7 +114,7 @@ Info.Type;   // typeof(PoUser)
 
 ```csharp
 var M = Src.GetMember(typeof(PoUser), nameof(PoUser.Age));
-// M 是官方成員物件；Member.Name(M) 是 "Age"、Member.DeclaringType(M) 是 typeof(PoUser)。
+// M 是官方成員物件；M.Name 是 "Age"、M.DeclaringType 是 typeof(PoUser)。
 
 Src.GetMember(typeof(PoUser), "NoSuch");
 // 拋 KeyNotFoundException，訊息含該型別的可用成員名（可直接拿去排查拼錯的名字）。
@@ -127,7 +127,7 @@ JsonOnly.GetMember(typeof(PoNoCtor), nameof(PoNoCtor.X));
 `Type` 的 DAM 註解：後端會把型別交給來源查元資料（反射來源需要成員元數據）。
 ]
 """)]
-	public static partial obj? GetMember(
+	public static partial IMemberInfo GetMember(
 		this ITypeInfoSrc z,
 		[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] Type Type,
 		str Name
@@ -147,13 +147,13 @@ JsonOnly.GetMember(typeof(PoNoCtor), nameof(PoNoCtor.X));
 
 ```csharp
 var M = Src.GetMember<PoUser>(nameof(PoUser.Age));
-Member.PropertyType(M);   // typeof(i32)
+M.PropertyType;   // typeof(i32)
 ```
 
 等於 `Src.GetMember(typeof(PoUser), nameof(PoUser.Age))`。
 ]
 """)]
-	public static partial obj? GetMember<[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] T>(this ITypeInfoSrc z, str Name);
+	public static partial IMemberInfo GetMember<[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] T>(this ITypeInfoSrc z, str Name);
 
 	[Doc($$"""
 #Sum[取成員的 Try 版：型別未註冊或成員不存在都返回 false。]
@@ -185,7 +185,7 @@ Src.TryGetMember(null, "Age", out _);
 		this ITypeInfoSrc z,
 		[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] Type Type,
 		str Name,
-		[NotNullWhen(true)] out obj? M
+		[NotNullWhen(true)] out IMemberInfo? M
 	);
 
 	[Doc($$"""
@@ -202,13 +202,13 @@ Src.TryGetMember(null, "Age", out _);
 
 ```csharp
 if(Src.TryGetMember<PoUser>(nameof(PoUser.Age), out var M)){
-	Member.CanWrite(M);   // true
+	M.CanWrite;   // true
 }
 Src.TryGetMember<PoUser>("NoSuch", out _);   // false
 ```
 ]
 """)]
-	public static partial bool TryGetMember<[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] T>(this ITypeInfoSrc z, str Name, out obj? M);
+	public static partial bool TryGetMember<[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] T>(this ITypeInfoSrc z, str Name, out IMemberInfo? M);
 
 	[Doc($$"""
 #Sum[按名讀值；失敗返回 false（不拋）。]
@@ -539,6 +539,16 @@ Src.AssignFromDict<PoUser>(User, new Dictionary<str, obj?>{ ["NoSuch"] = 1 });
 	public static partial ResAssignFromDict AssignFromDict<T>(this ITypeInfoSrc z, T O, IEnumerable<KeyValuePair<str, obj?>> Dict);
 
 }
+
+
+
+
+
+
+
+
+
+
 
 
 

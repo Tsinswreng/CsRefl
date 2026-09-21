@@ -19,7 +19,7 @@ public partial class TestFacadeExtn{
 		R("合成來源 取成員命中", async _ => {
 			var T = Assert.IsTrue;
 			var M = _merged.GetMember(typeof(PoUser), "Age");
-			T(Member.Name(M) == "Age" && Member.PropertyType(M) == typeof(i32), "應取到 Age 且型別正確");
+			T(M.Name == "Age" && M.PropertyType == typeof(i32), "應取到 Age 且型別正確");
 			return null;
 		});
 
@@ -54,6 +54,11 @@ public partial class TestFacadeExtn{
 		});
 	}
 }
+
+
+
+
+
 
 
 

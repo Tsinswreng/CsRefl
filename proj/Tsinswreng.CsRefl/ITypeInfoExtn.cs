@@ -7,10 +7,10 @@ using Tsinswreng.CsCore;
 
 #Descr[
 分工：按名查本身在 {nameof(ITypeInfo)}.{nameof(ITypeInfo.TryGetMember)} 上
-（它要按實例緩存、必須 O(1)），成員自身的讀寫判據在 {nameof(Member)} 上；
+（它要按實例緩存、必須 O(1)），成員自身的讀寫判據在 {nameof(IMemberInfo)} 上；
 本類只補中間那一格——手上有型別元資料、又只想要某個名字的值時，不必自己寫兩步。
 
-實測：不必先 {nameof(ITypeInfo.TryGetMember)} 再 {nameof(Member.TryGet)} 兩步，
+實測：不必先 {nameof(ITypeInfo.TryGetMember)} 再 {nameof(IMemberInfo.TryGet)} 兩步，
 直接 `Info.{nameof(TryGet)}(User, "Age", out var V)` 一次拿到值，
 當 `User.Age` 是 26 時 `V` 是 boxed 的 `i32` 26。
 
@@ -140,5 +140,10 @@ Info.TrySet<PoUser>(User, nameof(PoUser.Secret), "x");
 
 
 }
+
+
+
+
+
 
 

@@ -56,7 +56,7 @@ public static partial class ITypeInfoSrcExtn{
 型別在、成員名不存在時由 {nameof(ITypeInfo.GetMember)} 拋（訊息列出可用成員名）。
 ]
 """)]
-	public static partial obj? GetMember(this ITypeInfoSrc z, Type Type, str Name){
+	public static partial IMemberInfo GetMember(this ITypeInfoSrc z, Type Type, str Name){
 		ArgumentNullException.ThrowIfNull(z);
 		ArgumentNullException.ThrowIfNull(Type);
 		// step 1: 型別要能查到，否則這一步就沒法繼續（訊息指出是哪個來源）。
@@ -68,7 +68,7 @@ public static partial class ITypeInfoSrcExtn{
 		throw new KeyNotFoundException($"型別 {Type.FullName} 未註冊到來源 {z.GetType().Name}，無法取成員 {Name}。");
 	}
 
-	public static partial obj? GetMember<T>(this ITypeInfoSrc z, str Name){
+	public static partial IMemberInfo GetMember<T>(this ITypeInfoSrc z, str Name){
 		throw new NotImplementedException();
 	}
 
@@ -80,7 +80,7 @@ public static partial class ITypeInfoSrcExtn{
 型別內的按名查走 {nameof(ITypeInfo.TryGetMember)}（惰性索引，O(1)）。
 ]
 """)]
-	public static partial bool TryGetMember(this ITypeInfoSrc z, Type Type, str Name, out obj? M){
+	public static partial bool TryGetMember(this ITypeInfoSrc z, Type Type, str Name, out IMemberInfo? M){
 		M = null;
 		if(z is null || Type is null){
 			return false;
@@ -92,7 +92,7 @@ public static partial class ITypeInfoSrcExtn{
 		return Info.TryGetMember(Name, out M);
 	}
 
-	public static partial bool TryGetMember<T>(this ITypeInfoSrc z, str Name, out obj? M){
+	public static partial bool TryGetMember<T>(this ITypeInfoSrc z, str Name, out IMemberInfo? M){
 		throw new NotImplementedException();
 	}
 
@@ -101,7 +101,7 @@ public static partial class ITypeInfoSrcExtn{
 
 #Descr[
 查型別、按名取成員、讀值三步合一；
-成員自身的讀值判據（可讀性、實例型別）由 {nameof(Member)} 收口，兩套來源一條口徑。
+成員自身的讀值判據（可讀性、實例型別）由 {nameof(IMemberInfo)} 收口，兩套來源一條口徑。
 ]
 """)]
 	public static partial bool TryGet(this ITypeInfoSrc z, Type Type, obj? O, str Name, out obj? R){
@@ -112,7 +112,7 @@ public static partial class ITypeInfoSrcExtn{
 
 		}
 		// 成員自身的讀值判據由 Member 收口（兩套來源一條口徑）。
-		return Member.TryGet(M, O, out R);
+		return M.TryGet(O, out R);
 	}
 
 	public static partial bool TryGet<T>(this ITypeInfoSrc z, T O, str Name, out obj? V){
@@ -123,7 +123,7 @@ public static partial class ITypeInfoSrcExtn{
 #Sum[見宣告處的說明。]
 
 #Descr[
-同上三步合一；寫值判據由 {nameof(Member)} 收口（值型別不符照常拋）。
+同上三步合一；寫值判據由 {nameof(IMemberInfo)} 收口（值型別不符照常拋）。
 ]
 """)]
 	public static partial bool TrySet(this ITypeInfoSrc z, Type Type, obj? O, str Name, obj? V){
@@ -133,7 +133,7 @@ public static partial class ITypeInfoSrcExtn{
 
 		}
 		// 成員自身的寫值判據由 Member 收口（值型別不符照常拋）。
-		return Member.TrySet(M, O, V);
+		return M.TrySet(O, V);
 	}
 
 	public static partial bool TrySet<T>(this ITypeInfoSrc z, T O, str Name, obj? V){
@@ -215,11 +215,11 @@ public static partial class ITypeInfoSrcExtn{
 				);
 			}
 			// step 3: 只讀成員按已定語義跳過，不算錯。
-			if(!Member.CanWrite(M)){
+			if(!M.CanWrite){
 				continue;
 			}
 			// step 4: 寫入；值型別不符時拋（那是調用方的 bug，不是「不可寫」）。
-			if(!Member.TrySet(M, O, V)){
+			if(!M.TrySet(O, V)){
 				throw new InvalidOperationException($"寫入成員 {T.FullName}.{K} 失敗（值型別不符）。");
 			}
 		}
@@ -231,6 +231,15 @@ public static partial class ITypeInfoSrcExtn{
 	}
 
 }
+
+
+
+
+
+
+
+
+
 
 
 

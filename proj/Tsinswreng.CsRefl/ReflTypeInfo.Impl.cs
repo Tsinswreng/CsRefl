@@ -119,13 +119,13 @@ public partial class ReflTypeInfo{
 		);
 	}
 
-	private static partial IReadOnlyList<obj?> CollectMembers(
+	private static partial IReadOnlyList<IMemberInfo> CollectMembers(
 		[DynamicallyAccessedMembers(
 			DynamicallyAccessedMemberTypes.PublicProperties
 			| DynamicallyAccessedMemberTypes.PublicFields
 		)] Type T
 	){
-		var R = new List<obj?>();
+		var R = new List<IMemberInfo>();
 		// step 1: 公開實例屬性；索引器要排除（它需要下標，不是可按名讀寫的成員）。
 		foreach(var Prop in T.GetProperties(BindingFlags.Instance | BindingFlags.Public)){
 			if(Prop.GetIndexParameters().Length > 0){
@@ -133,11 +133,11 @@ public partial class ReflTypeInfo{
 			}
 			// 直接收官方 PropertyInfo：成員就是官方物件，本包不包一層
 			//（取名字、宣告型別、可讀可寫一律由 Member 收口）。
-			R.Add(Prop);
+			R.Add(new ReflMemberInfo(Prop));
 		}
 		// step 2: 公開實例字段；排在屬性段之後，構成「屬性在前、字段在後」的收集序。
 		foreach(var Fld in T.GetFields(BindingFlags.Instance | BindingFlags.Public)){
-			R.Add(Fld);
+			R.Add(new ReflMemberInfo(Fld));
 		}
 		return R;
 	}
@@ -175,4 +175,11 @@ public partial class ReflTypeInfo{
 		}
 	}
 }
+
+
+
+
+
+
+
 

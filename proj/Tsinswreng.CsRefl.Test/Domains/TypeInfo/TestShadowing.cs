@@ -20,18 +20,18 @@ public partial class TestTypeInfo{
 
 		T(Info.Members.Count == 3, $"應剩 3 個成員，實際 {Info.Members.Count}");
 		// 成員序：基類的 Name 在前，然後是派生類自己宣告的 Id、Age。
-		T(Member.Name(Info.Members[0]) == "Name"
-			&& Member.Name(Info.Members[1]) == "Id"
-			&& Member.Name(Info.Members[2]) == "Age",
-			$"成員序應是 Name、Id、Age，實際 {string.Join(",", Info.Members.Select(M => Member.Name(M)))}");
+		T(Info.Members[0].Name == "Name"
+			&& Info.Members[1].Name == "Id"
+			&& Info.Members[2].Name == "Age",
+			$"成員序應是 Name、Id、Age，實際 {string.Join(",", Info.Members.Select(M => M.Name))}");
 
 		// Id 只出現一次，且是派生類那份宣告。
 		var Id = Info.GetMember("Id");
-		T(Member.DeclaringType(Id) == typeof(PoUserExt), $"按名查到的 Id 應是派生類宣告，實際 {Member.DeclaringType(Id)?.Name ?? "null"}");
+		T(Id.DeclaringType == typeof(PoUserExt), $"按名查到的 Id 應是派生類宣告，實際 {Id.DeclaringType?.Name ?? "null"}");
 
 		// 去重後讀寫照常作用在實例上。
 		var Ext = new PoUserExt();
-		T(Member.TrySet(Id, Ext, 42L) && Ext.Id == 42, "去重後的 Id 應能寫回實例");
+		T(Id.TrySet(Ext, 42L) && Ext.Id == 42, "去重後的 Id 應能寫回實例");
 
 		// 名清單不得出現重複鍵。
 		T(Info.ReadableNames.Count == 3, $"可讀名應有 3 個，實際 {Info.ReadableNames.Count}");
@@ -53,6 +53,11 @@ public partial class TestTypeInfo{
 		}
 	}
 }
+
+
+
+
+
 
 
 

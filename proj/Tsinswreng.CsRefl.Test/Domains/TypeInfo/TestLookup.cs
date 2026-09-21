@@ -14,7 +14,7 @@ public partial class TestTypeInfo{
 		var T = Assert.IsTrue;
 
 		T(Info.TryGetMember("Age", out var Age), "TryGetMember 應命中 Age");
-		T(Member.PropertyType(Age!) == typeof(i32), "命中成員的型別應正確");
+		T(Age!.PropertyType == typeof(i32), "命中成員的型別應正確");
 
 		T(!Info.TryGetMember("NoSuch", out var Miss), "TryGetMember 對未知成員應返回 false");
 		T(Miss is null, "未命中時 out 應為 null");
@@ -47,6 +47,11 @@ public partial class TestTypeInfo{
 		}
 	}
 }
+
+
+
+
+
 
 
 
