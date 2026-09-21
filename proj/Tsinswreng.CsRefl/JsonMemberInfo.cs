@@ -17,7 +17,7 @@ public partial class JsonMemberInfo:IMemberInfo{
 
 #Descr[實測：`Age` 的這個屬性是官方 {nameof(JsonPropertyInfo)}。]
 """)]
-	private readonly JsonPropertyInfo _raw;
+	private readonly JsonPropertyInfo _raw;//TswgNote 違反命名規範, 而且爲甚麼不用public?
 
 	[Doc($"""
 #Sum[用官方成員物件建配接器。]

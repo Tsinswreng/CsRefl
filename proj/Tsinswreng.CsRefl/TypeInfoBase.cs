@@ -28,6 +28,7 @@ using Tsinswreng.CsCore;
 建構子與按名查詢的實現見 `TypeInfoBase.Impl.cs`。
 ]
 """)]
+//TswgNote 搞這個基類有甚麼用? 爲甚麼不直接實現接口?
 public abstract partial class TypeInfoBase:ITypeInfo{
 	[Doc($"""
 #Sum[本元資料對應的型別。]
@@ -110,7 +111,7 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 不會看到半成品字典。
 ]
 """)]
-	private volatile Dictionary<str, IMemberInfo>? _byName;
+	private volatile Dictionary<str, IMemberInfo>? _byName;//TswgNote 違反命名規範！沒一處寫得對的
 
 	[Doc($"""
 #Sum[可讀名清單緩存。]

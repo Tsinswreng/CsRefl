@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Text.Json.Serialization.Metadata;
 using Tsinswreng.CsCore;
 
+//TswgNote 註釋寫法不合格
 [Doc($"""
 #Sum[成員契約：成員名、宣告型別、成員型別、能力、讀寫——門面的成員層型別。]
 
@@ -39,7 +40,7 @@ M.DeclaringType;   // typeof(PoUser)
 #Descr[
 實測（`PoUser`）：`Age` → `typeof(i32)`；字段 `Note` → `typeof(str)`。
 ]
-""")]
+""")]//TswgNote
 	Type PropertyType{get;}
 
 	[Doc($"""
@@ -48,7 +49,7 @@ M.DeclaringType;   // typeof(PoUser)
 #Descr[
 實測：`Age` → `typeof(PoUser)`；繼承成員 `Id` → `typeof(PoUserBase)`。
 ]
-""")]
+""")]//TswgNote
 	Type DeclaringType{get;}
 
 	[Doc($"""

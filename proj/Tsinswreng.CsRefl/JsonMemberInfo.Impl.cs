@@ -12,6 +12,7 @@ public partial class JsonMemberInfo{
 		throw new NotImplementedException();
 	}
 
+	// 肏你媽臭屄這東西是給你寫到impl裏的嗎?
 	public partial str Name{ get{ throw new NotImplementedException(); } }
 	public partial Type PropertyType{ get{ throw new NotImplementedException(); } }
 	public partial Type DeclaringType{ get{ throw new NotImplementedException(); } }
@@ -27,6 +28,7 @@ public partial class JsonMemberInfo{
 		throw new NotImplementedException();
 	}
 
+	//TswgNote 肏你媽臭屄又脫褲子放屁了是吧? 而且這東西是給你寫到impl裏的嗎?
 	public partial obj Raw{ get{ return _raw; } }
 }
 
