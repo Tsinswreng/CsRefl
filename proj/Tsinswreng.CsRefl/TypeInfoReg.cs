@@ -37,31 +37,32 @@ public partial class TypeInfoReg:ITypeInfoReg{
 
 #Descr[
 實測：{nameof(Add)} 寫這張表，{nameof(TryGetInfo)} 讀這張表，
-{nameof(RegisteredTypes)} 取它的鍵快照，三者共用同一份狀態。
+{nameof(RegisteredTypes)} 交出這張表（鍵＝型別、值＝元資料），三者共用同一份狀態。
 
 實測：`{nameof(Add)}(typeof(PoUser), Info)` 之後
 `{nameof(TryGetInfo)}(typeof(PoUser), out var Got)` 返回 true 且 `Got` 就是剛才那個 `Info`（{nameof(ReferenceEquals)} 為 true）。
 ]
 """)]
+
 	public readonly ConcurrentDictionary<Type, ITypeInfo> _Map = new();
 
 	[Doc($"""
-#Sum[列舉已註冊型別（快照）。]
+#Sum[交出註冊表；鍵＝型別、值＝元資料。]
 
 #Descr[
-實測：登記 `typeof(PoUser)` 與 `typeof(PoColor)` 後返回 2 個 {nameof(Type)}；
-返回的是一份拷貝，之後再 {nameof(Add)} 不會改動已取出的那份清單。
-
-實測：登記 `typeof(PoUser)` 與 `typeof(PoColor)` 後 {nameof(RegisteredTypes)} 的
-{nameof(IReadOnlyCollection<int>)}.{nameof(IReadOnlyCollection<int>.Count)} 是 2，含這兩個型別；
-之後再 `{nameof(Add)}(typeof(PoNoCtor), Info)`，先前取出的那份仍是 2（快照不受影響）。
+取值＝{nameof(SnapshotTypes)} 的結果（一份拷貝）。
+賦值＝整張替換註冊表：以給的那份為準，不合併、不拷貝。
 ]
 
 #See[{nameof(ITypeInfoSrc.RegisteredTypes)}]
 """)]
-	public IReadOnlyCollection<Type>? RegisteredTypes{
+	public IDictionary<Type, ITypeInfo>? RegisteredTypes{
 		get{
 			return SnapshotTypes();
+		}
+		set{
+			// 佔位：本輪只改形狀，實現待寫（整張替換；照 ITypeInfoReg 的約定擋重複鍵）。
+			throw new NotImplementedException();
 		}
 	}
 
@@ -108,14 +109,13 @@ Reg.TryGetInfo(typeof(PoUser), out _);
 	// ---- 私有輔助（實現見 TypeInfoReg.Impl.cs）----
 
 	[Doc($"""
-#Sum[已註冊型別快照。]
+#Sum[已註冊表的快照。]
 
-#Rtn[型別列表；鍵的一份拷貝]
+#Rtn[型別 → 元資料；一份拷貝]
 
 #Descr[
-實測：登記 `typeof(PoUser)` 與 `typeof(PoColor)` 後得到 2 個 {nameof(Type)}；
-因為是拷貝，之後再 {nameof(Add)} 不會影響已經取出的那份。
+取完之後再 {nameof(Add)}／{nameof(Remove)} 不影響已經取出的那份。
 ]
 """)]
-	private partial IReadOnlyCollection<Type>? SnapshotTypes();
+	private partial IDictionary<Type, ITypeInfo>? SnapshotTypes();
 }

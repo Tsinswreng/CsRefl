@@ -109,7 +109,7 @@ public partial class InstDict:IInstDict{
 #Sum[視圖背後的物件。]
 
 #Descr[
-構造期賦值（自動屬性），之後不再改；與官方 `JsonObject` 那種「本體直接公開」同款寫法。
+構造期賦值（自動屬性）；可再賦值（換指另一個實例，形狀不變）。
 
 實測：`Dict["Level"] = 8` 之後 `User.Level` 就是 8，
 讀寫都落在這個物件上，視圖本身不持有成員值的副本。
@@ -119,13 +119,15 @@ public partial class InstDict:IInstDict{
 """)]
 	public obj? Target{
 		get;
+		set;
 	}
 
 	[Doc($"""
 #Sum[視圖所用到的型別元資料。]
 
 #Descr[
-構造期賦值（自動屬性），之後不再改。
+構造期賦值（自動屬性）；可再賦值＝換形狀來源——但鍵表是建構期算好的、不會跟著重建，
+故要換形狀就重建一份視圖。
 
 實測：其 {nameof(ITypeInfo.Type)} 是 `typeof(PoUser)`；
 鍵表與可讀可寫判據都從它現算，故換一份元資料建視圖，鍵集合也跟著變。
@@ -135,6 +137,7 @@ public partial class InstDict:IInstDict{
 """)]
 	public ITypeInfo TypeInfo{
 		get;
+		set;
 	}
 
 	[Doc($"""

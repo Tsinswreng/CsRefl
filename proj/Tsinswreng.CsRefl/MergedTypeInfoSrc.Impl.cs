@@ -45,18 +45,9 @@ public partial class MergedTypeInfoSrc{
 		return false;
 	}
 
-	private partial IReadOnlyCollection<Type>? SnapshotTypes(){
-		var R = new HashSet<Type>();
-		foreach(var S in _Sources){
-			var T = S.RegisteredTypes;
-			if(T is null){
-				return null;
-			}
-			foreach(var Item in T){
-				R.Add(Item);
-			}
-		}
-		return R;
+	private partial IDictionary<Type, ITypeInfo>? SnapshotTypes(){
+		// 佔位：本輪只改形狀，實現待寫（逐來源取表、按優先級合成並集）。
+		throw new NotImplementedException();
 	}
 }
 

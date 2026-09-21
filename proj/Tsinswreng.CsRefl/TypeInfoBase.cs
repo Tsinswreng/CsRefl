@@ -41,6 +41,7 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 """)]
 	public Type Type{
 		get;
+		set;
 	}
 
 	[Doc($"""
@@ -54,6 +55,7 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 """)]
 	public JsonTypeInfoKind Kind{
 		get;
+		set;
 	}
 
 	[Doc($"""
@@ -65,11 +67,12 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 另一條鏈上子類用 `new` 遮蔽基類的 `Id`，這裡是 `Name`、`Id`、`Age` 三項，
 `Id` 只有一份、仍在第 2 位、按名查到的其宣告型別是子類。
 規整由 {nameof(TypeInfoSorter)}.{nameof(TypeInfoSorter.SortEtDedup)} 在建構子裏一次做完，
-構造後本屬性不再變動，故按名索引與名清單可以安全緩存。
+本屬性可賦值（換整張成員表）；賦值不重建按名索引與名清單快取，故換表通常該重建一份實例。
 ]
 """)]
 	public IReadOnlyList<IMemberInfo> Members{
 		get;
+		set;
 	}
 
 	[Doc($"""
@@ -82,6 +85,7 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 """)]
 	public Type? ElementType{
 		get;
+		set;
 	}
 
 	[Doc($"""
@@ -96,6 +100,7 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 	// 已按此清掉：構造期算出來的事實直接落在屬性上（自動屬性），不再另存欄位由屬性轉發。
 	public Type? KeyType{
 		get;
+		set;
 	}
 
 	[Doc($"""
@@ -184,14 +189,14 @@ public partial class MyInfo:TypeInfoBase{
 
 #See[{nameof(ITypeInfo.CreateObject)}]
 """)]
-	public abstract Func<obj>? CreateObject{get;}
+	public abstract Func<obj>? CreateObject{get;set;}
 
 	[Doc($"""
 #Sum[被包裝的官方 {nameof(JsonTypeInfo)}；反射來源為 null。兩套來源各自提供。]
 
 #See[{nameof(ITypeInfo.Json)}]
 """)]
-	public abstract JsonTypeInfo? Json{get;}
+	public abstract JsonTypeInfo? Json{get;set;}
 
 	[Doc($"""
 #Sum[本型別能否建立無參實例。]

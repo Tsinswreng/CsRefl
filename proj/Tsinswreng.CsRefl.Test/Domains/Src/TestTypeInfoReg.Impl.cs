@@ -72,7 +72,7 @@ public partial class TestTypeInfoReg{
 			Table.Add(typeof(PoColor), new ReflTypeInfo(typeof(PoColor)));
 			var Types = Table.RegisteredTypes!;
 			T(Types.Count == 2, $"列舉應有 2 個，實際 {Types.Count}");
-			T(Types.Contains(typeof(PoUser)) && Types.Contains(typeof(PoColor)), "應含剛註冊的兩個型別");
+			T(Types.ContainsKey(typeof(PoUser)) && Types.ContainsKey(typeof(PoColor)), "應含剛註冊的兩個型別");
 			// 快照：取完之後再註冊不應影響已取到的那一份。
 			Table.Add(typeof(PoNoCtor), new ReflTypeInfo(typeof(PoNoCtor)));
 			T(Types.Count == 2, "快照不應隨之後的註冊而變化");

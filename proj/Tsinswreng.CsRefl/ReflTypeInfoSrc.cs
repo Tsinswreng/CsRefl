@@ -11,7 +11,7 @@ using Tsinswreng.CsCore;
 AOT 下可用——前提是查詢目標的成員元數據已被保留
 （見 {nameof(ReflTypeInfo.ReflDam)} 的說明）。
 
-{nameof(RegisteredTypes)} 返回 null：
+{nameof(RegisteredTypes)} 預設 null：
 反射來源能查任意型別，無法也無需列舉。
 
 實測：`{nameof(Inst)}.{nameof(TryGetInfo)}(typeof(PoUser), out var Info)` 與
@@ -51,14 +51,20 @@ public partial class ReflTypeInfoSrc:ITypeInfoSrc{
 	} = new();
 
 	[Doc($"""
-#Sum[不支持列舉（反射來源能查任意型別）。]
+#Sum[預設 null（本來源不支持列舉）；可賦值。]
+
+#Descr[
+反射來源對任意型別都能現場建元資料，故沒有「已知型別清單」這種東西，預設就是 null。
+
+賦值留給調用方自行取用（例如替下游掃描塞一份型別全集，或讓合成來源變得可列舉）：
+本來源的 {nameof(TryGetInfo)} 不讀這份表，故賦值不會改變查詢結果。
+]
 
 #See[{nameof(ITypeInfoSrc.RegisteredTypes)}]
 """)]
-	public IReadOnlyCollection<Type>? RegisteredTypes{
-		get{
-			return null;
-		}
+	public IDictionary<Type, ITypeInfo>? RegisteredTypes{
+		get;
+		set;
 	}
 
 	[Doc($$"""

@@ -56,6 +56,11 @@ using Tsinswreng.CsCore;
 實測：上例的鍵序就是成員序（`Id` 在 `Note` 之前，而不是字母序的 `Age` 在前），
 值裏 `i64`、`str`、`i32`、集合混在一起也照樣平鋪返回，不會拋。
 ]
+
+#Descr[
+事實成員皆可賦值：賦值＝換掉那件事實（不合併、不拷貝、不驗證），留給調用方自行取用。
+{nameof(TypeInfo)} 是視圖的形狀來源，換它牽動鍵表——鍵表是建構期算好的，故要換形狀就重建一份視圖。
+]
 """)]
 //TswgTodo 是不是有點違反里氏替換了?
 //我拿到一個IDict 我不知道裏面是甚麼實現, 我對他增減鍵 卻會報錯。
@@ -71,7 +76,7 @@ public interface IInstDict:IDictionary<str,obj?>{
 讀寫都落在這個物件上，視圖本身不持有成員值的副本。
 ]
 """)]
-	obj? Target{get;}
+	obj? Target{get;set;}
 
 	[Doc($"""
 #Sum[視圖所用到的型別元資料。]
@@ -83,5 +88,5 @@ public interface IInstDict:IDictionary<str,obj?>{
 換用基類 `PoUserBase` 的元資料建視圖，鍵就只有 `Id` 與 `Name` 兩個。
 ]
 """)]
-	ITypeInfo TypeInfo{get;}
+	ITypeInfo TypeInfo{get;set;}
 }

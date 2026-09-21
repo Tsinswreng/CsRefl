@@ -23,8 +23,9 @@ public partial class TypeInfoReg{
 		return _Map.TryGetValue(Type, out Info);
 	}
 
-	private partial IReadOnlyCollection<Type>? SnapshotTypes(){
-		return _Map.Keys.ToList();
+	private partial IDictionary<Type, ITypeInfo>? SnapshotTypes(){
+		// 佔位：本輪只改形狀，實現待寫（照 ITypeInfoSrc.RegisteredTypes 的口徑交一份快照）。
+		throw new NotImplementedException();
 	}
 
 	[Doc($"""

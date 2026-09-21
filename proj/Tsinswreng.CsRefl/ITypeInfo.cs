@@ -31,6 +31,14 @@ using Tsinswreng.CsCore;
 要成員型別走 {nameof(TryGetMemberType)}、要能力走 {nameof(CanRead)}／{nameof(CanWrite)}、
 要值走 {nameof(ITypeInfoExtn.TryGet)}／{nameof(ITypeInfoExtn.TrySet)}。
 ]
+
+#Descr[
+事實成員皆可賦值：賦值＝換掉那件事實（不合併、不拷貝、不驗證），留給調用方自行取用。
+由別的成員算出來的值只讀：{nameof(CanMkInst)} 就是 {nameof(CreateObject)} 是否為 null，
+{nameof(ReadableNames)}／{nameof(WritableNames)} 是 {nameof(Members)} 過濾出來的。
+
+換了 {nameof(Members)} 不會重建按名索引與名清單快取，故換整張成員表通常該重建一份實例。
+]
 """)]
 public partial interface ITypeInfo{
 	[Doc($"""
@@ -40,7 +48,7 @@ public partial interface ITypeInfo{
 實測：兩套來源查 `PoUser` 得到的這個屬性都是 `typeof(PoUser)`（官方 {nameof(JsonTypeInfo.Type)} 同值）。
 ]
 """)]
-	Type Type{get;}
+	Type Type{get;set;}
 
 	[Doc($"""
 #Sum[型別分類，直接用官方 {nameof(JsonTypeInfoKind)}。]
@@ -54,7 +62,7 @@ public partial interface ITypeInfo{
 + `typeof(PoUser)` → {nameof(JsonTypeInfoKind)}.{nameof(JsonTypeInfoKind.Object)}。
 ]
 """)]
-	JsonTypeInfoKind Kind{get;}
+	JsonTypeInfoKind Kind{get;set;}
 
 	[Doc($"""
 #Sum[官方 JSON 型別元資料本體；反射側為 null。]
@@ -68,7 +76,7 @@ public partial interface ITypeInfo{
 `{nameof(Json)}.{nameof(JsonTypeInfo.Type)}` 是 `typeof(PoUser)`；從 {nameof(ReflTypeInfoSrc)} 查同型別時為 null。
 ]
 """)]
-	JsonTypeInfo? Json{get;}
+	JsonTypeInfo? Json{get;set;}
 
 	[Doc($"""
 #Sum[集合的元素型別；非集合為 null。]
@@ -79,7 +87,7 @@ public partial interface ITypeInfo{
 實測：`typeof(List<str>)` → `typeof(str)`；`typeof(Dictionary<str, i32>)` → `typeof(i32)`（字典取值型別）；`typeof(PoUser)` → null。
 ]
 """)]
-	Type? ElementType{get;}
+	Type? ElementType{get;set;}
 
 	[Doc($"""
 #Sum[字典的鍵型別；非字典為 null。]
@@ -90,7 +98,7 @@ public partial interface ITypeInfo{
 實測：`typeof(Dictionary<str, i32>)` → `typeof(str)`；`typeof(List<str>)` → null。
 ]
 """)]
-	Type? KeyType{get;}
+	Type? KeyType{get;set;}
 
 	//TswgTodo 爲甚麼用 IReadOnlyList? 這個查詢是O(n)。
 	// 註：本批註原文保留。它原本掛在 Members 上，而 Members 已按新方向
@@ -202,7 +210,7 @@ Info.CanWrite("NoSuch");                // false
 `typeof(PoNoCtor)`（只有帶參構造函數）兩套來源都是 null。
 ]
 """)]
-	Func<obj>? CreateObject{get;}
+	Func<obj>? CreateObject{get;set;}
 
 	[Doc($"""
 #Sum[本型別能否建立無參實例；判據就是 {nameof(CreateObject)} 是否為 null。]
@@ -229,11 +237,13 @@ Info.CanWrite("NoSuch");                // false
 #Sum[全部成員（契約序：基類在前、同類內宣告序）。]
 
 #Descr[
-元素是官方成員物件：反射側 {nameof(MemberInfo)}（{nameof(PropertyInfo)} 或 {nameof(FieldInfo)}）、Json 側 {nameof(JsonPropertyInfo)}。
-本成員目前的處置（是否改成帶型別的成員契約）待你確認，故先原樣保留。
+元素是成員契約 {nameof(IMemberInfo)}：反射側由 {nameof(ReflMemberInfo)} 包官方 {nameof(MemberInfo)}、
+Json 側由 {nameof(JsonMemberInfo)} 包官方 {nameof(JsonPropertyInfo)}。
+
+可賦值：換整張成員表；賦值不重建按名索引與名清單快取，故換表通常該重建一份實例。
 ]
 """)]
-	IReadOnlyList<IMemberInfo> Members{get;}
+	IReadOnlyList<IMemberInfo> Members{get;set;}
 
 	[Doc($"""
 #Sum[按名查成員；未知返回 false。]

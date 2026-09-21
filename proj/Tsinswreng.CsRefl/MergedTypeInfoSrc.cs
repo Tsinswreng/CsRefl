@@ -42,27 +42,31 @@ public partial class MergedTypeInfoSrc:ITypeInfoSrc{
 	public readonly IReadOnlyList<ITypeInfoSrc> _Sources;
 
 	[Doc($"""
-#Sum[全部來源都支持列舉才返回並集快照，否則返回 null。]
+#Sum[全部來源都支持列舉才交出並集，否則返回 null。]
 
 #Descr[
 與「來源可不同構」的設計一致。
 
-快照按訪問現算：來源本身可能在建構後繼續註冊，緩存反而會給出過期答案。
+按訪問現算：來源本身可能在建構後繼續註冊，緩存反而會給出過期答案。
 
-實測：鏈裏只要有一個 {nameof(JsonTypeInfoSrc)}，
+同一型別登記在多個來源時只出現一次；值取優先級最高（最靠前）那個來源交出的元資料。
+
+鏈裏只要有一個 {nameof(JsonTypeInfoSrc)}，
 整個 {nameof(RegisteredTypes)} 就是 null（它不支持列舉），
 哪怕另一個 {nameof(TypeInfoReg)} 本身能列舉。
 
-實測：兩個 {nameof(TypeInfoReg)} 合成的鏈（都支持列舉）返回並集，
-同一型別登記在兩邊時只出現一次；
-{nameof(JsonTypeInfoSrc)} 與 {nameof(ReflTypeInfoSrc)} 合成的鏈返回 null。
+賦值＝覆蓋列舉結果：本類沒有自己的表，故賦值只影響列舉，不改查詢的來源優先級。
 ]
 
 #See[{nameof(ITypeInfoSrc.RegisteredTypes)}]
 """)]
-	public IReadOnlyCollection<Type>? RegisteredTypes{
+	public IDictionary<Type, ITypeInfo>? RegisteredTypes{
 		get{
 			return SnapshotTypes();
+		}
+		set{
+			// 佔位：本輪只改形狀，實現待寫（本類沒有自己的表，賦值＝覆蓋列舉結果）。
+			throw new NotImplementedException();
 		}
 	}
 
@@ -123,20 +127,16 @@ Src.TryGetInfo(typeof(SomeUnregistepedType), out _);
 	// ---- 私有輔助（實現見 MergedTypeInfoSrc.Impl.cs）----
 
 	[Doc($"""
-#Sum[全部來源都支持列舉才返回並集，否則返回 null。]
+#Sum[逐來源取表，只有全部來源都支持列舉時才交出並集。]
 
-#Rtn[並集快照；任一來源不支持列舉時為 null]
+#Rtn[型別 → 元資料的並集；任一來源不支持列舉時為 null]
 
 #Descr[
-用 {nameof(HashSet<object>)} 去重（{nameof(Type)} 的相等性是引用相等，正合併集語義）；
-不用 {nameof(List<object>)}.{nameof(List<object>.Contains)} 是因為那是 O(n²)，來源多的時候白燒。
-
-實測：兩個 {nameof(TypeInfoReg)} 合成的鏈，其中一個登記了 `PoColor`、
-另一個登記了 `PoColor` 與 `PoUser`，
-返回的是 `PoColor` 與 `PoUser` 兩項而不是三項。
+按型別去重（{nameof(Type)} 的相等性是引用相等，正合並集語義）；
+同一型別在多個來源都有時，保留先出現（優先級最高）那個來源的值。
 ]
 """)]
-	private partial IReadOnlyCollection<Type>? SnapshotTypes();
+	private partial IDictionary<Type, ITypeInfo>? SnapshotTypes();
 }
 
 

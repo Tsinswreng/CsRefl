@@ -19,6 +19,11 @@ using Tsinswreng.CsCore;
 具體取值的示例在測試域（那裏有具體模型，示例裏的型別與成員名都能 f12 跳轉）：
 `proj/Tsinswreng.CsRefl.Test/Domains/Synthesis/TestMember.cs`。
 ]
+
+#Descr[
+事實成員皆可賦值：賦值＝換掉那件事實（不合併、不拷貝、不驗證），留給調用方自行取用。
+現有兩個配接器是「現讀官方成員物件」，故它們的賦值實現待寫（見各自的說明）。
+]
 """)]
 public partial interface IMemberInfo{
 	[Doc($$"""
@@ -28,50 +33,71 @@ public partial interface IMemberInfo{
 {{nameof(ITypeInfo.ReadableNames)}}／{{nameof(ITypeInfo.WritableNames)}} 列出的也是它。
 ]
 """)]
-	str Name{get;}
+	str Name{get;set;}
 
 	[Doc($$"""
-#Sum[成員自身的型別：成員聲明時寫的那個型別，與運行期裝的值無關。]
+#Sum[這個屬性或字段是甚麼型別。]
 #Descr[
-聲明為 {{nameof(System.Collections.Generic.List<str>)}}<str> 的成員，本屬性就是它；
-此刻裝進去的值不影響本屬性。
+一個屬性或字段在型別定義裏寫的是甚麼型別，{{nameof(IMemberInfo.PropertyType)}} 就是甚麼型別。
+成員裏當下存着甚麼值，與 {{nameof(IMemberInfo.PropertyType)}} 無關。
 
-按名查同一個事實見 {{nameof(ITypeInfo.TryGetMemberType)}}。
+下面例子用到：{{nameof(ITypeInfoSrcExtn.GetInfo)}}、{{nameof(ITypeInfo)}}、{{nameof(ITypeInfo.Members)}}、{{nameof(IMemberInfo.PropertyType)}}。
+
+調用方這樣寫。src 是一個來源，info 是 ITypeInfo 這個型別的元資料：
+
+```cs
+var info = src.GetInfo(typeof(ITypeInfo));
+
+foreach(var m in info.Members){
+	var declared = m.PropertyType;   // 這個成員聲明成甚麼型別
+}
+```
 ]
 """)]//TswgNote
-	Type PropertyType{get;}
+	Type PropertyType{get;set;}
 
 	[Doc($$"""
-#Sum[成員的宿主型別：成員聲明在哪個型別裏。]
+#Sum[這個屬性或字段寫在哪個型別裏。]
 #Descr[
-繼承來的成員，本屬性是聲明它的那個基類，不是取到它的那個型別。
+一個屬性或字段的定義寫在哪個型別裏，{{nameof(IMemberInfo.DeclaringType)}} 就是那個型別。
+繼承來的成員，定義寫在基類，故 {{nameof(IMemberInfo.DeclaringType)}} 是基類，不是取到該成員的子類。
 
-取成員時用的型別見 {{nameof(ITypeInfo.Type)}}。
+下面例子用到：{{nameof(ITypeInfoSrcExtn.GetInfo)}}、{{nameof(ITypeInfo)}}、{{nameof(ITypeInfo.Members)}}、{{nameof(IMemberInfo.DeclaringType)}}。
+
+調用方這樣寫。src 是一個來源，info 是 ITypeInfo 這個型別的元資料：
+
+```cs
+var info = src.GetInfo(typeof(ITypeInfo));
+
+foreach(var m in info.Members){
+	var owner = m.DeclaringType;   // 這個成員寫在哪個型別裏
+}
+```
 ]
 """)]//TswgNote
-	Type DeclaringType{get;}
+	Type DeclaringType{get;set;}
 
 	[Doc($$"""
 #Sum[本成員可否讀取。]
 #Descr[
 判據是成員自身有沒有公開的讀取器，不是「在不在某張鍵表裏」。
-只寫成員為 false，讀它要經 {{nameof(IMemberInfo.TryGet)}}，那裏同樣返回 false。
+只寫成員為 false，讀它要經 {{nameof(TryGet)}}，那裏同樣返回 false。
 
 整份名單見 {{nameof(ITypeInfo.ReadableNames)}}。
 ]
 """)]
-	bool CanRead{get;}
+	bool CanRead{get;set;}
 
 	[Doc($$"""
 #Sum[本成員可否寫入。]
 #Descr[
 判據是成員自身有沒有公開的寫入器，不是「在不在某張鍵表裏」。
-只讀成員為 false，寫它要經 {{nameof(IMemberInfo.TrySet)}}，那裏同樣返回 false。
+只讀成員為 false，寫它要經 {{nameof(TrySet)}}，那裏同樣返回 false。
 
 整份名單見 {{nameof(ITypeInfo.WritableNames)}}。
 ]
 """)]
-	bool CanWrite{get;}
+	bool CanWrite{get;set;}
 
 	[Doc($$"""
 #Sum[官方特性提供者（兩側共有的官方接口 {{nameof(ICustomAttributeProvider)}}）。]
@@ -82,7 +108,7 @@ public partial interface IMemberInfo{
 取特性走 {{nameof(AttrProvider.GetCustomAttribute)}}。
 ]
 """)]
-	ICustomAttributeProvider? AttributeProvider{get;}
+	ICustomAttributeProvider? AttributeProvider{get;set;}
 
 	[Doc($$"""
 #Sum[讀取實例上的本成員；讀不到返回 false（不拋）。]
@@ -90,7 +116,7 @@ public partial interface IMemberInfo{
 #Descr[
 按名一步讀值的捷徑是 {{nameof(ITypeInfoExtn.TryGet)}}。
 
-返回 false 的場合：實例為 null、實例與 {{nameof(IMemberInfo.DeclaringType)}} 不符、成員只寫、
+返回 false 的場合：實例為 null、實例與 {{nameof(DeclaringType)}} 不符、成員只寫、
 名不在成員表上。
 ]
 """)]
@@ -102,7 +128,7 @@ public partial interface IMemberInfo{
 #Descr[
 按名一步寫值的捷徑是 {{nameof(ITypeInfoExtn.TrySet)}}。
 
-返回 false 的場合：實例為 null、實例與 {{nameof(IMemberInfo.DeclaringType)}} 不符、成員只讀、
+返回 false 的場合：實例為 null、實例與 {{nameof(DeclaringType)}} 不符、成員只讀、
 名不在成員表上；值型別不符照常拋（那是調用方的 bug）。
 ]
 """)]

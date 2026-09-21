@@ -41,6 +41,7 @@ var Sorted = TypeInfoSorter.SortEtDedup(typeof(PoUser), Collected);
 去重時離實例最近的宣告勝出，且佔被遮蔽成員的位置。
 ]
 """)]
+	//TswgNote 看不懂
 	public static partial IReadOnlyList<IMemberInfo> SortEtDedup(Type Root, IReadOnlyList<IMemberInfo> Members);
 
 	// ---- 私有輔助（實現見 TypeInfoSorter.Impl.cs）----

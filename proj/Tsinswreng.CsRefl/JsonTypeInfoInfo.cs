@@ -62,6 +62,8 @@ new JsonTypeInfoInfo(null!);
 
 實測：包裝完成後把官方 {nameof(JsonTypeInfo.CreateObject)} 換成別的委託，
 本屬性的取值立刻跟著變（與換上去的那個委託 `{nameof(ReferenceEquals)}` 為 true）。
+
+賦值＝覆蓋這條委託；本輪只加形狀，實現待寫。
 ]
 
 #See[{nameof(ITypeInfo.CreateObject)}]
@@ -70,10 +72,14 @@ new JsonTypeInfoInfo(null!);
 		get{
 			return Json?.CreateObject;
 		}
+		set{
+			// 佔位：本輪只加形狀，實現待寫（本屬性是現讀官方本體那條委託，覆蓋語義待定）。
+			throw new NotImplementedException();
+		}
 	}
 
 	[Doc($"""
-#Sum[官方型別元資料本體；構造期賦值，之後不再改。]
+#Sum[官方型別元資料本體；構造期賦值，可再賦值。]
 
 #Descr[
 就是構造時傳進來的那個官方實例（{nameof(ReferenceEquals)} 為 true），
@@ -84,6 +90,7 @@ new JsonTypeInfoInfo(null!);
 """)]
 	public override JsonTypeInfo? Json{
 		get;
+		set;
 	}
 
 	[Doc($"""

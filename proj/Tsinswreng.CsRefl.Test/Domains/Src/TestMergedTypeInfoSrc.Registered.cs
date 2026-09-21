@@ -23,7 +23,7 @@ public partial class TestMergedTypeInfoSrc{
 			B.Add(typeof(PoUser), new ReflTypeInfo(typeof(PoUser)));
 			var Types = new MergedTypeInfoSrc(A, B).RegisteredTypes!;
 			T(Types.Count == 2, $"並集應去重，實際 {Types.Count}");
-			T(Types.Contains(typeof(PoUser)) && Types.Contains(typeof(PoColor)), "並集應含兩個型別");
+			T(Types.ContainsKey(typeof(PoUser)) && Types.ContainsKey(typeof(PoColor)), "並集應含兩個型別");
 			return null;
 		});
 

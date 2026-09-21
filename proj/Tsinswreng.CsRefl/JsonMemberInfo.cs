@@ -38,6 +38,10 @@ public partial class JsonMemberInfo:IMemberInfo{
 		get{
 			return _Raw.Name;
 		}
+		set{
+			// 佔位：本輪只加形狀，實現待寫（本配接器是現讀官方物件，覆蓋語義待定）。
+			throw new NotImplementedException();
+		}
 	}
 
 	[Doc($"""
@@ -48,6 +52,10 @@ public partial class JsonMemberInfo:IMemberInfo{
 	public Type PropertyType{
 		get{
 			return _Raw.PropertyType;
+		}
+		set{
+			// 佔位：本輪只加形狀，實現待寫（本配接器是現讀官方物件，覆蓋語義待定）。
+			throw new NotImplementedException();
 		}
 	}
 
@@ -60,6 +68,10 @@ public partial class JsonMemberInfo:IMemberInfo{
 		get{
 			return _Raw.DeclaringType;
 		}
+		set{
+			// 佔位：本輪只加形狀，實現待寫（本配接器是現讀官方物件，覆蓋語義待定）。
+			throw new NotImplementedException();
+		}
 	}
 
 	[Doc($"""
@@ -70,6 +82,10 @@ public partial class JsonMemberInfo:IMemberInfo{
 	public bool CanRead{
 		get{
 			return _Raw.Get is not null;
+		}
+		set{
+			// 佔位：本輪只加形狀，實現待寫（本配接器是現讀官方物件，覆蓋語義待定）。
+			throw new NotImplementedException();
 		}
 	}
 
@@ -82,6 +98,10 @@ public partial class JsonMemberInfo:IMemberInfo{
 		get{
 			return _Raw.Set is not null;
 		}
+		set{
+			// 佔位：本輪只加形狀，實現待寫（本配接器是現讀官方物件，覆蓋語義待定）。
+			throw new NotImplementedException();
+		}
 	}
 
 	[Doc($"""
@@ -92,6 +112,10 @@ public partial class JsonMemberInfo:IMemberInfo{
 	public ICustomAttributeProvider? AttributeProvider{
 		get{
 			return _Raw.AttributeProvider;
+		}
+		set{
+			// 佔位：本輪只加形狀，實現待寫（本配接器是現讀官方物件，覆蓋語義待定）。
+			throw new NotImplementedException();
 		}
 	}
 

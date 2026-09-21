@@ -107,17 +107,21 @@ NativeAOT 下表達式樹不能 Comrile（會拋 {nameof(PlatformNotSupportedExc
 """)]
 	public override Func<obj>? CreateObject{
 		get;
+		set;
 	}
 
 	[Doc($"""
-#Sum[反射來源沒有官方 {nameof(JsonTypeInfo)}，恆為 null。]
+#Sum[反射來源沒有官方 {nameof(JsonTypeInfo)}，預設 null；可賦值。]
+
+#Descr[
+預設 null。賦值留給調用方自行取用（例如把別處拿到的官方本體掛上來）。
+]
 
 #See[{nameof(ITypeInfo.Json)}]
 """)]
 	public override JsonTypeInfo? Json{
-		get{
-			return null;
-		}
+		get;
+		set;
 	}
 
 	[Doc($"""

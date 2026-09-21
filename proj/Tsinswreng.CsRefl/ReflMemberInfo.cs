@@ -37,6 +37,10 @@ public partial class ReflMemberInfo:IMemberInfo{
 		get{
 			return _Raw.Name;
 		}
+		set{
+			// 佔位：本輪只加形狀，實現待寫（本配接器是現讀官方物件，覆蓋語義待定）。
+			throw new NotImplementedException();
+		}
 	}
 
 	[Doc($"""
@@ -54,6 +58,10 @@ public partial class ReflMemberInfo:IMemberInfo{
 			}
 			throw new NotSupportedException($"本配接器只接 {nameof(PropertyInfo)} 與 {nameof(FieldInfo)}。");
 		}
+		set{
+			// 佔位：本輪只加形狀，實現待寫（本配接器是現讀官方物件，覆蓋語義待定）。
+			throw new NotImplementedException();
+		}
 	}
 
 	[Doc($"""
@@ -64,6 +72,10 @@ public partial class ReflMemberInfo:IMemberInfo{
 	public Type DeclaringType{
 		get{
 			return _Raw.DeclaringType!;
+		}
+		set{
+			// 佔位：本輪只加形狀，實現待寫（本配接器是現讀官方物件，覆蓋語義待定）。
+			throw new NotImplementedException();
 		}
 	}
 
@@ -79,6 +91,10 @@ public partial class ReflMemberInfo:IMemberInfo{
 			}
 			return _Raw is FieldInfo;
 		}
+		set{
+			// 佔位：本輪只加形狀，實現待寫（本配接器是現讀官方物件，覆蓋語義待定）。
+			throw new NotImplementedException();
+		}
 	}
 
 	[Doc($"""
@@ -93,6 +109,10 @@ public partial class ReflMemberInfo:IMemberInfo{
 			}
 			return _Raw is FieldInfo;
 		}
+		set{
+			// 佔位：本輪只加形狀，實現待寫（本配接器是現讀官方物件，覆蓋語義待定）。
+			throw new NotImplementedException();
+		}
 	}
 
 	[Doc($"""
@@ -103,6 +123,10 @@ public partial class ReflMemberInfo:IMemberInfo{
 	public ICustomAttributeProvider? AttributeProvider{
 		get{
 			return _Raw;
+		}
+		set{
+			// 佔位：本輪只加形狀，實現待寫（本配接器是現讀官方物件，覆蓋語義待定）。
+			throw new NotImplementedException();
 		}
 	}
 

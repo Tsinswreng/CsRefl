@@ -29,7 +29,7 @@ using Tsinswreng.CsCore;
 	未註冊時 {nameof(TryGetInfo)} 返回 false
 + 讀寫是委託（官方 {nameof(JsonPropertyInfo)}.{nameof(JsonPropertyInfo.Get)}／
 	{nameof(JsonPropertyInfo.Set)}），AOT 主路徑最優解
-+ {nameof(RegisteredTypes)} 返回 null：上下文不暴露已註冊清單，無法列舉
++ {nameof(RegisteredTypes)} 預設 null：上下文不暴露已註冊清單，無法列舉（可賦值，見該成員說明）
 
 實測：型別掛了 `[JsonSerializable]` 就能查到；
 沒掛的走反射源才查得到，故生產上通常用 {nameof(MergedTypeInfoSrc)} 把兩者串起來。
@@ -156,14 +156,20 @@ new JsonTypeInfoSrc(new JsonSerializerOptions());
 	public partial JsonTypeInfoSrc(JsonSerializerOptions Options);
 
 	[Doc($"""
-#Sum[不支持列舉（上下文不暴露已註冊清單）。]
+#Sum[預設 null（源生成上下文不暴露已註冊清單）；可賦值。]
+
+#Descr[
+官方上下文不給「已註冊型別清單」，故預設就是 null。
+
+賦值留給調用方自行取用（例如替下游掃描塞一份型別全集，或讓合成來源變得可列舉）：
+本來源的 {nameof(TryGetInfo)} 不讀這份表，故賦值不會改變查詢結果。
+]
 
 #See[{nameof(ITypeInfoSrc.RegisteredTypes)}]
 """)]
-	public IReadOnlyCollection<Type>? RegisteredTypes{
-		get{
-			return null;
-		}
+	public IDictionary<Type, ITypeInfo>? RegisteredTypes{
+		get;
+		set;
 	}
 
 	[Doc($$"""
