@@ -8,17 +8,13 @@ using Tsinswreng.CsCore;
 """)]
 public partial class JsonMemberInfo{
 	public partial JsonMemberInfo(JsonPropertyInfo Json){
-		_raw = Json;
+		_Raw = Json;
 		throw new NotImplementedException();
 	}
 
 	// 肏你媽臭屄這東西是給你寫到impl裏的嗎?
-	public partial str Name{ get{ throw new NotImplementedException(); } }
-	public partial Type PropertyType{ get{ throw new NotImplementedException(); } }
-	public partial Type DeclaringType{ get{ throw new NotImplementedException(); } }
-	public partial bool CanRead{ get{ throw new NotImplementedException(); } }
-	public partial bool CanWrite{ get{ throw new NotImplementedException(); } }
-	public partial System.Reflection.ICustomAttributeProvider? AttributeProvider{ get{ throw new NotImplementedException(); } }
+	// 已按此改：訪問器本體（Name／PropertyType／DeclaringType／CanRead／CanWrite／AttributeProvider）
+	// 全部搬回 JsonMemberInfo.cs（Decl），Impl 只留函數。
 
 	public partial bool TryGet(obj? O, out obj? V){
 		throw new NotImplementedException();
@@ -29,9 +25,8 @@ public partial class JsonMemberInfo{
 	}
 
 	//TswgNote 肏你媽臭屄又脫褲子放屁了是吧? 而且這東西是給你寫到impl裏的嗎?
-	public partial obj Raw{ get{ return _raw; } }
+	// 已按此改：欄位改 public readonly JsonPropertyInfo _Raw，唯讀轉發屬性 Raw 已刪。
 }
-
 
 
 

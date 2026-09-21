@@ -70,7 +70,7 @@ public partial class JsonTypeInfoSrc:ITypeInfoSrc{
 傳 null 上下文或 null options 都在建構期拋 {nameof(ArgumentNullException)}。
 ]
 """)]
-	private readonly IJsonTypeInfoResolver _resolver;
+	public readonly IJsonTypeInfoResolver _Resolver;
 
 	[Doc($"""
 #Sum[解析時用的 options。]
@@ -85,7 +85,7 @@ public partial class JsonTypeInfoSrc:ITypeInfoSrc{
 否則建構期拋 {nameof(ArgumentException)}（不留到解析時才失敗）。
 ]
 """)]
-	private readonly JsonSerializerOptions _options;
+	public readonly JsonSerializerOptions _Options;
 
 	[Doc($"""
 #Sum[型別 → 元資料緩存；同一型別只包一次。]
@@ -98,7 +98,7 @@ public partial class JsonTypeInfoSrc:ITypeInfoSrc{
 滿足 `{nameof(ReferenceEquals)}(A, B)` 為 true。
 ]
 """)]
-	private readonly ConcurrentDictionary<Type, ITypeInfo> _cache = new();
+	public readonly ConcurrentDictionary<Type, ITypeInfo> _Cache = new();
 
 	[Doc($"""
 #Sum[未註冊型別的負面緩存。]
@@ -114,7 +114,7 @@ public partial class JsonTypeInfoSrc:ITypeInfoSrc{
 第二次仍返回 false 且 `Info` 為 null，但不再進 resolver。
 ]
 """)]
-	private readonly ConcurrentDictionary<Type, byte> _misses = new();
+	public readonly ConcurrentDictionary<Type, byte> _Misses = new();
 
 	[Doc($$"""
 #Sum[用一個源生成 context 建來源。]

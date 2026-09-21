@@ -68,28 +68,28 @@ public partial class InstDict:IInstDict{
 只讀的 `Secret` 與只寫的 `Token` 都不在裏面。
 ]
 """)]
-	private readonly List<str> _keys;
+	public readonly List<str> _KeyList;
 
 	[Doc($"""
-#Sum[{nameof(ContainsKey)} 用的鍵索引：與 {nameof(_keys)} 同一批名字，只為把存在性判斷做成 O(1)。]
+#Sum[{nameof(ContainsKey)} 用的鍵索引：與 {nameof(_KeyList)} 同一批名字，只為把存在性判斷做成 O(1)。]
 
 #Descr[
-{nameof(_keys)} 是 {nameof(List<>)}{nameof(Keys)} 的順序載體，順序是契約的一部分，
+{nameof(_KeyList)} 是 {nameof(List<>)}{nameof(Keys)} 的順序載體，順序是契約的一部分，
 但拿它做 {nameof(ICollection<string>.Contains)} 是 O(n)——
 鍵表按成員數可能很長，故另存一份 {nameof(HashSet<>)}{nameof(Keys)} 專供查存在性。
 比較用 {nameof(StringComparer)}.{nameof(StringComparer.Ordinal)}（成員名是程式碼識別符）。
 
-實測（`PoUser`）：這份索引是 9 個名，與 {nameof(_keys)} 逐項相同；
+實測（`PoUser`）：這份索引是 9 個名，與 {nameof(_KeyList)} 逐項相同；
 `Dict.{nameof(ContainsKey)}("Age")` 為 true、`"NoSuch"` 與 `"Secret"` 都為 false。
 ]
 """)]
-	private readonly HashSet<str> _keySet;
+	public readonly HashSet<str> _KeySet;
 
 	[Doc($"""
 #Sum[讀寫各按成員能力放行。]
 
 #Descr[
-讀要求可讀、寫要求可寫，兩者的判據都是成員表而非 {nameof(_keys)}。
+讀要求可讀、寫要求可寫，兩者的判據都是成員表而非 {nameof(_KeyList)}。
 實現見 `InstDict.Impl.cs`。
 
 實測（`PoUser`，`Age` 起初 26、`Secret` 初值 "s"）：
@@ -162,7 +162,7 @@ public partial class InstDict:IInstDict{
 """)]
 	public int Count{
 		get{
-			return _keys.Count;
+			return _KeyList.Count;
 		}
 	}
 
@@ -170,7 +170,7 @@ public partial class InstDict:IInstDict{
 #Sum[出現口徑的鍵集合。]
 
 #Descr[
-構造期建好的只讀包裝（與 {nameof(_keys)} 同一份數據、不複製），對外不提供改形狀的入口。
+構造期建好的只讀包裝（與 {nameof(_KeyList)} 同一份數據、不複製），對外不提供改形狀的入口。
 
 實測：`foreach(var K in Dict.Keys)` 依次拿到 `Id`、`Name`、`Age`、`Email`、`Married`、`Tags`、`Extra`、`Level`、`Note`；
 這個順序與名前綴的成員序一致，可直接當列序用。
@@ -399,7 +399,7 @@ Dict.CopyTo(Small, 0);
 	[Doc($"""
 #Sum[按出現口徑的鍵序逐鍵取值。]
 
-#Rtn[值集合，順序同字段 {nameof(_keys)}]
+#Rtn[值集合，順序同字段 {nameof(_KeyList)}]
 
 #Descr[
 逐鍵求值，不做排序，故異質值不會因不可互比而拋。

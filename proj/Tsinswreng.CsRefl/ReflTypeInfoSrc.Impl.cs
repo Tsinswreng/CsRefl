@@ -19,14 +19,14 @@ public partial class ReflTypeInfoSrc{
 	public partial bool TryGetInfo(Type Type, out ITypeInfo? Info){
 		ArgumentNullException.ThrowIfNull(Type);
 		// step 1: 命中緩存直接返回，避免重複付反射建元資料的代價。
-		if(_cache.TryGetValue(Type, out Info)){
+		if(_Cache.TryGetValue(Type, out Info)){
 			return true;
 		}
 		// step 2: 直接構造而非 GetOrAdd 委託：factory 委託的參數無法帶 DAM 註解，
 		// 會觸發 trimmer 警告；try-fetch 模式讓 Type 的 DAM 直接流入建構子。
 		Info = new ReflTypeInfo(Type);
 		// step 3: 收進緩存；並行下重複 TryAdd 無害（元資料只讀不可變）。
-		_cache.TryAdd(Type, Info);
+		_Cache.TryAdd(Type, Info);
 		return true;
 	}
 }

@@ -1,12 +1,40 @@
 using Tsinswreng.CsTreeTest;
 using Tsinswreng.CsRefl;
 using Tsinswreng.CsRefl.Test.Domains.Models;
+using Tsinswreng.CsCore;
 
 namespace Tsinswreng.CsRefl.Test.Domains.Synthesis;
 
 /// 層三：成員層 IMemberInfo——成員物件是官方物件（反射側 MemberInfo、Json 側 JsonPropertyInfo）的配接器。
 /// 這一層沒有泛型版：受體就是成員本體本身，沒有「型別要從哪來」的問題。
 /// 只放函數實現：聲明在 _TestSynthesis.cs。
+[Doc($$"""
+#Sum[成員層 {{nameof(IMemberInfo)}} 的用法示例，同時是本域的用例。]
+#Descr[
+調用方這樣寫：
+
+```cs
+var Src = new {{nameof(MergedTypeInfoSrc)}}(
+	new {{nameof(JsonTypeInfoSrc)}}({{nameof(TestJsonCtx)}}.Default),
+	new {{nameof(ReflTypeInfoSrc)}}()
+);
+var Info = Src.{{nameof(ITypeInfoSrcExtn.GetInfo)}}(typeof({{nameof(PoUser)}}));
+var MAge = Info.{{nameof(ITypeInfo.GetMember)}}(nameof({{nameof(PoUser)}}.{{nameof(PoUser.Age)}}));
+var U = new {{nameof(PoUser)}}{ Id = 1, Name = "小明", Age = 26 };
+
+MAge.{{nameof(IMemberInfo.Name)}};             // "Age"
+MAge.{{nameof(IMemberInfo.PropertyType)}};     // typeof(i32)
+MAge.{{nameof(IMemberInfo.DeclaringType)}};    // typeof({{nameof(PoUser)}})
+MAge.{{nameof(IMemberInfo.CanRead)}};          // true
+
+Info.{{nameof(ITypeInfo.GetMember)}}(nameof({{nameof(PoUser)}}.{{nameof(PoUser.Id)}})).{{nameof(IMemberInfo.DeclaringType)}};    // typeof({{nameof(PoUserBase)}})：繼承來的
+Info.{{nameof(ITypeInfo.GetMember)}}(nameof({{nameof(PoUser)}}.{{nameof(PoUser.Secret)}})).{{nameof(IMemberInfo.CanWrite)}};     // false：只讀
+
+MAge.{{nameof(IMemberInfo.TryGet)}}(U, out var V);   // true；V 是 boxed 的 i32 26
+MAge.{{nameof(IMemberInfo.TrySet)}}(U, 33);          // true；之後 U.Age 是 33
+```
+]
+""")]
 public partial class TestSynthesis{
 	/// 見聲明處的說明。
 	public partial async Task<nil> MemberOps(obj? O){

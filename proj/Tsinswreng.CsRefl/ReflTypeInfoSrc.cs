@@ -35,7 +35,7 @@ public partial class ReflTypeInfoSrc:ITypeInfoSrc{
 並行下重複 {nameof(ConcurrentDictionary<,>)}.{nameof(ConcurrentDictionary<,>.TryAdd)} 無害，包的是等價實例。
 ]
 """)]
-	private readonly ConcurrentDictionary<Type, ITypeInfo> _cache = new();
+	public readonly ConcurrentDictionary<Type, ITypeInfo> _Cache = new();
 
 	[Doc($"""
 #Sum[默認單例：不經 DI 也能直接使用的反射來源。]

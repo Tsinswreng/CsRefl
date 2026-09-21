@@ -8,16 +8,9 @@ using Tsinswreng.CsCore;
 """)]
 public partial class ReflMemberInfo{
 	public partial ReflMemberInfo(MemberInfo Member){
-		_raw = Member;
+		_Raw = Member;
 		throw new NotImplementedException();
 	}
-
-	public partial str Name{ get{ throw new NotImplementedException(); } }
-	public partial Type PropertyType{ get{ throw new NotImplementedException(); } }
-	public partial Type DeclaringType{ get{ throw new NotImplementedException(); } }
-	public partial bool CanRead{ get{ throw new NotImplementedException(); } }
-	public partial bool CanWrite{ get{ throw new NotImplementedException(); } }
-	public partial System.Reflection.ICustomAttributeProvider? AttributeProvider{ get{ throw new NotImplementedException(); } }
 
 	public partial bool TryGet(obj? O, out obj? V){
 		throw new NotImplementedException();
@@ -26,10 +19,7 @@ public partial class ReflMemberInfo{
 	public partial bool TrySet(obj? O, obj? V){
 		throw new NotImplementedException();
 	}
-
-	public partial obj Raw{ get{ return _raw; } }
 }
-
 
 
 

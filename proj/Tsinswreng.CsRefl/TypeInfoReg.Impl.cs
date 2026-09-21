@@ -20,11 +20,11 @@ public partial class TypeInfoReg{
 """)]
 	public partial bool TryGetInfo(Type Type, out ITypeInfo? Info){
 		ArgumentNullException.ThrowIfNull(Type);
-		return _map.TryGetValue(Type, out Info);
+		return _Map.TryGetValue(Type, out Info);
 	}
 
 	private partial IReadOnlyCollection<Type>? SnapshotTypes(){
-		return _map.Keys.ToList();
+		return _Map.Keys.ToList();
 	}
 
 	[Doc($"""
@@ -36,7 +36,7 @@ public partial class TypeInfoReg{
 		ArgumentNullException.ThrowIfNull(Type);
 		ArgumentNullException.ThrowIfNull(Info);
 		// 重複登記拋異常（防止無意覆蓋；確要替換先 Remove 再 Add）。
-		if(!_map.TryAdd(Type, Info)){
+		if(!_Map.TryAdd(Type, Info)){
 			throw new InvalidOperationException($"型別 {Type.FullName} 已註冊，不能用 Add 覆蓋；請先 Remove 再 Add。");
 		}
 	}
@@ -48,7 +48,7 @@ public partial class TypeInfoReg{
 """)]
 	public partial bool Remove(Type Type){
 		ArgumentNullException.ThrowIfNull(Type);
-		return _map.TryRemove(Type, out _);
+		return _Map.TryRemove(Type, out _);
 	}
 }
 

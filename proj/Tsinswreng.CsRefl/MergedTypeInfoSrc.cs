@@ -39,7 +39,7 @@ public partial class MergedTypeInfoSrc:ITypeInfoSrc{
 合成查詢仍按原優先級命中（因為內部存的是拷貝）。
 ]
 """)]
-	private readonly IReadOnlyList<ITypeInfoSrc> _sources;
+	public readonly IReadOnlyList<ITypeInfoSrc> _Sources;
 
 	[Doc($"""
 #Sum[全部來源都支持列舉才返回並集快照，否則返回 null。]

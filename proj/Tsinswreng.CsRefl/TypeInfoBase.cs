@@ -23,7 +23,7 @@ using Tsinswreng.CsCore;
 抽象維度由 {nameof(ITypeInfo)} 接口承擔；本類不是它的替代品。
 
 構造期算出來的事實一律直接落在對應屬性上（自動屬性），不再另存一份欄位由屬性轉發；
-本類只留三個真正的緩存欄位：`_byName`、`_readable`、`_writable`。
+本類只留三個真正的緩存欄位：`_ByName`、`_Readable`、`_Writable`。
 
 建構子與按名查詢的實現見 `TypeInfoBase.Impl.cs`。
 ]
@@ -111,7 +111,7 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 不會看到半成品字典。
 ]
 """)]
-	private volatile Dictionary<str, IMemberInfo>? _byName;//TswgNote 違反命名規範！沒一處寫得對的
+	public volatile Dictionary<str, IMemberInfo>? _ByName;//TswgNote 違反命名規範！沒一處寫得對的
 
 	[Doc($"""
 #Sum[可讀名清單緩存。]
@@ -122,7 +122,7 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 第二次讀返回的是同一份清單實例（`{nameof(ReferenceEquals)}` 為 true）。
 ]
 """)]
-	private volatile IReadOnlyCollection<str>? _readable;
+	public volatile IReadOnlyCollection<str>? _Readable;
 
 	[Doc($"""
 #Sum[可寫名清單緩存。]
@@ -132,7 +132,7 @@ public abstract partial class TypeInfoBase:ITypeInfo{
 與 {nameof(ReadableNames)} 的差別只有一處：把 `Secret` 換成了 `Token`。
 ]
 """)]
-	private volatile IReadOnlyCollection<str>? _writable;
+	public volatile IReadOnlyCollection<str>? _Writable;
 
 	[Doc($$"""
 #Sum[由派生類交出型別事實；{{nameof(Members)}} 會在此規整。]
@@ -231,8 +231,8 @@ public partial class MyInfo:TypeInfoBase{
 """)]
 	public IReadOnlyCollection<str> ReadableNames{
 		get{
-			// 惰性算一次並緩存：成員表構造後不變，故緩存安全（見 _readable）。
-			return _readable ??= Members
+			// 惰性算一次並緩存：成員表構造後不變，故緩存安全（見 _Readable）。
+			return _Readable ??= Members
 				.Where(M => M.CanRead)
 				.Select(M => M.Name)
 				.ToList();
@@ -251,8 +251,8 @@ public partial class MyInfo:TypeInfoBase{
 """)]
 	public IReadOnlyCollection<str> WritableNames{
 		get{
-			// 同上，惰性算一次並緩存（見 _writable）。
-			return _writable ??= Members
+			// 同上，惰性算一次並緩存（見 _Writable）。
+			return _Writable ??= Members
 				.Where(M => M.CanWrite)
 				.Select(M => M.Name)
 				.ToList();
@@ -263,7 +263,7 @@ public partial class MyInfo:TypeInfoBase{
 #Sum[按名查成員；未知返回 false。]
 
 #Descr[
-走 {nameof(_byName)} 那份惰性索引，是 O(1)（見 {nameof(_byName)}），不掃 {nameof(Members)}。
+走 {nameof(_ByName)} 那份惰性索引，是 O(1)（見 {nameof(_ByName)}），不掃 {nameof(Members)}。
 ]
 
 #See[{nameof(ITypeInfo.TryGetMember)}]

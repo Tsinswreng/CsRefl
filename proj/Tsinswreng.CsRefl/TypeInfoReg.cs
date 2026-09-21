@@ -43,7 +43,7 @@ public partial class TypeInfoReg:ITypeInfoReg{
 `{nameof(TryGetInfo)}(typeof(PoUser), out var Got)` 返回 true 且 `Got` 就是剛才那個 `Info`（{nameof(ReferenceEquals)} 為 true）。
 ]
 """)]
-	private readonly ConcurrentDictionary<Type, ITypeInfo> _map = new();
+	public readonly ConcurrentDictionary<Type, ITypeInfo> _Map = new();
 
 	[Doc($"""
 #Sum[列舉已註冊型別（快照）。]

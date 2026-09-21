@@ -49,7 +49,7 @@ public abstract partial class TypeInfoBase{
 		}
 		// step 2: 走索引（第一次調用時才建，見 EnsureByName）。
 		EnsureByName();
-		return _byName!.TryGetValue(Name, out M);
+		return _ByName!.TryGetValue(Name, out M);
 	}
 
 	[Doc($"""
@@ -73,7 +73,7 @@ public abstract partial class TypeInfoBase{
 
 #Descr[
 成員表在建構後不可變，故緩存安全。
-索引雙檢：{nameof(_byName)} 是 volatile，兩個線程同時建也只會多建一份等價字典。
+索引雙檢：{nameof(_ByName)} 是 volatile，兩個線程同時建也只會多建一份等價字典。
 
 實測：第一次按名查時才建這份字典，故「只枚舉成員、從不按名查」的用法不付這份內存代價；
 建好之後每次按名查是 O(1)。
@@ -83,14 +83,14 @@ public abstract partial class TypeInfoBase{
 ]
 """)]
 	private partial void EnsureByName(){
-		if(_byName is not null){
+		if(_ByName is not null){
 			return;
 		}
 		var Dict = new Dictionary<str, IMemberInfo>(Members.Count, StringComparer.Ordinal);
 		foreach(var M in Members){
 			Dict[M.Name] = M;
 		}
-		_byName = Dict;
+		_ByName = Dict;
 	}
 
 	[Doc($"""

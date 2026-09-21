@@ -26,7 +26,7 @@ public partial class MergedTypeInfoSrc{
 		}
 		// params 數組是調用方傳進來的，此處拷貝一份：
 		// 否則調用方事後改數組元素就等於偷偷改了來源優先級。
-		_sources = [.. Sources];
+		_Sources = [.. Sources];
 	}
 
 	[Doc($"""
@@ -36,7 +36,7 @@ public partial class MergedTypeInfoSrc{
 """)]
 	public partial bool TryGetInfo(Type Type, out ITypeInfo? Info){
 		ArgumentNullException.ThrowIfNull(Type);
-		foreach(var S in _sources){
+		foreach(var S in _Sources){
 			if(S.TryGetInfo(Type, out Info)){
 				return true;
 			}
@@ -47,7 +47,7 @@ public partial class MergedTypeInfoSrc{
 
 	private partial IReadOnlyCollection<Type>? SnapshotTypes(){
 		var R = new HashSet<Type>();
-		foreach(var S in _sources){
+		foreach(var S in _Sources){
 			var T = S.RegisteredTypes;
 			if(T is null){
 				return null;

@@ -39,8 +39,8 @@ public partial class InstDict{
 				KeySet.Add(N);
 			}
 		}
-		_keys = KeyList;
-		_keySet = KeySet;
+		_KeyList = KeyList;
+		_KeySet = KeySet;
 		// step 3: 對外只讀包裝（不複製）：外部拿不到 List 的 Add/Remove，形狀改不動。
 		Keys = new ReadOnlyCollection<str>(KeyList);
 	}
@@ -75,7 +75,7 @@ public partial class InstDict{
 
 #Descr[
 成員不存在或不可讀拋 {nameof(KeyNotFoundException)}（訊息含出現口徑的鍵）。
-判據是成員表而非 {nameof(_keys)}：只讀成員也讀得到（見 {nameof(InstDict)} 的口徑說明）。
+判據是成員表而非 {nameof(_KeyList)}：只讀成員也讀得到（見 {nameof(InstDict)} 的口徑說明）。
 
 實測（`PoUser`，`Secret = "s"`）：讀 `"Secret"` 返回 "s"；
 讀 `"Token"`（只寫）拋 {nameof(KeyNotFoundException)}，
@@ -87,7 +87,7 @@ public partial class InstDict{
 	private partial obj? ReadCell(str Key){
 		// step 1: 成員必須存在且可讀（判據是成員表，不看鍵表）。
 		if(!TypeInfo.TryGetMember(Key, out var M) || !M.CanRead){
-			throw new KeyNotFoundException($"鍵 {Key} 不在字典視圖裏（不存在或不可讀）。可用鍵：{string.Join(", ", _keys)}");
+			throw new KeyNotFoundException($"鍵 {Key} 不在字典視圖裏（不存在或不可讀）。可用鍵：{string.Join(", ", _KeyList)}");
 		}
 		// step 2: 真正取值；實例型別不符時 TryGet 返回 false。
 		if(!M.TryGet(Target, out var R)){
@@ -107,7 +107,7 @@ public partial class InstDict{
 成員不存在拋 {nameof(KeyNotFoundException)}，
 不可寫或值型別不符拋 {nameof(InvalidOperationException)}。
 
-判據同樣是成員表：只寫成員寫得進（它讀不出來，故不在 {nameof(_keys)} 裏）。
+判據同樣是成員表：只寫成員寫得進（它讀不出來，故不在 {nameof(_KeyList)} 裏）。
 
 實測（`PoUser`）：寫 `"Level"` 為 8 成功且寫回物件；
 寫 `"Secret"` 拋 {nameof(InvalidOperationException)}，訊息指名 "Secret"（成員在、但不可寫）；
@@ -117,7 +117,7 @@ public partial class InstDict{
 	private partial void WriteCell(str Key, obj? Value){
 		// step 1: 成員必須存在。
 		if(!TypeInfo.TryGetMember(Key, out var M)){
-			throw new KeyNotFoundException($"鍵 {Key} 不在字典視圖裏（不存在）。可用鍵：{string.Join(", ", _keys)}");
+			throw new KeyNotFoundException($"鍵 {Key} 不在字典視圖裏（不存在）。可用鍵：{string.Join(", ", _KeyList)}");
 		}
 		// step 2: 成員必須可寫（只讀成員到這裡就被擋住，不會撞到底層異常）。
 		if(!M.CanWrite){
@@ -132,7 +132,7 @@ public partial class InstDict{
 	[Doc($"""
 #Sum[按出現口徑的鍵序逐鍵取值。]
 
-#Rtn[值集合，順序同 {nameof(_keys)}]
+#Rtn[值集合，順序同 {nameof(_KeyList)}]
 
 #Descr[
 逐鍵求值，不做排序。
@@ -144,8 +144,8 @@ null、false、空列表、空字典、boxed 的 `i32` 0、`str` "n"；
 ]
 """)]
 	private partial ICollection<obj?> BuildValues(){
-		var R = new List<obj?>(_keys.Count);
-		foreach(var K in _keys){
+		var R = new List<obj?>(_KeyList.Count);
+		foreach(var K in _KeyList){
 			R.Add(ReadCell(K));
 		}
 		return R;
@@ -157,8 +157,8 @@ null、false、空列表、空字典、boxed 的 `i32` 0、`str` "n"；
 #See[{nameof(InstDict.ContainsKey)}]
 """)]
 	public partial bool ContainsKey(str Key){
-		// 走 _keySet（O(1)），不掃 _keys（那是 O(n)，鍵一多就變貴）。
-		return _keySet.Contains(Key);
+		// 走 _KeySet（O(1)），不掃 _KeyList（那是 O(n)，鍵一多就變貴）。
+		return _KeySet.Contains(Key);
 	}
 
 	[Doc($"""
@@ -248,13 +248,13 @@ null、false、空列表、空字典、boxed 的 `i32` 0、`str` "n"；
 		// 對調用方毫無線索。
 		ArgumentNullException.ThrowIfNull(Array);
 		ArgumentOutOfRangeException.ThrowIfNegative(ArrayIndex);
-		if(Array.Length - ArrayIndex < _keys.Count){
+		if(Array.Length - ArrayIndex < _KeyList.Count){
 			throw new ArgumentException(
-				$"目標數組容量不足：從下標 {ArrayIndex} 起需要 {_keys.Count} 個位置，實際只剩 {Array.Length - ArrayIndex} 個。",
+				$"目標數組容量不足：從下標 {ArrayIndex} 起需要 {_KeyList.Count} 個位置，實際只剩 {Array.Length - ArrayIndex} 個。",
 				nameof(Array)
 			);
 		}
-		foreach(var K in _keys){
+		foreach(var K in _KeyList){
 			Array[ArrayIndex] = new KeyValuePair<str, obj?>(K, ReadCell(K));
 			ArrayIndex++;
 		}
@@ -272,7 +272,7 @@ null、false、空列表、空字典、boxed 的 `i32` 0、`str` "n"；
 #See[{nameof(InstDict.GetEnumerator)}]
 """)]
 	public partial IEnumerator<KeyValuePair<str, obj?>> GetEnumerator(){
-		foreach(var K in _keys){
+		foreach(var K in _KeyList){
 			yield return new KeyValuePair<str, obj?>(K, ReadCell(K));
 		}
 	}

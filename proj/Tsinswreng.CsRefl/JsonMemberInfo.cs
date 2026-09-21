@@ -8,16 +8,19 @@ using Tsinswreng.CsCore;
 #Sum[Json 側的成員配接器：把官方 {nameof(JsonPropertyInfo)} 接上 {nameof(IMemberInfo)}。]
 
 #Descr[
-實測：`typeof(PoUser)` 的成員表裡每一項包的都是官方 {nameof(JsonPropertyInfo)}（首項 `Id`、末項 `Note`）。
+源生成給出的成員是官方 {nameof(JsonPropertyInfo)}，本類把它統一成門面的 {nameof(IMemberInfo)}。
 ]
 """)]
 public partial class JsonMemberInfo:IMemberInfo{
 	[Doc($"""
 #Sum[官方成員物件本體（進階用途）。]
 
-#Descr[實測：`Age` 的這個屬性是官方 {nameof(JsonPropertyInfo)}。]
+#Descr[
+構造期賦值，之後不再改；要直接使官方源生成 API，用它。
+]
 """)]
-	private readonly JsonPropertyInfo _raw;//TswgNote 違反命名規範, 而且爲甚麼不用public?
+	public readonly JsonPropertyInfo _Raw;//TswgNote 違反命名規範, 而且爲甚麼不用public?
+	// 已按此改：命名改 _Raw（public ＋ 下劃線 ＋ 大駝峯）；改 public，不再 private。
 
 	[Doc($"""
 #Sum[用官方成員物件建配接器。]
@@ -26,21 +29,75 @@ public partial class JsonMemberInfo:IMemberInfo{
 """)]
 	public partial JsonMemberInfo(JsonPropertyInfo Json);
 
-	public partial str Name{get;}
-	public partial Type PropertyType{get;}
-	public partial Type DeclaringType{get;}
-	public partial bool CanRead{get;}
-	public partial bool CanWrite{get;}
-	public partial System.Reflection.ICustomAttributeProvider? AttributeProvider{get;}
+	[Doc($"""
+#Sum[成員名，取自官方成員物件。]
+
+#See[{nameof(IMemberInfo.Name)}]
+""")]
+	public str Name{
+		get{
+			return _Raw.Name;
+		}
+	}
+
+	[Doc($"""
+#Sum[成員型別，取自官方 {nameof(JsonPropertyInfo)}.{nameof(JsonPropertyInfo.PropertyType)}。]
+
+#See[{nameof(IMemberInfo.PropertyType)}]
+""")]
+	public Type PropertyType{
+		get{
+			return _Raw.PropertyType;
+		}
+	}
+
+	[Doc($"""
+#Sum[成員宣告所在的型別，取自官方成員物件。]
+
+#See[{nameof(IMemberInfo.DeclaringType)}]
+""")]
+	public Type DeclaringType{
+		get{
+			return _Raw.DeclaringType;
+		}
+	}
+
+	[Doc($"""
+#Sum[看官方的讀取委託 {nameof(JsonPropertyInfo)}.{nameof(JsonPropertyInfo.Get)} 是否非 null。]
+
+#See[{nameof(IMemberInfo.CanRead)}]
+""")]
+	public bool CanRead{
+		get{
+			return _Raw.Get is not null;
+		}
+	}
+
+	[Doc($"""
+#Sum[看官方的寫入委託 {nameof(JsonPropertyInfo)}.{nameof(JsonPropertyInfo.Set)} 是否非 null。]
+
+#See[{nameof(IMemberInfo.CanWrite)}]
+""")]
+	public bool CanWrite{
+		get{
+			return _Raw.Set is not null;
+		}
+	}
+
+	[Doc($"""
+#Sum[取官方成員物件自帶的特性提供者。]
+
+#See[{nameof(IMemberInfo.AttributeProvider)}]
+""")]
+	public ICustomAttributeProvider? AttributeProvider{
+		get{
+			return _Raw.AttributeProvider;
+		}
+	}
+
 	public partial bool TryGet(obj? O, out obj? V);
 	public partial bool TrySet(obj? O, obj? V);
-
-	public partial obj Raw{get;}
 }
-
-
-
-
 
 
 
