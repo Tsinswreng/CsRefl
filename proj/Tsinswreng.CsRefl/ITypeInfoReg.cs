@@ -3,7 +3,7 @@ namespace Tsinswreng.CsRefl;
 using Tsinswreng.CsCore;
 
 [Doc($"""
-#Sum[可寫的型別元資料註冊表：在 {nameof(ITypeInfoSrc)} 之上補上手動增刪。]
+#Sum[可寫的型別元資料註冊表：在 {nameof(ITypeInfoEnumSrc)} 之上補上手動增刪。]
 
 #Descr[
 與舊 Srefl 的「可寫字典」不同：
@@ -16,7 +16,7 @@ using Tsinswreng.CsCore;
 就可以手工造一份元資料塞進註冊表，讓上層代碼照常查得到。
 ]
 """)]
-public interface ITypeInfoReg:ITypeInfoSrc{
+public interface ITypeInfoReg:ITypeInfoEnumSrc{
 	[Doc($$"""
 #Sum[登記一個型別的元資料。]
 

@@ -13,7 +13,7 @@ public partial class JsonMemberInfo{
 	}
 
 	// 肏你媽臭屄這東西是給你寫到impl裏的嗎?
-	// 已按此改：訪問器本體（Name／PropertyType／DeclaringType／CanRead／CanWrite／AttributeProvider）
+	// 已按此改：訪問器本體（Name／PropertyType／OwnerType／CanRead／CanWrite／AttributeProvider）
 	// 全部搬回 JsonMemberInfo.cs（Decl），Impl 只留函數。
 
 	public partial bool TryGet(obj? O, out obj? V){

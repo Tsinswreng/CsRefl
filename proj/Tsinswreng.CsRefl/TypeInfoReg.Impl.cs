@@ -23,11 +23,6 @@ public partial class TypeInfoReg{
 		return _Map.TryGetValue(Type, out Info);
 	}
 
-	private partial IDictionary<Type, ITypeInfo>? SnapshotTypes(){
-		// 佔位：本輪只改形狀，實現待寫（照 ITypeInfoSrc.RegisteredTypes 的口徑交一份快照）。
-		throw new NotImplementedException();
-	}
-
 	[Doc($"""
 #Sum[登記一個型別的元資料。]
 

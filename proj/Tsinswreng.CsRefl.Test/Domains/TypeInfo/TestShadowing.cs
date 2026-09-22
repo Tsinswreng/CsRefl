@@ -27,7 +27,7 @@ public partial class TestTypeInfo{
 
 		// Id 只出現一次，且是派生類那份宣告。
 		var Id = Info.GetMember("Id");
-		T(Id.DeclaringType == typeof(PoUserExt), $"按名查到的 Id 應是派生類宣告，實際 {Id.DeclaringType?.Name ?? "null"}");
+		T(Id.OwnerType == typeof(PoUserExt), $"按名查到的 Id 應是派生類宣告，實際 {Id.OwnerType?.Name ?? "null"}");
 
 		// 去重後讀寫照常作用在實例上。
 		var Ext = new PoUserExt();

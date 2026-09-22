@@ -11,14 +11,13 @@ using Tsinswreng.CsCore;
 AOT 下可用——前提是查詢目標的成員元數據已被保留
 （見 {nameof(ReflTypeInfo.ReflDam)} 的說明）。
 
-{nameof(RegisteredTypes)} 預設 null：
-反射來源能查任意型別，無法也無需列舉。
+反射來源沒有一份型別清單：任何型別都能查，故本類只實作 {nameof(ITypeInfoSrc)}，
+不實作 {nameof(ITypeInfoEnumSrc)}。
 
 實測：`{nameof(Inst)}.{nameof(TryGetInfo)}(typeof(PoUser), out var Info)` 與
 `{nameof(Inst)}.{nameof(TryGetInfo)}(typeof(PoNoCtor), out _)` 都返回 true，
 不需要事先把型別註冊到任何地方；
-反過來 `{nameof(RegisteredTypes)}` 也給不出「所有能查的型別」，
-因為那等於「所有型別」。
+本類給不出「所有能查的型別」，因為那等於「所有型別」。
 
 {nameof(TryGetInfo)} 實現見 `ReflTypeInfoSrc.Impl.cs`。
 ]
@@ -49,23 +48,6 @@ public partial class ReflTypeInfoSrc:ITypeInfoSrc{
 	public static ReflTypeInfoSrc Inst{
 		get;
 	} = new();
-
-	[Doc($"""
-#Sum[預設 null（本來源不支持列舉）；可賦值。]
-
-#Descr[
-反射來源對任意型別都能現場建元資料，故沒有「已知型別清單」這種東西，預設就是 null。
-
-賦值留給調用方自行取用（例如替下游掃描塞一份型別全集，或讓合成來源變得可列舉）：
-本來源的 {nameof(TryGetInfo)} 不讀這份表，故賦值不會改變查詢結果。
-]
-
-#See[{nameof(ITypeInfoSrc.RegisteredTypes)}]
-""")]
-	public IDictionary<Type, ITypeInfo>? RegisteredTypes{
-		get;
-		set;
-	}
 
 	[Doc($$"""
 #Sum[取任意型別的元資料；反射來源總是「可知」。]

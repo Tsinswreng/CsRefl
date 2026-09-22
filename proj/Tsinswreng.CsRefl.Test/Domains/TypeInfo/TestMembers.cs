@@ -28,7 +28,7 @@ public partial class TestTypeInfo{
 		var Age = Info.Members[2];
 		T(Age.Name == "Age", "Age 應在自分類的第 3 位");
 		T(Age.PropertyType == typeof(i32), "Age 型別應是 int");
-		T(Age.DeclaringType == typeof(PoUser), "Age 聲明型別應是 PoUser");
+		T(Age.OwnerType == typeof(PoUser), "Age 聲明型別應是 PoUser");
 		T(Age.CanRead && Age.CanWrite, "Age 應可讀可寫");
 		// 可讀/可寫與官方委託同一判據（官方 JsonPropertyInfo 就是用 Get/Set 表示）。
 		T(((Age as JsonPropertyInfo)?.Get) is not null && ((Age as JsonPropertyInfo)?.Set) is not null, "Age 應同時給出官方 Get 與 Set 委託");
@@ -36,7 +36,7 @@ public partial class TestTypeInfo{
 		T(((Age as JsonPropertyInfo)?.AttributeProvider) is not null, "Age 應給出官方特性提供者");
 
 		var Id = Info.Members[0];
-		T(Id.DeclaringType == typeof(PoUserBase), "Id 聲明型別應是基類 PoUserBase（繼承成員在前）");
+		T(Id.OwnerType == typeof(PoUserBase), "Id 聲明型別應是基類 PoUserBase（繼承成員在前）");
 
 		var Secret = Info.Members[7];
 		T(Secret.Name == "Secret", "Secret 應在第 8 位");

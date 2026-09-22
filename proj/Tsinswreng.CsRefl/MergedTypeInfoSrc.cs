@@ -28,7 +28,7 @@ using Tsinswreng.CsCore;
 （實測：`new {nameof(MergedTypeInfoSrc)}(Table, ReflSrc)` 命中的是註冊表裏那個實例）。
 ]
 """)]
-public partial class MergedTypeInfoSrc:ITypeInfoSrc{
+public partial class MergedTypeInfoSrc:ITypeInfoEnumSrc{
 	[Doc($"""
 #Sum[來源清單，順序即優先級。]
 
@@ -42,23 +42,20 @@ public partial class MergedTypeInfoSrc:ITypeInfoSrc{
 	public readonly IReadOnlyList<ITypeInfoSrc> _Sources;
 
 	[Doc($"""
-#Sum[全部來源都支持列舉才交出並集，否則返回 null。]
+#Sum[成員來源都拿得出表時，現算一份並集。]
 
 #Descr[
-與「來源可不同構」的設計一致。
+本類自己沒有表：它按順序問每一條成員來源「你的表是甚麼」，把各張表併成一份新字典。
+同一個型別被多條來源登記時只留一份，保留排在最前面那條來源的元資料。
+按訪問現算，不緩存：成員來源可以在本類背後繼續登記，緩存會給出過期的答案。
 
-按訪問現算：來源本身可能在建構後繼續註冊，緩存反而會給出過期答案。
-
-同一型別登記在多個來源時只出現一次；值取優先級最高（最靠前）那個來源交出的元資料。
-
-鏈裏只要有一個 {nameof(JsonTypeInfoSrc)}，
-整個 {nameof(RegisteredTypes)} 就是 null（它不支持列舉），
-哪怕另一個 {nameof(TypeInfoReg)} 本身能列舉。
+成員來源之中只要有一條拿不出表（例如 {nameof(JsonTypeInfoSrc)} 與 {nameof(ReflTypeInfoSrc)}），
+本屬性就交不出並集，此時值是 null；哪怕另一個 {nameof(TypeInfoReg)} 本身拿得出表。
 
 賦值＝覆蓋列舉結果：本類沒有自己的表，故賦值只影響列舉，不改查詢的來源優先級。
 ]
 
-#See[{nameof(ITypeInfoSrc.RegisteredTypes)}]
+#See[{nameof(ITypeInfoEnumSrc.RegisteredTypes)}]
 """)]
 	public IDictionary<Type, ITypeInfo>? RegisteredTypes{
 		get{
@@ -127,13 +124,17 @@ Src.TryGetInfo(typeof(SomeUnregistepedType), out _);
 	// ---- 私有輔助（實現見 MergedTypeInfoSrc.Impl.cs）----
 
 	[Doc($"""
-#Sum[逐來源取表，只有全部來源都支持列舉時才交出並集。]
+#Sum[逐條來源取表再合成一份並集；{nameof(RegisteredTypes)} 的取值就是呼叫本方法。]
 
-#Rtn[型別 → 元資料的並集；任一來源不支持列舉時為 null]
+#Rtn[一個新字典，鍵是全部來源已知的型別，值是該型別的元資料；只要有一條來源不支持列舉就回 null]
 
 #Descr[
-按型別去重（{nameof(Type)} 的相等性是引用相等，正合並集語義）；
-同一型別在多個來源都有時，保留先出現（優先級最高）那個來源的值。
+本方法依序問每一條來源「你的表是甚麼」，再把各張表裏的鍵值對併進同一個新字典。
+同一個型別被多條來源登記時只留一份，保留排在最前面那條來源給的元資料，
+因為排在最前面代表優先級最高。
+
+只要有一條來源回答「我沒有表」，本方法就回 null，
+也就是這條合成鏈不能當型別全集用。
 ]
 """)]
 	private partial IDictionary<Type, ITypeInfo>? SnapshotTypes();

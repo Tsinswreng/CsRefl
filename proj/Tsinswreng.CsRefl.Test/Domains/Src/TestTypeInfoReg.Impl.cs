@@ -65,7 +65,7 @@ public partial class TestTypeInfoReg{
 			return null;
 		});
 
-		R("RegisteredTypes 列舉快照", async _ => {
+		R("RegisteredTypes 交出註冊表本體", async _ => {
 			var T = Assert.IsTrue;
 			var Table = new TypeInfoReg();
 			Table.Add(typeof(PoUser), new ReflTypeInfo(typeof(PoUser)));
@@ -73,9 +73,9 @@ public partial class TestTypeInfoReg{
 			var Types = Table.RegisteredTypes!;
 			T(Types.Count == 2, $"列舉應有 2 個，實際 {Types.Count}");
 			T(Types.ContainsKey(typeof(PoUser)) && Types.ContainsKey(typeof(PoColor)), "應含剛註冊的兩個型別");
-			// 快照：取完之後再註冊不應影響已取到的那一份。
+			// 交出的就是註冊表本體（O(1)、不複製），故之後的註冊在同一張表上看得見。
 			Table.Add(typeof(PoNoCtor), new ReflTypeInfo(typeof(PoNoCtor)));
-			T(Types.Count == 2, "快照不應隨之後的註冊而變化");
+			T(Types.Count == 3, "取出的就是同一張表，之後的註冊應看得到");
 			return null;
 		});
 	}

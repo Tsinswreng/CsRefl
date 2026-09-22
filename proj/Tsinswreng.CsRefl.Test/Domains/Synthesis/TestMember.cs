@@ -24,10 +24,10 @@ var U = new {{nameof(PoUser)}}{ Id = 1, Name = "小明", Age = 26 };
 
 MAge.{{nameof(IMemberInfo.Name)}};             // "Age"
 MAge.{{nameof(IMemberInfo.PropertyType)}};     // typeof(i32)
-MAge.{{nameof(IMemberInfo.DeclaringType)}};    // typeof({{nameof(PoUser)}})
+MAge.{{nameof(IMemberInfo.OwnerType)}};    // typeof({{nameof(PoUser)}})
 MAge.{{nameof(IMemberInfo.CanRead)}};          // true
 
-Info.{{nameof(ITypeInfo.GetMember)}}(nameof({{nameof(PoUser)}}.{{nameof(PoUser.Id)}})).{{nameof(IMemberInfo.DeclaringType)}};    // typeof({{nameof(PoUserBase)}})：繼承來的
+Info.{{nameof(ITypeInfo.GetMember)}}(nameof({{nameof(PoUser)}}.{{nameof(PoUser.Id)}})).{{nameof(IMemberInfo.OwnerType)}};    // typeof({{nameof(PoUserBase)}})：繼承來的
 Info.{{nameof(ITypeInfo.GetMember)}}(nameof({{nameof(PoUser)}}.{{nameof(PoUser.Secret)}})).{{nameof(IMemberInfo.CanWrite)}};     // false：只讀
 
 MAge.{{nameof(IMemberInfo.TryGet)}}(U, out var V);   // true；V 是 boxed 的 i32 26
@@ -51,8 +51,8 @@ public partial class TestSynthesis{
 
 		// 名字、宣告型別：兩種成員物件（屬性／字段）與兩套來源同一條路。
 		T(MAge.Name == nameof(PoUser.Age), "成員名應是 Age");
-		T(MAge.DeclaringType == typeof(PoUser), "Age 應宣告在 PoUser 上");
-		T(Info.GetMember(nameof(PoUser.Id)).DeclaringType == typeof(PoUserBase), "繼承成員 Id 的宣告型別是基類");
+		T(MAge.OwnerType == typeof(PoUser), "Age 應宣告在 PoUser 上");
+		T(Info.GetMember(nameof(PoUser.Id)).OwnerType == typeof(PoUserBase), "繼承成員 Id 的宣告型別是基類");
 
 		// 宣告型別：PropertyInfo／JsonPropertyInfo 取 PropertyType、FieldInfo 取 FieldType。
 		T(MAge.PropertyType == typeof(i32), "Age 的宣告型別應是 i32");

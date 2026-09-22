@@ -20,8 +20,8 @@ public partial class JsonTypeInfoSrc{
 	public partial JsonTypeInfoSrc(JsonSerializerContext Ctx){
 		ArgumentNullException.ThrowIfNull(Ctx);
 		// JsonSerializerContext 顯式實現 IJsonTypeInfoResolver，轉介面調用。
-		_Resolver = Ctx;
-		_Options = Ctx.Options;
+		JsonTypeInfoResolver = Ctx;
+		JsonSerializerOptions = Ctx.Options;
 	}
 
 	[Doc($"""
@@ -32,13 +32,13 @@ public partial class JsonTypeInfoSrc{
 	public partial JsonTypeInfoSrc(JsonSerializerOptions Options){
 		ArgumentNullException.ThrowIfNull(Options);
 		// step 1: 取出 resolver 鏈；取不到就沒有解析能力，直接擋在建構期。
-		_Resolver = Options.TypeInfoResolver
+		JsonTypeInfoResolver = Options.TypeInfoResolver
 			?? throw new ArgumentException(
 				"Options.TypeInfoResolver 為空；JsonTypeInfo 來源需要一個能解析型別的 resolver（如源生成 context）。",
 				nameof(Options)
 			);
 		// step 2: 連 options 一起留著，解析時要傳回給 resolver（見 Build）。
-		_Options = Options;
+		JsonSerializerOptions = Options;
 	}
 
 	[Doc($"""
@@ -72,7 +72,7 @@ public partial class JsonTypeInfoSrc{
 	}
 
 	private partial ITypeInfo? Build(Type Type){
-		var JsonInfo = _Resolver.GetTypeInfo(Type, _Options);
+		var JsonInfo = JsonTypeInfoResolver.GetTypeInfo(Type, JsonSerializerOptions);
 		if(JsonInfo is null){
 			return null;
 		}

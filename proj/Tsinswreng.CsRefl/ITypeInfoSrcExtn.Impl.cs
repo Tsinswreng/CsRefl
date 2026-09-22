@@ -21,7 +21,7 @@ public static partial class ITypeInfoSrcExtn{
 本體只是原樣返回，作用是在編譯期把 DAM 註解掛上。
 ]
 """)]
-	private static partial Type RuntimeType(Type T){
+	private static partial Type _RuntimeType(Type T){
 		return T;
 	}
 
@@ -162,7 +162,7 @@ public static partial class ITypeInfoSrcExtn{
 		ArgumentNullException.ThrowIfNull(z);
 		ArgumentNullException.ThrowIfNull(O);
 		// 動態 GetType() 的 DAM 需要擔保，見 RuntimeType。
-		var T = Type ?? RuntimeType(O.GetType());
+		var T = Type ?? _RuntimeType(O.GetType());
 		if(!z.TryGetInfo(T, out var Info)){
 			throw new KeyNotFoundException($"型別 {T.FullName} 未註冊到來源 {z.GetType().Name}，無法建字典視圖。");
 
@@ -198,7 +198,7 @@ public static partial class ITypeInfoSrcExtn{
 		ArgumentNullException.ThrowIfNull(O);
 		ArgumentNullException.ThrowIfNull(Dict);
 		// 動態 GetType() 的 DAM 需要擔保，見 RuntimeType。
-		var T = Type ?? RuntimeType(O.GetType());
+		var T = Type ?? _RuntimeType(O.GetType());
 		// step 1: 型別要能查到（訊息指出是哪個型別與哪個來源）。
 		if(!z.TryGetInfo(T, out var Info)){
 			throw new KeyNotFoundException($"型別 {T.FullName} 未註冊到來源 {z.GetType().Name}，無法執行字典寫回。");

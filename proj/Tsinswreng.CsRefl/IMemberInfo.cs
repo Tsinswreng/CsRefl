@@ -38,44 +38,47 @@ public partial interface IMemberInfo{
 	[Doc($$"""
 #Sum[這個屬性或字段是甚麼型別。]
 #Descr[
-一個屬性或字段在型別定義裏寫的是甚麼型別，{{nameof(IMemberInfo.PropertyType)}} 就是甚麼型別。
-成員裏當下存着甚麼值，與 {{nameof(IMemberInfo.PropertyType)}} 無關。
+一個屬性或字段在型別定義裏寫的是甚麼型別，{{nameof(IMemberInfo.PropertyType)}} 就是甚麼型別，
+與成員裏當下存着甚麼值無關。
 
-下面例子用到：{{nameof(ITypeInfoSrcExtn.GetInfo)}}、{{nameof(ITypeInfo)}}、{{nameof(ITypeInfo.Members)}}、{{nameof(IMemberInfo.PropertyType)}}。
+本例取 Name 這個屬性，Name 定義成 str，故取到的型別是 str，與 Name 此刻裝着的值無關。
 
-調用方這樣寫。src 是一個來源，info 是 ITypeInfo 這個型別的元資料：
+下面例子用到：{{nameof(ITypeInfoSrcExtn.GetInfo)}}、{{nameof(IMemberInfo)}}、{{nameof(ITypeInfo.GetMember)}}、{{nameof(IMemberInfo.Name)}}、{{nameof(IMemberInfo.PropertyType)}}。
+
+src 是一個來源。
 
 ```cs
-var info = src.GetInfo(typeof(ITypeInfo));
+var info = src.GetInfo(typeof(IMemberInfo));
+var m = info.GetMember(nameof(IMemberInfo.Name));
 
-foreach(var m in info.Members){
-	var declared = m.PropertyType;   // 這個成員聲明成甚麼型別
-}
+var t = m.PropertyType;   // str
 ```
 ]
 """)]//TswgNote
 	Type PropertyType{get;set;}
 
 	[Doc($$"""
-#Sum[這個屬性或字段寫在哪個型別裏。]
+#Sum[這個屬性或字段屬於哪個型別。]
 #Descr[
-一個屬性或字段的定義寫在哪個型別裏，{{nameof(IMemberInfo.DeclaringType)}} 就是那個型別。
-繼承來的成員，定義寫在基類，故 {{nameof(IMemberInfo.DeclaringType)}} 是基類，不是取到該成員的子類。
+一個屬性或字段的定義寫在哪個型別裏，{{nameof(IMemberInfo.OwnerType)}} 就是那個型別。
+繼承來的成員，定義寫在基類，故 {{nameof(IMemberInfo.OwnerType)}} 是基類，不是取到該成員的子類。
 
-下面例子用到：{{nameof(ITypeInfoSrcExtn.GetInfo)}}、{{nameof(ITypeInfo)}}、{{nameof(ITypeInfo.Members)}}、{{nameof(IMemberInfo.DeclaringType)}}。
+本例從 JsonTypeInfoInfo 上取到 Members，但 Members 的定義寫在基類 TypeInfoBase 裏，
+故取到的是 TypeInfoBase。
 
-調用方這樣寫。src 是一個來源，info 是 ITypeInfo 這個型別的元資料：
+下面例子用到：{{nameof(ITypeInfoSrcExtn.GetInfo)}}、{{nameof(JsonTypeInfoInfo)}}、{{nameof(ITypeInfo.GetMember)}}、{{nameof(TypeInfoBase)}}、{{nameof(TypeInfoBase.Members)}}、{{nameof(IMemberInfo.OwnerType)}}。
+
+src 是一個來源。
 
 ```cs
-var info = src.GetInfo(typeof(ITypeInfo));
+var info = src.GetInfo(typeof(JsonTypeInfoInfo));
+var m = info.GetMember(nameof(TypeInfoBase.Members));
 
-foreach(var m in info.Members){
-	var owner = m.DeclaringType;   // 這個成員寫在哪個型別裏
-}
+var d = m.OwnerType;   // TypeInfoBase
 ```
 ]
 """)]//TswgNote
-	Type DeclaringType{get;set;}
+	Type OwnerType{get;set;}
 
 	[Doc($$"""
 #Sum[本成員可否讀取。]
@@ -116,7 +119,7 @@ foreach(var m in info.Members){
 #Descr[
 按名一步讀值的捷徑是 {{nameof(ITypeInfoExtn.TryGet)}}。
 
-返回 false 的場合：實例為 null、實例與 {{nameof(DeclaringType)}} 不符、成員只寫、
+返回 false 的場合：實例為 null、實例與 {{nameof(OwnerType)}} 不符、成員只寫、
 名不在成員表上。
 ]
 """)]
@@ -128,7 +131,7 @@ foreach(var m in info.Members){
 #Descr[
 按名一步寫值的捷徑是 {{nameof(ITypeInfoExtn.TrySet)}}。
 
-返回 false 的場合：實例為 null、實例與 {{nameof(DeclaringType)}} 不符、成員只讀、
+返回 false 的場合：實例為 null、實例與 {{nameof(OwnerType)}} 不符、成員只讀、
 名不在成員表上；值型別不符照常拋（那是調用方的 bug）。
 ]
 """)]

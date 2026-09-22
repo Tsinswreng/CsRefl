@@ -47,18 +47,21 @@ public partial class TypeInfoReg:ITypeInfoReg{
 	public readonly ConcurrentDictionary<Type, ITypeInfo> _Map = new();
 
 	[Doc($"""
-#Sum[交出註冊表；鍵＝型別、值＝元資料。]
+#Sum[交出註冊表本體。]
 
 #Descr[
-取值＝{nameof(SnapshotTypes)} 的結果（一份拷貝）。
-賦值＝整張替換註冊表：以給的那份為準，不合併、不拷貝。
+取值時直接把 {nameof(_Map)} 交出去，是 O(1)，不做任何複製。
+因此調用方拿到的就是註冊表本身：對它增刪會直接改到註冊表，
+而 {nameof(Add)} 對重複登記的檢查會被繞過；要一份副本就自己複製。
+
+賦值時整張換掉註冊表：以給的那份為準，不與現有內容合併，也不再另做一份副本。
 ]
 
-#See[{nameof(ITypeInfoSrc.RegisteredTypes)}]
+#See[{nameof(ITypeInfoEnumSrc.RegisteredTypes)}]
 """)]
 	public IDictionary<Type, ITypeInfo>? RegisteredTypes{
 		get{
-			return SnapshotTypes();
+			return _Map;
 		}
 		set{
 			// 佔位：本輪只改形狀，實現待寫（整張替換；照 ITypeInfoReg 的約定擋重複鍵）。
@@ -105,17 +108,4 @@ Reg.TryGetInfo(typeof(PoUser), out _);
 #See[{nameof(ITypeInfoReg.Remove)}]
 """)]
 	public partial bool Remove(Type Type);
-
-	// ---- 私有輔助（實現見 TypeInfoReg.Impl.cs）----
-
-	[Doc($"""
-#Sum[已註冊表的快照。]
-
-#Rtn[型別 → 元資料；一份拷貝]
-
-#Descr[
-取完之後再 {nameof(Add)}／{nameof(Remove)} 不影響已經取出的那份。
-]
-""")]
-	private partial IDictionary<Type, ITypeInfo>? SnapshotTypes();
 }

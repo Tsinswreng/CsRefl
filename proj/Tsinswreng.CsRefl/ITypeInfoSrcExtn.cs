@@ -55,7 +55,7 @@ JsonOnly.GetInfo(typeof(PoNoCtor));
 """)]
 	public static partial ITypeInfo GetInfo(
 		this ITypeInfoSrc z,
-		[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] Type Type
+		[DAM(ReflTypeInfo.ReflDam)] Type Type
 	);
 
 	[Doc($$"""
@@ -77,7 +77,7 @@ Info.Type;   // typeof(PoUser)
 不必像 `GetInfo(Type)` 那樣要調用方自己記得傳 `typeof(T)`。
 ]
 """)]
-	public static partial ITypeInfo GetInfo<[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] T>(this ITypeInfoSrc z);
+	public static partial ITypeInfo GetInfo<[DAM(ReflTypeInfo.ReflDam)] T>(this ITypeInfoSrc z);
 
 	[Doc($"""
 #Sum[運行期型別的 DAM 擔保。]
@@ -92,15 +92,15 @@ Info.Type;   // typeof(PoUser)
 缺元數據時會在反射建元資料處自然拋錯，不會悄悄剪錯，
 故此處顯式擔保成員元數據需求。
 
-實測：`{nameof(ToInstDict)}(User)` 內部就是先 `{nameof(RuntimeType)}(User.GetType())`，
+實測：`{nameof(ToInstDict)}(User)` 內部就是先 `{nameof(_RuntimeType)}(User.GetType())`，
 再拿這個 {nameof(Type)} 去查來源（實測得到的是 `typeof(PoUser)`）；
 調用方不必自己處理 DAM，剪裁分析器也不會因此報警。
 ]
 """)]
 	[UnconditionalSuppressMessage("Trimming", "IL2068",
 		Justification = "運行期型別（O.GetType()）本質無法靜態攜帶 DAM 信息；本包對它的用法只有 IsInstanceOfType 與反射建元資料，缺元數據時在反射建元資料處自然拋錯，不會悄悄剪錯。")]
-	[return: DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)]
-	private static partial Type RuntimeType(Type T);
+	[return: DAM(ReflTypeInfo.ReflDam)]
+	private static partial Type _RuntimeType(Type T);
 
 	[Doc($$"""
 #Sum[取成員；型別未註冊或成員不存在都拋。]
@@ -114,7 +114,7 @@ Info.Type;   // typeof(PoUser)
 
 ```csharp
 var M = Src.GetMember(typeof(PoUser), nameof(PoUser.Age));
-// M 是官方成員物件；M.Name 是 "Age"、M.DeclaringType 是 typeof(PoUser)。
+// M 是官方成員物件；M.Name 是 "Age"、M.OwnerType 是 typeof(PoUser)。
 
 Src.GetMember(typeof(PoUser), "NoSuch");
 // 拋 KeyNotFoundException，訊息含該型別的可用成員名（可直接拿去排查拼錯的名字）。
@@ -129,7 +129,7 @@ JsonOnly.GetMember(typeof(PoNoCtor), nameof(PoNoCtor.X));
 """)]
 	public static partial IMemberInfo GetMember(
 		this ITypeInfoSrc z,
-		[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] Type Type,
+		[DAM(ReflTypeInfo.ReflDam)] Type Type,
 		str Name
 	);
 
@@ -153,7 +153,7 @@ M.PropertyType;   // typeof(i32)
 等於 `Src.GetMember(typeof(PoUser), nameof(PoUser.Age))`。
 ]
 """)]
-	public static partial IMemberInfo GetMember<[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] T>(this ITypeInfoSrc z, str Name);
+	public static partial IMemberInfo GetMember<[DAM(ReflTypeInfo.ReflDam)] T>(this ITypeInfoSrc z, str Name);
 
 	[Doc($$"""
 #Sum[取成員的 Try 版：型別未註冊或成員不存在都返回 false。]
@@ -183,7 +183,7 @@ Src.TryGetMember(null, "Age", out _);
 """)]
 	public static partial bool TryGetMember(
 		this ITypeInfoSrc z,
-		[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] Type Type,
+		[DAM(ReflTypeInfo.ReflDam)] Type Type,
 		str Name,
 		[NotNullWhen(true)] out IMemberInfo? M
 	);
@@ -208,7 +208,7 @@ Src.TryGetMember<PoUser>("NoSuch", out _);   // false
 ```
 ]
 """)]
-	public static partial bool TryGetMember<[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] T>(this ITypeInfoSrc z, str Name, out IMemberInfo? M);
+	public static partial bool TryGetMember<[DAM(ReflTypeInfo.ReflDam)] T>(this ITypeInfoSrc z, str Name, out IMemberInfo? M);
 
 	[Doc($$"""
 #Sum[按名讀值；失敗返回 false（不拋）。]
@@ -246,7 +246,7 @@ Src.TryGet(typeof(PoColor), User, nameof(PoUser.Age), out _); // false：實例�
 	// 已按此改：參數序改為 Type → O → Name（範圍大→小），與 AssignFromDict／ToInstDict 的「實例在前」一致。
 	public static partial bool TryGet(
 		this ITypeInfoSrc z,
-		[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] Type Type,
+		[DAM(ReflTypeInfo.ReflDam)] Type Type,
 		obj? O,
 		str Name,
 		out obj? R
@@ -311,7 +311,7 @@ Src.TrySet(typeof(PoUser), User, nameof(PoUser.Age), "不是數字");
 """)]
 	public static partial bool TrySet(
 		this ITypeInfoSrc z,
-		[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] Type Type,
+		[DAM(ReflTypeInfo.ReflDam)] Type Type,
 		obj? O,
 		str Name,
 		obj? V
@@ -401,7 +401,7 @@ foreach(var K in BaseDict.Keys){
 	public static partial IInstDict ToInstDict(
 		this ITypeInfoSrc z,
 		obj? O,
-		[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] Type? Type
+		[DAM(ReflTypeInfo.ReflDam)] Type? Type
 	);
 
 	[Doc($$"""
@@ -506,7 +506,7 @@ Src.AssignFromDict(User, new Dictionary<str, obj?>{ [nameof(PoUser.Level)] = 7 }
 		this ITypeInfoSrc z,
 		obj? O,
 		IEnumerable<KeyValuePair<str, obj?>> Dict,
-		[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] Type? Type
+		[DAM(ReflTypeInfo.ReflDam)] Type? Type
 	);
 
 	[Doc($$"""

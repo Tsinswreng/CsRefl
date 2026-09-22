@@ -62,9 +62,9 @@ public partial class JsonMemberInfo:IMemberInfo{
 	[Doc($"""
 #Sum[成員宣告所在的型別，取自官方成員物件。]
 
-#See[{nameof(IMemberInfo.DeclaringType)}]
+#See[{nameof(IMemberInfo.OwnerType)}]
 """)]
-	public Type DeclaringType{
+	public Type OwnerType{
 		get{
 			return _Raw.DeclaringType;
 		}

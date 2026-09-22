@@ -25,10 +25,10 @@ internal static partial class TypeInfoSorter{
 		// step 1: 排序。
 		// 契約序 = 基類在前：DepthOf 是「自 Root 沿 BaseType 下探的層數」，
 		// 基類的值更大，故用降序。LINQ OrderBy 穩定，同深度保持來源給的相對序。
-		// DeclaringType 為 null（畸形元資料，官方 JsonPropertyInfo.DeclaringType 本來就可空）
+		// OwnerType 為 null（畸形元資料，官方 JsonPropertyInfo.DeclaringType 本來就可空）
 		// 時按 0 處理，即「當作 Root 自己宣告」，排在最前。
 		var Sorted = Members
-			.OrderByDescending(M => M.DeclaringType is null ? 0 : DepthOf(Root, M.DeclaringType!))
+			.OrderByDescending(M => M.OwnerType is null ? 0 : DepthOf(Root, M.OwnerType!))
 			.ToList();
 
 		// step 2: 挑勝出者。
