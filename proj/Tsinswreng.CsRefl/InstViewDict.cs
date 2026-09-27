@@ -438,7 +438,7 @@ new InstDict(User, null!);
 // 也拋 ArgumentNullException，兩者都在構造期暴露，不留到讀寫時。
 ```
 
-順帶：{{nameof(ITypeInfoSrcExtn.ToInstDict)}} 就是「查型別 + new 本類」這兩步的合寫。
+順帶：{{nameof(ITypeInfoSrcExtn.ToInstViewDict)}} 就是「查型別 + new 本類」這兩步的合寫。
 ]
 """)]
 	public partial InstViewDict(obj Target, ITypeInfo TypeInfo);

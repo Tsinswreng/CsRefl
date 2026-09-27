@@ -14,7 +14,7 @@ using Tsinswreng.CsCore;
 實測：不必先 `TryGetInfo` 再 `TryGetMember` 再 `TryGet` 三步，
 直接 `Src.{nameof(TryGet)}(typeof(PoUser), "Age", User, out var V)` 一次拿到值，
 當 `User.Age` 是 30 時 `V` 是 boxed 的 `i32` 30；
-同樣的三步合寫在 {nameof(ToInstDict)} 與 {nameof(AssignFromDict)} 上，
+同樣的三步合寫在 {nameof(ToInstViewDict)} 與 {nameof(AssignFromDict)} 上，
 故調用方（CsSql、Ngan.Dict）不必自己碰來源與成員兩層。
 ]
 
@@ -92,7 +92,7 @@ Info.Type;   // typeof(PoUser)
 缺元數據時會在反射建元資料處自然拋錯，不會悄悄剪錯，
 故此處顯式擔保成員元數據需求。
 
-實測：`{nameof(ToInstDict)}(User)` 內部就是先 `{nameof(_RuntimeType)}(User.GetType())`，
+實測：`{nameof(ToInstViewDict)}(User)` 內部就是先 `{nameof(_RuntimeType)}(User.GetType())`，
 再拿這個 {nameof(Type)} 去查來源（實測得到的是 `typeof(PoUser)`）；
 調用方不必自己處理 DAM，剪裁分析器也不會因此報警。
 ]
@@ -235,7 +235,7 @@ Src.TryGet(typeof(PoColor), User, nameof(PoUser.Age), out _); // false：實例�
 ```
 
 參數序按範圍由大到小：型別 → 實例 → 成員名 → 收值的那個出參，
-與同類的 {{nameof(AssignFromDict)}}／{{nameof(ToInstDict)}}（實例在前）一致。
+與同類的 {{nameof(AssignFromDict)}}／{{nameof(ToInstViewDict)}}（實例在前）一致。
 
 三步（查型別、查成員、讀值）合一、失敗一律用 false 表示，
 故適合批量回填、按外部欄位名取值這類「能取就取」的場景；
@@ -243,7 +243,7 @@ Src.TryGet(typeof(PoColor), User, nameof(PoUser.Age), out _); // false：實例�
 ]
 """)]
 	//TswgNote 爲甚麼Name在O前面? 不覺得很反直覺嗎? 範圍不應該都是從大到小嗎?
-	// 已按此改：參數序改為 Type → O → Name（範圍大→小），與 AssignFromDict／ToInstDict 的「實例在前」一致。
+	// 已按此改：參數序改為 Type → O → Name（範圍大→小），與 AssignFromDict／ToInstViewDict 的「實例在前」一致。
 	public static partial bool TryGet(
 		this ITypeInfoSrc z,
 		[DAM(ReflTypeInfo.ReflDam)] Type Type,
@@ -356,13 +356,13 @@ Src.TrySet<PoUser>(User, nameof(PoUser.Secret), "x");   // false：只讀成員
 ```csharp
 var User = new PoUser{ Id = 1, Name = "小明", Age = 26 };
 
-var Dict = Src.ToInstDict(User);
+var Dict = Src.ToInstViewDict(User);
 // Dict.Target 就是 User；Dict.Count 是 9（可讀可寫的成員，只讀的 Secret 不在鍵表內）。
 
 Dict[nameof(PoUser.Age)] = 32;
 // 寫回原物件：User.Age 變成 32。
 
-Src.ToInstDict(null!);
+Src.ToInstViewDict(null!);
 // 拋 ArgumentNullException：視圖必須能讀寫實例，所以不接 null。
 ```
 
@@ -386,7 +386,7 @@ Src.ToInstDict(null!);
 ```csharp
 var User = new PoUser{ Id = 1, Name = "小明", Age = 26 };
 
-var BaseDict = Src.ToInstDict(User, typeof(PoUserBase));
+var BaseDict = Src.ToInstViewDict(User, typeof(PoUserBase));
 // BaseDict.Count 是 2；Keys 依次是 Id、Name——子類新增的成員（Age 等）不在鍵表裏。
 
 foreach(var K in BaseDict.Keys){
@@ -419,14 +419,14 @@ foreach(var K in BaseDict.Keys){
 ```csharp
 var User = new PoUser{ Id = 1, Name = "小明", Age = 26 };
 
-var D1 = Src.ToInstDict<PoUser>(User);        // 鍵 9 個（PoUser 的可讀可寫成員）
+var D1 = Src.ToInstViewDict<PoUser>(User);        // 鍵 9 個（PoUser 的可讀可寫成員）
 PoUserBase B = User;
-var D2 = Src.ToInstDict<PoUserBase>(B);       // 鍵只有 Id、Name 兩個——按靜態型別走
-var D3 = Src.ToInstDict((obj)B);              // 非泛型版按執行期型別：仍是 9 個鍵
+var D2 = Src.ToInstViewDict<PoUserBase>(B);       // 鍵只有 Id、Name 兩個——按靜態型別走
+var D3 = Src.ToInstViewDict((obj)B);              // 非泛型版按執行期型別：仍是 9 個鍵
 // 注意那個 (obj)：不寫的話 C# 會挑上面的泛型版（T 直接等於 B 的靜態型別），拿到的是 2 個鍵。
 ```
 
-要「按執行期型別」就別用泛型版，用 `{{nameof(ToInstDict)}}(O)`。
+要「按執行期型別」就別用泛型版，用 `{{nameof(ToInstViewDict)}}(O)`。
 ]
 """)]
 	public static partial IInstViewDict ToInstViewDict<T>(this ITypeInfoSrc z, T O);

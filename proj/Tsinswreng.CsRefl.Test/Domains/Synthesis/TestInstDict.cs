@@ -74,7 +74,7 @@ public partial class TestSynthesis{
 		var reg = Node.MkTestFnRegister(
 			typeof(TestSynthesis),
 			[typeof(IInstViewDict), typeof(ITypeInfoSrcExtn)],
-			[nameof(ITypeInfoSrcExtn.ToInstDict), nameof(IInstViewDict.Keys)],
+			[nameof(ITypeInfoSrcExtn.ToInstViewDict), nameof(IInstViewDict.Keys)],
 			"綜合測試:視圖層:"
 		);
 		reg.Register(nameof(DictView), DictView!);

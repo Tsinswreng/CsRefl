@@ -49,14 +49,18 @@ public partial class ReflTypeInfo:ITypeInfo{
 #Sum[反射建立元資料所需的成員種類。]
 
 #Descr[
-{nameof(ITypeInfoSrc)}、{nameof(ITypeInfoSrcExtn)} 的 DAM 註解都引用本常量，
-改動即全包同步。
+{nameof(ITypeInfoSrc)}、{nameof(ITypeInfoSrcExtn)} 的 DAM 註解都引用本常量，改動即全包同步。
 
-實測：`typeof(PoUser)` 的成員表能取到 11 項、無參工廠非 null，
-即「公共屬性、公共字段、無參構造函數」這三檔元數據在 NativeAOT 下確實被保留。
+本常量公開是給宿主用的。凡是把型別往本包的來源裏送的地方，`Type` 參數或泛型參數上都該標同一組要求；
+不標的話，NativeAOT 剪裁時成員會被剪掉，查出來的成員表是空的，而且不會拋異常。
+
+例：宿主寫一個轉發函數，參數一個是來源、一個是要查的型別，
+把那個型別參數標上本常量即可。標完之後要求會往上推給調用方：
+調用方傳 `typeof(PoUser)` 時要求就在那裏滿足；
+若調用方傳的變數同樣沒標註解，要求就繼續往上推，一路推到某處傳的是具體型別為止。
 ]
 """)]
-	internal const DynamicallyAccessedMemberTypes ReflDam
+	public const DynamicallyAccessedMemberTypes ReflDam
 		= DynamicallyAccessedMemberTypes.Interfaces
 		| DynamicallyAccessedMemberTypes.PublicProperties
 		| DynamicallyAccessedMemberTypes.PublicFields
