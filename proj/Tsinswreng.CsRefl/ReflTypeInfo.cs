@@ -42,7 +42,9 @@ using Tsinswreng.CsCore;
 建構子與 {nameof(MkInst)} 實現見 `ReflTypeInfo.Imrl.cs`。
 ]
 """)]
-public partial class ReflTypeInfo:TypeInfoBase{
+//TswgNote 搞這個基類有甚麼用? 爲甚麼不直接實現接口?
+// 已按此拆：TypeInfoBase 已刪除，兩條來源各自實現 ITypeInfo（另一條見 JsonTypeInfoInfo.cs）。
+public partial class ReflTypeInfo:ITypeInfo{
 	[Doc($"""
 #Sum[反射建立元資料所需的成員種類。]
 
@@ -90,6 +92,117 @@ DAM 註解：反射建立元資料需要 接口、公共屬性、公共字段、
 		Type Type
 	);
 
+	// ---- 型別事實：建構子一次算好，直接落在屬性上 ----
+
+	[Doc($"""
+#Sum[本元資料對應的型別。]
+
+#Descr[
+實測：查 `PoUser` 時，{nameof(ReflTypeInfo)} 收到的是構造時傳進來的 `typeof(PoUser)`，
+{nameof(JsonTypeInfoInfo)} 收到的是官方 {nameof(JsonTypeInfo.Type)}（也是 `typeof(PoUser)`）；
+兩者是同一個 {nameof(Type)} 物件，`{nameof(ReferenceEquals)}` 為 true，故可用 `==` 比較。
+]
+""")]
+	public Type Type{get;set;}
+
+	[Doc($"""
+#Sum[型別分類（官方 {nameof(JsonTypeInfoKind)}）。]
+
+#Descr[
+實測（`PoUser`）：Json 源直接取官方 {nameof(JsonTypeInfo.Kind)}，得到 {nameof(JsonTypeInfoKind)}.{nameof(JsonTypeInfoKind.Object)}；
+反射源由分類規則算出，也是 {nameof(JsonTypeInfoKind)}.{nameof(JsonTypeInfoKind.Object)}；
+`typeof(List<str>)` 兩邊都是 {nameof(JsonTypeInfoKind)}.{nameof(JsonTypeInfoKind.Enumerable)}，故兩套來源的取值可比。
+]
+""")]
+	//TswgNote 爲甚麼要在基類裏放這個東西? 我越來越搞不懂你這個TypeInfoBase到底是甚麼東西了
+	//光是搞這個抽象類而不是直接實現接口就已經很讓人迷惑了 你還在基類 裏面搞一堆看不懂的操作
+	// 已按此拆：Kind 等型別事實不再放共用基類，兩條來源各自宣告、建構子各自賦值。
+	public JsonTypeInfoKind Kind{get;set;}
+
+	[Doc($"""
+#Sum[成員表（契約序，已去重：遮蔽成員只留最靠近實例的那份宣告）。]
+
+#Descr[
+實測：`PoUser` 這條鏈的成員依次是
+`Id`、`Name`、`Age`、`Email`、`Married`、`Tags`、`Extra`、`Secret`、`Level`、`Token`、`Note`（11 項）；
+另一條鏈上子類用 `new` 遮蔽基類的 `Id`，這裡是 `Name`、`Id`、`Age` 三項，
+`Id` 只有一份、仍在第 2 位、按名查到的其宣告型別是子類。
+規整由 {nameof(TypeInfoSorter)}.{nameof(TypeInfoSorter.SortEtDedup)} 在建構子裏一次做完。
+本屬性可賦值（換整張成員表）；賦值不重建按名索引與名清單快取，故換表通常該重建一份實例。
+]
+""")]
+	public IReadOnlyList<IMemberInfo> Members{
+		get;
+		set;
+	}
+
+	[Doc($"""
+#Sum[集合的元素型別；非集合為 null。]
+
+#Descr[
+實測：`typeof(List<str>)` 的這個屬性是 `typeof(str)`、`typeof(Dictionary<str, i32>)` 的是 `typeof(i32)`；
+`typeof(PoUser)` 這種物件型別為 null（不是集合）。
+]
+""")]
+	public Type? ElementType{
+		get;
+		set;
+	}
+
+	[Doc($"""
+#Sum[字典的鍵型別；非字典為 null。]
+
+#Descr[
+實測：`typeof(Dictionary<str, i32>)` 的這個屬性是 `typeof(str)`、`typeof(List<str>)` 的是 null；
+本屬性與 {nameof(ElementType)} 由同一份來源事實決定，互斥不衝突。
+]
+""")]
+	//TswgNote 爲甚麼有這麼多脫褲子放屁的東西? 給我個理由?
+	// 已按此清掉：構造期算出來的事實直接落在屬性上（自動屬性），不再另存欄位由屬性轉發。
+	public Type? KeyType{
+		get;
+		set;
+	}
+
+	// ---- 惰性快取：第一次用到時才建，之後一直用 ----
+
+	[Doc($"""
+#Sum[按名的成員索引緩存，首次查詢時建立。]
+
+#Descr[
+實測：第一次 {nameof(TryGetMember)} 時才建這份 {nameof(Dictionary<,>)}，
+之後每次按名查都是 O(1)（不是 O(n)）——O(n) 的只有枚舉 {nameof(Members)} 本身；
+{nameof(GetMember)}("Age") 與 {nameof(TryGetMember)}("Age", out _) 返回的實例
+`{nameof(ReferenceEquals)}` 為 true，即共用這份索引。
+
+用 volatile 是為了多線程下雙檢：兩個線程同時建也只會多建一份等價字典，
+不會看到半成品字典。
+]
+""")]
+	public volatile Dictionary<str, IMemberInfo>? _ByName;//TswgNote 違反命名規範！沒有一處寫得對的
+	// 已按此改：_byName → _ByName（public ＋ 下劃線 ＋ 大駝峯）；快取欄位現由兩條來源各自持有。
+
+	[Doc($"""
+#Sum[可讀名清單緩存。]
+
+#Descr[
+實測（`PoUser`）：第一次讀 {nameof(ReadableNames)} 時由 {nameof(Members)} 現算一次並存下來，
+內容是 10 個名（跳過只寫的 `Token`）；
+第二次讀返回的是同一份清單實例（`{nameof(ReferenceEquals)}` 為 true）。
+]
+""")]
+	public volatile IReadOnlyCollection<str>? _Readable;
+
+	[Doc($"""
+#Sum[可寫名清單緩存。]
+
+#Descr[
+實測（`PoUser`）：這份清單是 10 個名（跳過只讀的 `Secret`、含只寫的 `Token`），
+與 {nameof(ReadableNames)} 的差別只有一處：把 `Secret` 換成了 `Token`。
+]
+""")]
+	public volatile IReadOnlyCollection<str>? _Writable;
+
 	[Doc($"""
 #Sum[無參實例工廠，形狀與官方 {nameof(JsonTypeInfo)}.{nameof(JsonTypeInfo.CreateObject)} 一致；null 表示本型別不可建實例。]
 
@@ -105,7 +218,7 @@ NativeAOT 下表達式樹不能 Comrile（會拋 {nameof(PlatformNotSupportedExc
 
 #See[{nameof(ITypeInfo.CreateObject)}]
 """)]
-	public override Func<obj>? CreateObject{
+	public Func<obj>? CreateObject{
 		get;
 		set;
 	}
@@ -119,9 +232,27 @@ NativeAOT 下表達式樹不能 Comrile（會拋 {nameof(PlatformNotSupportedExc
 
 #See[{nameof(ITypeInfo.Json)}]
 """)]
-	public override JsonTypeInfo? Json{
+	public JsonTypeInfo? Json{
 		get;
 		set;
+	}
+
+	[Doc($"""
+#Sum[本型別能否建立無參實例。]
+
+#Descr[
+實測：`typeof(PoUser)` 兩套來源都是 true；`typeof(PoNoCtor)` 兩套來源都是 false。
+{nameof(ReflTypeInfo)} 的判據是建構子算出的工廠是否為 null，
+{nameof(JsonTypeInfoInfo)} 的判據是官方 {nameof(JsonTypeInfo.CreateObject)} 是否為 null，
+兩者都歸到「{nameof(CreateObject)} 是否為 null」這一條。
+]
+
+#See[{nameof(ITypeInfo.CanMkInst)}]
+""")]
+	public bool CanMkInst{
+		get{
+			return CreateObject is not null;
+		}
 	}
 
 	[Doc($"""
@@ -129,11 +260,106 @@ NativeAOT 下表達式樹不能 Comrile（會拋 {nameof(PlatformNotSupportedExc
 
 #See[{nameof(ITypeInfo.MkInst)}]
 """)]
-	public override partial obj? MkInst();
+	public partial obj? MkInst();
 
-	// ---- 私有輔助（實現見 ReflTypeInfo.Imrl.cs）----
-	// 參數上的剪裁註解（{nameof(DynamicallyAccessedMembersAttribute)}）只寫在 Imrl 側，
+	[Doc($"""
+#Sum[可讀成員名清單，順序同 {nameof(Members)}（已去重，不含重複名）。]
+
+#Descr[
+實測（`PoUser`）：`Secret` 只讀、`Token` 只寫，
+故這裡是 10 個名、含 `Secret` 不含 `Token`；
+第一次讀時現算並緩存，第二次讀返回同一份清單實例，故在循環裏反復讀不會反復計算。
+]
+
+#See[{nameof(ITypeInfo.ReadableNames)}]
+""")]
+	public IReadOnlyCollection<str> ReadableNames{
+		get{
+			// 惰性算一次並緩存：成員表構造後不變，故緩存安全（見 _Readable）。
+			return _Readable ??= Members
+				.Where(M => M.CanRead)
+				.Select(M => M.Name)
+				.ToList();
+		}
+	}
+
+	[Doc($"""
+#Sum[可寫成員名清單，順序同 {nameof(Members)}（已去重，不含重複名）。]
+
+#Descr[
+實測（`PoUser`）：這裡也是 10 個名、含 `Token` 不含 `Secret`；
+兩份清單的交集是 9 個「可讀可寫」成員名，正好等於 {nameof(InstDict)} 的鍵表。
+]
+
+#See[{nameof(ITypeInfo.WritableNames)}]
+""")]
+	public IReadOnlyCollection<str> WritableNames{
+		get{
+			// 同上，惰性算一次並緩存（見 _Writable）。
+			return _Writable ??= Members
+				.Where(M => M.CanWrite)
+				.Select(M => M.Name)
+				.ToList();
+		}
+	}
+
+	[Doc($"""
+#Sum[按名查成員；未知返回 false。]
+
+#Descr[
+走 {nameof(_ByName)} 那份惰性索引，是 O(1)（見 {nameof(_ByName)}），不掃 {nameof(Members)}。
+]
+
+#See[{nameof(ITypeInfo.TryGetMember)}]
+""")]
+	public partial bool TryGetMember(str Name, [NotNullWhen(true)] out IMemberInfo? M);
+
+	[Doc($"""
+#Sum[按名取成員；未知拋 {nameof(KeyNotFoundException)}，訊息含可用名清單。]
+
+#See[{nameof(ITypeInfo.GetMember)}]
+""")]
+	public partial IMemberInfo GetMember(str Name);
+
+	[Doc($"""
+#Sum[見接口說明。]
+""")]
+	public partial bool TryGetMemberType(str Name, out Type? T);
+	[Doc($"""
+#Sum[見接口說明。]
+""")]
+	public partial bool CanRead(str Name);
+	[Doc($"""
+#Sum[見接口說明。]
+""")]
+	public partial bool CanWrite(str Name);
+
+	// ---- 私有輔助（實現見 ReflTypeInfo.Impl.cs）----
+	// 參數上的剪裁註解（{nameof(DynamicallyAccessedMembersAttribute)}）只寫在 Impl 側，
 	// `partial` 合併時兩邊都標會報 CS0579。
+
+	[Doc($"""
+#Sum[惰性建按名索引；已建過則直接返回。]
+
+#Descr[
+O(n) 只發生在第一次（建一次 {nameof(Dictionary<,>)}），
+之後 {nameof(TryGetMember)} 與 {nameof(GetMember)} 都是 O(1)。
+
+實測：`{nameof(GetMember)}("Age")` 與 `{nameof(TryGetMember)}("Age", out _)` 返回的
+是同一實例（{nameof(ReferenceEquals)} 為 true），即共用這份索引；
+名字比較用 {nameof(StringComparer)}.{nameof(StringComparer.Ordinal)}，不受當前區域設定影響。
+]
+""")]
+	private partial void EnsureByName();
+
+	[Doc($"""
+#Sum[按成員序列出全部成員名，供未命中時的錯誤訊息用。]
+
+#Descr[
+實測（`PoUser`）：11 個名，與成員表同序，首位是 `Id`、末位是 `Note`。
+]
+""")]
+	private partial IEnumerable<str> AllNames();
 
 	[Doc($"""
 #Sum[型別分類。]
@@ -213,7 +439,7 @@ NativeAOT 下表達式樹不能 Comrile（會拋 {nameof(PlatformNotSupportedExc
 
 實測：`typeof(Dictionary<str, i32>)` → `typeof(str)`；
 `typeof(List<str>)` 不是字典，返回 null
-（此時 {nameof(TypeInfoBase.ElementType)} 有值 `typeof(str)`、本項為 null）。
+（此時 {nameof(ElementType)} 有值 `typeof(str)`、本項為 null）。
 ]
 """)]
 	private static partial Type? FindKeyType(Type T);
@@ -245,7 +471,7 @@ NativeAOT 下表達式樹不能 Comrile（會拋 {nameof(PlatformNotSupportedExc
 
 #Params([[T, 要收集的型別]])
 
-#Rtn[成員表（尚未規整，由 {nameof(TypeInfoBase)} 建構子統一處理）]
+#Rtn[成員表（尚未規整，由建構子統一處理）]
 
 #Descr[
 屬性段在前、字段段後；
@@ -290,15 +516,3 @@ NativeAOT 不支持動態編譯
 		Type T
 	);
 }
-
-
-
-
-
-
-
-
-
-
-
-

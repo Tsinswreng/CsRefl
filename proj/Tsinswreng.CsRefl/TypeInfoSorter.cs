@@ -33,7 +33,7 @@ internal static partial class TypeInfoSorter{
 本包內部在建構子裏這樣調（不在對外門面上）：
 
 ```csharp
-// TypeInfoBase 建構子內部：
+// 兩條來源的建構子內部：
 var Sorted = TypeInfoSorter.SortEtDedup(typeof(PoUser), Collected);
 // Sorted 依次是 Id、Name、Age、…、Note：基類 PoUserBase 宣告的 Id、Name 排在最前。
 ```

@@ -21,18 +21,17 @@ public partial class ReflTypeInfo{
 """)]
 	public partial ReflTypeInfo(
 		[DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] Type Type
-	)
-		: base(
-			Type: Type,
-			Kind: ComputeKind(Type),
-			Members: CollectMembers(Type),
-			ElementType: FindElementType(Type),
-			KeyType: FindKeyType(Type)
-		)
-	{
-		// 成員的排序與去重統一交給 TypeInfoBase 建構子（見 TypeInfoSorter.SortEtDedup）。
-		// 無參工廠構造期算一次就落在屬性上（不再另存欄位）。
-		CreateObject = TryBuildMkInst(Type);
+	){
+		ArgumentNullException.ThrowIfNull(Type);
+		// step 1: 型別事實建構期一次算好，直接落在屬性上（自動屬性），不另存欄位由屬性轉發。
+		this.Type = Type;
+		this.Kind = ComputeKind(Type);
+		this.ElementType = FindElementType(Type);
+		this.KeyType = FindKeyType(Type);
+		// step 2: 成員表在此規整成契約序（排序、去重、只讀），見 TypeInfoSorter.SortEtDedup。
+		this.Members = TypeInfoSorter.SortEtDedup(Type, CollectMembers(Type));
+		// step 3: 無參工廠構造期算一次就落在屬性上。
+		this.CreateObject = TryBuildMkInst(Type);
 	}
 
 	[Doc($"""
@@ -40,7 +39,7 @@ public partial class ReflTypeInfo{
 
 #See[{nameof(ITypeInfo.MkInst)}]
 """)]
-	public override partial obj? MkInst(){
+	public partial obj? MkInst(){
 		// 錯誤訊息用 CreateObject 判空（與官方那條「CreateObject 是否為 null」同一判據）。
 		var F = CreateObject;
 		if(F is null){
@@ -51,6 +50,91 @@ public partial class ReflTypeInfo{
 		return F();
 	}
 
+	[Doc($"""
+#Sum[惰性建立按名索引。]
+
+#Descr[
+成員表在建構後不可變，故緩存安全。
+索引雙檢：{nameof(_ByName)} 是 volatile，兩個線程同時建也只會多建一份等價字典。
+
+實測：第一次按名查時才建這份字典，故「只枚舉成員、從不按名查」的用法不付這份內存代價；
+建好之後每次按名查是 O(1)。
+
+鍵比較用 {nameof(StringComparer)}.{nameof(StringComparer.Ordinal)} 而非默認比較：
+成員名是程式碼識別符，Ordinal 才是正確語義，也不受當前文化影響。
+]
+""")]
+	private partial void EnsureByName(){
+		if(_ByName is not null){
+			return;
+		}
+		var Dict = new Dictionary<str, IMemberInfo>(Members.Count, StringComparer.Ordinal);
+		foreach(var M in Members){
+			Dict[M.Name] = M;
+		}
+		_ByName = Dict;
+	}
+
+	[Doc($"""
+#Sum[按成員序列出全部成員名，供未命中時的錯誤訊息用。]
+
+#Descr[
+實測（`PoUser`）：11 個名，與成員表同序。
+]
+""")]
+	private partial IEnumerable<str> AllNames(){
+		return Members.Select(M => M.Name);
+	}
+
+	[Doc($"""
+#Sum[按名查成員；走惰性索引，O(1)。]
+
+#See[{nameof(ITypeInfo.TryGetMember)}]
+""")]
+	public partial bool TryGetMember(str Name, out IMemberInfo? M){
+		M = null;
+		// step 1: 名字為 null 時直接返回 false（成員名不可能是 null，故這不是「查不到」而是「沒法查」）。
+		if(Name is null){
+			return false;
+		}
+		// step 2: 走索引（第一次調用時才建，見 EnsureByName）。
+		EnsureByName();
+		return _ByName!.TryGetValue(Name, out M);
+	}
+
+	[Doc($"""
+#Sum[按名取成員；未知拋 {nameof(KeyNotFoundException)}。]
+
+#See[{nameof(ITypeInfo.GetMember)}]
+""")]
+	public partial IMemberInfo GetMember(str Name){
+		ArgumentNullException.ThrowIfNull(Name);
+		// step 1: 命中就返回；未命中才付「列可用名」的代價（錯誤路徑）。
+		if(TryGetMember(Name, out var M)){
+			return M;
+		}
+		throw new KeyNotFoundException(
+			$"型別 {Type.FullName} 沒有成員 {Name}。可用成員：{string.Join(", ", AllNames())}"
+		);
+	}
+
+	public partial bool TryGetMemberType(str Name, out Type? T){
+		throw new NotImplementedException();
+	}
+
+	public partial bool CanRead(str Name){
+		throw new NotImplementedException();
+	}
+
+	public partial bool CanWrite(str Name){
+		throw new NotImplementedException();
+	}
+
+	[Doc($"""
+#Sum[型別分類。]
+
+#See[{nameof(ITypeInfo.Kind)}]
+""")]
 	private static partial JsonTypeInfoKind ComputeKind([DynamicallyAccessedMembers(ReflTypeInfo.ReflDam)] Type T){
 		// step 1: 剝掉 Nullable，可空值型別的分類與其非可空版本一致。
 		var U = Nullable.GetUnderlyingType(T);
@@ -131,8 +215,8 @@ public partial class ReflTypeInfo{
 			if(Prop.GetIndexParameters().Length > 0){
 				continue;
 			}
-			// 直接收官方 PropertyInfo：成員就是官方物件，本包不包一層
-			//（取名字、宣告型別、可讀可寫一律由 Member 收口）。
+			// 成員由 ReflMemberInfo 包住官方 PropertyInfo；
+			// 取名字、宣告型別、可讀可寫一律由 IMemberInfo 收口。
 			R.Add(new ReflMemberInfo(Prop));
 		}
 		// step 2: 公開實例字段；排在屬性段之後，構成「屬性在前、字段在後」的收集序。
@@ -175,11 +259,3 @@ public partial class ReflTypeInfo{
 		}
 	}
 }
-
-
-
-
-
-
-
-

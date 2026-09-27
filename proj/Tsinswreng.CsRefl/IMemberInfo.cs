@@ -63,18 +63,18 @@ var t = m.PropertyType;   // str
 一個屬性或字段的定義寫在哪個型別裏，{{nameof(IMemberInfo.OwnerType)}} 就是那個型別。
 繼承來的成員，定義寫在基類，故 {{nameof(IMemberInfo.OwnerType)}} 是基類，不是取到該成員的子類。
 
-本例從 JsonTypeInfoInfo 上取到 Members，但 Members 的定義寫在基類 TypeInfoBase 裏，
-故取到的是 TypeInfoBase。
+本例取 JsonTypeInfoInfo 的 Members，這個屬性宣告在 JsonTypeInfoInfo 自己身上，
+故取到的是 JsonTypeInfoInfo。
 
-下面例子用到：{{nameof(ITypeInfoSrcExtn.GetInfo)}}、{{nameof(JsonTypeInfoInfo)}}、{{nameof(ITypeInfo.GetMember)}}、{{nameof(TypeInfoBase)}}、{{nameof(TypeInfoBase.Members)}}、{{nameof(IMemberInfo.OwnerType)}}。
+下面例子用到：{{nameof(ITypeInfoSrcExtn.GetInfo)}}、{{nameof(JsonTypeInfoInfo)}}、{{nameof(ITypeInfo.GetMember)}}、{{nameof(JsonTypeInfoInfo.Members)}}、{{nameof(IMemberInfo.OwnerType)}}。
 
 src 是一個來源。
 
 ```cs
 var info = src.GetInfo(typeof(JsonTypeInfoInfo));
-var m = info.GetMember(nameof(TypeInfoBase.Members));
+var m = info.GetMember(nameof(JsonTypeInfoInfo.Members));
 
-var d = m.OwnerType;   // TypeInfoBase
+var d = m.OwnerType;   // JsonTypeInfoInfo
 ```
 ]
 """)]//TswgNote
