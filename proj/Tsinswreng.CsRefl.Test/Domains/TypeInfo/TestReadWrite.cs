@@ -4,19 +4,19 @@ using Tsinswreng.CsRefl.Test.Domains.Models;
 
 namespace Tsinswreng.CsRefl.Test.Domains.TypeInfo;
 
-/// ReadWrite 契約：ReadableNames/WritableNames 清單與順序、TryGet/TrySet 端到端。
+/// ReadWrite 契約：ReadableMembers/WritableMembers 的表與順序、TryGet/TrySet 端到端。
 /// 函數實現文件；聲明在 _TestTypeInfo.cs。
 public partial class TestTypeInfo{
 	/// 見聲明處的說明。
 	private static partial void CheckReadWriteNames(ITypeInfo Info){
 		var T = Assert.IsTrue;
 
-		var Readable = Info.ReadableNames.ToList();
+		var Readable = Info.ReadableMembers.Keys.ToList();
 		T(Readable.Count == 10, $"可讀名應有 10 個（Token 只寫），實際 {Readable.Count}");
 		T(Readable[0] == "Id" && Readable[1] == "Name" && Readable[7] == "Secret" && Readable[9] == "Note",
 			"可讀名順序應與成員序一致");
 
-		var Writable = Info.WritableNames.ToList();
+		var Writable = Info.WritableMembers.Keys.ToList();
 		T(Writable.Count == 10, $"可寫名應有 10 個（Secret 只讀），實際 {Writable.Count}");
 		T(!Writable.Contains("Secret"), "可寫名不得含 Secret");
 		T(Writable[0] == "Id" && Writable[8] == "Token" && Writable[9] == "Note",
@@ -45,7 +45,7 @@ public partial class TestTypeInfo{
 		// 只讀成員寫不動。
 		T(!Info.GetMember("Secret").TrySet(User, "x"), "寫只讀 Secret 應返回 false");
 
-		// 只寫成員讀不到（它照樣在成員表與 WritableNames 裏）。
+		// 只寫成員讀不到（它照樣在成員表與 WritableMembers 裏）。
 		T(!Info.GetMember("Token").TryGet(User, out _), "讀只寫 Token 應返回 false");
 
 		// 實例型別不符 / null 實例。

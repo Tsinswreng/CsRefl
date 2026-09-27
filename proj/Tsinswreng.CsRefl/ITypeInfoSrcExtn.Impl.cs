@@ -210,8 +210,8 @@ public static partial class ITypeInfoSrcExtn{
 				// 未知鍵的報錯訊息同時列可寫名與可讀名：未知鍵的判據是整張成員表，
 				// 只列可寫名會讓「成員存在但不可寫」的調用方找不到線索。
 				throw new KeyNotFoundException(
-					$"字典含非成員鍵 {K}；型別 {T.FullName} 的可寫名：{string.Join(", ", Info.WritableNames)}；"
-					+ $"可讀名：{string.Join(", ", Info.ReadableNames)}"
+					$"字典含非成員鍵 {K}；型別 {T.FullName} 的可寫名：{string.Join(", ", Info.WritableMembers.Keys)}；"
+					+ $"可讀名：{string.Join(", ", Info.ReadableMembers.Keys)}"
 				);
 			}
 			// step 3: 只讀成員按已定語義跳過，不算錯。

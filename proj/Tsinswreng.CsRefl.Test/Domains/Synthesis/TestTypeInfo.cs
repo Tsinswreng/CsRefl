@@ -23,9 +23,9 @@ public partial class TestSynthesis{
 		// 成員表與名清單：順序即契約序（基類在前、同類內宣告序）。
 		// 這兩者是屬性，按實例緩存，沒有泛型/非泛型之分。
 		T(Info.Members.Count == 11, $"成員應有 11 個，實際 {Info.Members.Count}");
-		T(Info.WritableNames.Count == 9, $"可寫成員應有 9 個，實際 {Info.WritableNames.Count}");
-		T(Info.ReadableNames.Count == 10, $"可讀成員應有 10 個，實際 {Info.ReadableNames.Count}");
-		T(Info.ReadableNames.Contains(nameof(PoUser.Secret)) && !Info.WritableNames.Contains(nameof(PoUser.Secret))
+		T(Info.WritableMembers.Count == 9, $"可寫成員應有 9 個，實際 {Info.WritableMembers.Count}");
+		T(Info.ReadableMembers.Count == 10, $"可讀成員應有 10 個，實際 {Info.ReadableMembers.Count}");
+		T(Info.ReadableMembers.ContainsKey(nameof(PoUser.Secret)) && !Info.WritableMembers.ContainsKey(nameof(PoUser.Secret))
 			, "只讀的 Secret 在可讀清單、不在可寫清單");
 
 		// 按名查成員：TryGetMember / GetMember。

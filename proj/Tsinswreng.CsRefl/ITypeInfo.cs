@@ -17,7 +17,7 @@ using Tsinswreng.CsCore;
 
 實測（`PoUser`，兩套來源逐項相同）：
 {nameof(Kind)} 都是 {nameof(JsonTypeInfoKind)}.{nameof(JsonTypeInfoKind.Object)}；
-{nameof(ReadableNames)} 都是 10 個名、{nameof(WritableNames)} 都是 9 個名。
+{nameof(ReadableMembers)}、{nameof(WritableMembers)}、{nameof(ReadWriteMembers)} 的項數分別是 10、10、9。
 ]
 
 #Descr[
@@ -35,7 +35,7 @@ using Tsinswreng.CsCore;
 #Descr[
 事實成員皆可賦值：賦值＝換掉那件事實（不合併、不拷貝、不驗證），留給調用方自行取用。
 由別的成員算出來的值只讀：{nameof(CanMkInst)} 就是 {nameof(CreateObject)} 是否為 null，
-{nameof(ReadableNames)}／{nameof(WritableNames)} 是 {nameof(Members)} 過濾出來的。
+{nameof(ReadableMembers)}／{nameof(WritableMembers)}／{nameof(ReadWriteMembers)} 是 {nameof(Members)} 過濾出來的。
 
 換了 {nameof(Members)} 不會重建按名索引與名清單快取，故換整張成員表通常該重建一份實例。
 ]
@@ -105,7 +105,7 @@ public partial interface ITypeInfo{
 	//（門面只按名、不外露官方成員物件）移除，處置待你確認。
 
 	[Doc($$"""
-#Sum[可讀成員名清單，順序即契約序（基類在前、同類內宣告序）。]
+#Sum[可讀成員；鍵是成員名、值是成員本體，順序即契約序（基類在前、同類內宣告序）。]
 
 #Descr[
 調用方這樣寫：
@@ -113,20 +113,24 @@ public partial interface ITypeInfo{
 ```csharp
 var Info = Src.GetInfo<PoUser>();
 
-foreach(var Name in Info.ReadableNames){
+foreach(var (Name, M) in Info.ReadableMembers){
 	// 依次拿到 Id、Name、Age、Email、Married、Tags、Extra、Secret、Level、Note（10 個）
 }
 
-Info.ReadableNames.Contains(nameof(PoUser.Secret));   // true：只讀成員算「可讀」
+Info.ReadableMembers.ContainsKey(nameof(PoUser.Secret));       // true：只讀成員算「可讀」
+Info.ReadableMembers[nameof(PoUser.Age)].PropertyType;          // typeof(i32)：值就是成員本體
 ```
 
-按實例緩存：第一次由成員表現算一份，之後每次返回同一份清單實例。
+按實例緩存：第一次由成員表現算一份，之後每次返回同一份表實例。
+
+這三份子集都是本庫持有的那一份：交出同一個實例，不另做副本；
+要自己改就先複製一份，改了本庫那一份會影響之後讀到它的人。
 ]
 """)]
-	IReadOnlyCollection<str> ReadableNames{get;}
+	IDictionary<str, IMemberInfo> ReadableMembers{get;}
 
 	[Doc($$"""
-#Sum[可寫成員名清單，順序同 {nameof(ReadableNames)}。]
+#Sum[可寫成員；鍵是成員名、值是成員本體，順序同 {nameof(ReadableMembers)}。]
 
 #Descr[
 調用方這樣寫（拼 SQL 列或表單欄位時就吃這個順序）：
@@ -134,13 +138,34 @@ Info.ReadableNames.Contains(nameof(PoUser.Secret));   // true：只讀成員算�
 ```csharp
 var Info = Src.GetInfo<PoUser>();
 
-Info.WritableNames.Count;                            // 9
-Info.WritableNames.Contains(nameof(PoUser.Secret));  // false：只讀成員不可寫
-Info.WritableNames.Contains(nameof(PoUser.Token));   // true：只寫成員算「可寫」
+Info.WritableMembers.Count;                                    // 9
+Info.WritableMembers.ContainsKey(nameof(PoUser.Secret));       // false：只讀成員不可寫
+Info.WritableMembers.ContainsKey(nameof(PoUser.Token));        // true：只寫成員算「可寫」
 ```
 ]
 """)]
-	IReadOnlyCollection<str> WritableNames{get;}
+	IDictionary<str, IMemberInfo> WritableMembers{get;}
+
+	[Doc($$"""
+#Sum[既可讀又可寫的成員；鍵是成員名、值是成員本體，順序同 {nameof(ReadableMembers)}。]
+
+#Descr[
+列與表單欄位就是這一批：取得到、也寫得回。
+
+調用方這樣寫：
+
+```csharp
+var Info = Src.GetInfo<PoUser>();
+
+Info.ReadWriteMembers.Count;                                   // 9
+Info.ReadWriteMembers.ContainsKey(nameof(PoUser.Secret));      // false：只讀
+Info.ReadWriteMembers.ContainsKey(nameof(PoUser.Token));       // false：只寫
+```
+
+這也是 {nameof(InstDict)} 的鍵表口徑：它只把可讀且可寫的成員當鍵。
+]
+""")]
+	IDictionary<str, IMemberInfo> ReadWriteMembers{get;}
 
 	[Doc($$"""
 #Sum[按名取成員的宣告型別；成員不存在返回 false。]
@@ -233,17 +258,29 @@ Info.CanWrite("NoSuch");                // false
 """)]
 	obj? MkInst();
 
-	[Doc($"""
-#Sum[全部成員（契約序：基類在前、同類內宣告序）。]
+	[Doc($$"""
+#Sum[全部成員；鍵是成員名、值是成員本體，順序即契約序（基類在前、同類內宣告序）。]
 
 #Descr[
-元素是成員契約 {nameof(IMemberInfo)}：反射側由 {nameof(ReflMemberInfo)} 包官方 {nameof(MemberInfo)}、
+值是成員契約 {nameof(IMemberInfo)}：反射側由 {nameof(ReflMemberInfo)} 包官方 {nameof(MemberInfo)}、
 Json 側由 {nameof(JsonMemberInfo)} 包官方 {nameof(JsonPropertyInfo)}。
 
-可賦值：換整張成員表；賦值不重建按名索引與名清單快取，故換表通常該重建一份實例。
+調用方這樣寫：
+
+```csharp
+var Info = Src.GetInfo<PoUser>();
+
+Info.Members.Count;                              // 11
+Info.Members[nameof(PoUser.Age)].PropertyType;    // typeof(i32)：按名直接取成員，O(1)
+Info.Members.Keys;                               // 成員名，順序同契約序
+```
+
+實現用保序字典，故枚舉順序等於插入順序，即契約序；按名查也就是它的 TryGetValue。
+
+可賦值：換整張成員表；賦值不重建三份子集快取，故換表通常該重建一份實例。
 ]
 """)]
-	IReadOnlyList<IMemberInfo> Members{get;set;}
+	IDictionary<str, IMemberInfo> Members{get;set;}
 
 	[Doc($"""
 #Sum[按名查成員；未知返回 false。]

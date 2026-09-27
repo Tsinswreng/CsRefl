@@ -3,7 +3,7 @@ namespace Tsinswreng.CsRefl.Test.Domains.Models;
 /// 遮蔽測試的派生類：用 new 遮蔽基類的 Id。
 ///
 /// 為甚麼要有這個模型：成員名就是字典鍵 / SQL 列名，同名成員若有兩份就會讓
-/// Members、ReadableNames、按名索引三處口徑分裂。這裡驗證三段結果：
+/// Members、ReadableMembers、按名查三處口徑分裂。這裡驗證三段結果：
 /// - 成員總數 3，且 Id 只出現一次；
 /// - 成員序 Name、Id、Age（基類成員在前、同類內宣告序）；
 /// - 按名查到的 Id 是派生類那份宣告（OwnerType == PoUserExt）。

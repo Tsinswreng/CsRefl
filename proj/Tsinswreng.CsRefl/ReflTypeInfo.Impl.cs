@@ -28,8 +28,14 @@ public partial class ReflTypeInfo{
 		this.Kind = ComputeKind(Type);
 		this.ElementType = FindElementType(Type);
 		this.KeyType = FindKeyType(Type);
-		// step 2: 成員表在此規整成契約序（排序、去重、只讀），見 TypeInfoSorter.SortEtDedup。
-		this.Members = TypeInfoSorter.SortEtDedup(Type, CollectMembers(Type));
+		// step 2: 成員表在此規整成契約序（排序、去重），見 TypeInfoSorter.SortEtDedup；
+		//         再依序收進保序字典：插入序即契約序，故成員表的枚舉順序就是契約序。
+		var Sorted = TypeInfoSorter.SortEtDedup(Type, CollectMembers(Type));
+		var MemberDict = new OrderedDictionary<str, IMemberInfo>(Sorted.Count);
+		foreach(var M in Sorted){
+			MemberDict[M.Name] = M;
+		}
+		this.Members = MemberDict;
 		// step 3: 無參工廠構造期算一次就落在屬性上。
 		this.CreateObject = TryBuildMkInst(Type);
 	}
@@ -51,43 +57,22 @@ public partial class ReflTypeInfo{
 	}
 
 	[Doc($"""
-#Sum[惰性建立按名索引。]
+#Sum[由成員表過濾出一份子集快照。]
 
-#Descr[
-成員表在建構後不可變，故緩存安全。
-索引雙檢：{nameof(_ByName)} 是 volatile，兩個線程同時建也只會多建一份等價字典。
-
-實測：第一次按名查時才建這份字典，故「只枚舉成員、從不按名查」的用法不付這份內存代價；
-建好之後每次按名查是 O(1)。
-
-鍵比較用 {nameof(StringComparer)}.{nameof(StringComparer.Ordinal)} 而非默認比較：
-成員名是程式碼識別符，Ordinal 才是正確語義，也不受當前文化影響。
-]
+#See[{nameof(MkSubset)}]
 """)]
-	private partial void EnsureByName(){
-		if(_ByName is not null){
-			return;
+	private partial IDictionary<str, IMemberInfo> MkSubset(Func<IMemberInfo, bool> Pick){
+		var R = new OrderedDictionary<str, IMemberInfo>();
+		foreach(var (Name, M) in Members){
+			if(Pick(M)){
+				R[Name] = M;
+			}
 		}
-		var Dict = new Dictionary<str, IMemberInfo>(Members.Count, StringComparer.Ordinal);
-		foreach(var M in Members){
-			Dict[M.Name] = M;
-		}
-		_ByName = Dict;
+		return R;
 	}
 
 	[Doc($"""
-#Sum[按成員序列出全部成員名，供未命中時的錯誤訊息用。]
-
-#Descr[
-實測（`PoUser`）：11 個名，與成員表同序。
-]
-""")]
-	private partial IEnumerable<str> AllNames(){
-		return Members.Select(M => M.Name);
-	}
-
-	[Doc($"""
-#Sum[按名查成員；走惰性索引，O(1)。]
+#Sum[按名查成員；就是成員表的一次字典查，O(1)。]
 
 #See[{nameof(ITypeInfo.TryGetMember)}]
 """)]
@@ -97,9 +82,8 @@ public partial class ReflTypeInfo{
 		if(Name is null){
 			return false;
 		}
-		// step 2: 走索引（第一次調用時才建，見 EnsureByName）。
-		EnsureByName();
-		return _ByName!.TryGetValue(Name, out M);
+		// step 2: 成員表本身是保序字典（見 Members），按名查就是它的一次字典查。
+		return Members.TryGetValue(Name, out M);
 	}
 
 	[Doc($"""
@@ -110,11 +94,11 @@ public partial class ReflTypeInfo{
 	public partial IMemberInfo GetMember(str Name){
 		ArgumentNullException.ThrowIfNull(Name);
 		// step 1: 命中就返回；未命中才付「列可用名」的代價（錯誤路徑）。
-		if(TryGetMember(Name, out var M)){
+		if(Members.TryGetValue(Name, out var M)){
 			return M;
 		}
 		throw new KeyNotFoundException(
-			$"型別 {Type.FullName} 沒有成員 {Name}。可用成員：{string.Join(", ", AllNames())}"
+			$"型別 {Type.FullName} 沒有成員 {Name}。可用成員：{string.Join(", ", Members.Keys)}"
 		);
 	}
 

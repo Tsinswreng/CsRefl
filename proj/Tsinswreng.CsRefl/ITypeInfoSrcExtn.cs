@@ -41,7 +41,7 @@ public static partial class ITypeInfoSrcExtn{
 
 ```csharp
 var Info = Src.GetInfo(typeof(PoUser));
-// Info.Type 是 typeof(PoUser)；接著就能 Info.Members、Info.WritableNames、Info.TryGetMember("Age", out var M)。
+// Info.Type 是 typeof(PoUser)；接著就能 Info.Members、Info.WritableMembers、Info.TryGetMember("Age", out var M)。
 
 var JsonOnly = new JsonTypeInfoSrc(TestJsonCtx.Default);
 JsonOnly.GetInfo(typeof(PoNoCtor));

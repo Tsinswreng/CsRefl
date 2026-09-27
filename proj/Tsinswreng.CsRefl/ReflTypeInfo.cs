@@ -120,21 +120,22 @@ DAM 註解：反射建立元資料需要 接口、公共屬性、公共字段、
 	public JsonTypeInfoKind Kind{get;set;}
 
 	[Doc($"""
-#Sum[成員表（契約序，已去重：遮蔽成員只留最靠近實例的那份宣告）。]
+#Sum[成員表：鍵是成員名、值是成員本體；契約序，已去重。]
 
 #Descr[
 實測：`PoUser` 這條鏈的成員依次是
 `Id`、`Name`、`Age`、`Email`、`Married`、`Tags`、`Extra`、`Secret`、`Level`、`Token`、`Note`（11 項）；
 另一條鏈上子類用 `new` 遮蔽基類的 `Id`，這裡是 `Name`、`Id`、`Age` 三項，
 `Id` 只有一份、仍在第 2 位、按名查到的其宣告型別是子類。
-規整由 {nameof(TypeInfoSorter)}.{nameof(TypeInfoSorter.SortEtDedup)} 在建構子裏一次做完。
-本屬性可賦值（換整張成員表）；賦值不重建按名索引與名清單快取，故換表通常該重建一份實例。
+
+規整由 {nameof(TypeInfoSorter)}.{nameof(TypeInfoSorter.SortEtDedup)} 在建構子裏一次做完，
+再依序放進 {nameof(OrderedDictionary<,>)}：插入序就是契約序，故枚舉順序即契約序，
+按名查就是它的 TryGetValue。
+
+本屬性可賦值（換整張成員表）；賦值不重建三份子集快取，故換表通常該重建一份實例。
 ]
 """)]
-	public IReadOnlyList<IMemberInfo> Members{
-		get;
-		set;
-	}
+	public IDictionary<str, IMemberInfo> Members{get;set;}
 
 	[Doc($"""
 #Sum[集合的元素型別；非集合為 null。]
@@ -144,10 +145,7 @@ DAM 註解：反射建立元資料需要 接口、公共屬性、公共字段、
 `typeof(PoUser)` 這種物件型別為 null（不是集合）。
 ]
 """)]
-	public Type? ElementType{
-		get;
-		set;
-	}
+	public Type? ElementType{get;set;}
 
 	[Doc($"""
 #Sum[字典的鍵型別；非字典為 null。]
@@ -159,49 +157,42 @@ DAM 註解：反射建立元資料需要 接口、公共屬性、公共字段、
 """)]
 	//TswgNote 爲甚麼有這麼多脫褲子放屁的東西? 給我個理由?
 	// 已按此清掉：構造期算出來的事實直接落在屬性上（自動屬性），不再另存欄位由屬性轉發。
-	public Type? KeyType{
-		get;
-		set;
-	}
+	public Type? KeyType{get;set;}
 
 	// ---- 惰性快取：第一次用到時才建，之後一直用 ----
 
-	[Doc($"""
-#Sum[按名的成員索引緩存，首次查詢時建立。]
-
-#Descr[
-實測：第一次 {nameof(TryGetMember)} 時才建這份 {nameof(Dictionary<,>)}，
-之後每次按名查都是 O(1)（不是 O(n)）——O(n) 的只有枚舉 {nameof(Members)} 本身；
-{nameof(GetMember)}("Age") 與 {nameof(TryGetMember)}("Age", out _) 返回的實例
-`{nameof(ReferenceEquals)}` 為 true，即共用這份索引。
-
-用 volatile 是為了多線程下雙檢：兩個線程同時建也只會多建一份等價字典，
-不會看到半成品字典。
-]
-""")]
-	public volatile Dictionary<str, IMemberInfo>? _ByName;//TswgNote 違反命名規範！沒有一處寫得對的
-	// 已按此改：_byName → _ByName（public ＋ 下劃線 ＋ 大駝峯）；快取欄位現由兩條來源各自持有。
+	//TswgNote 違反命名規範！沒有一處寫得對的
+	// 已按此改：_byName → _ByName；其後成員表改成保序字典本體，這份按名索引不再需要，已刪。
 
 	[Doc($"""
-#Sum[可讀名清單緩存。]
+#Sum[可讀成員表緩存（本庫持有的那一份）。]
 
 #Descr[
-實測（`PoUser`）：第一次讀 {nameof(ReadableNames)} 時由 {nameof(Members)} 現算一次並存下來，
-內容是 10 個名（跳過只寫的 `Token`）；
-第二次讀返回的是同一份清單實例（`{nameof(ReferenceEquals)}` 為 true）。
+實測（`PoUser`）：第一次讀 {nameof(ReadableMembers)} 時由 {nameof(Members)} 現算一次並存下來，
+內容是 10 項（跳過只寫的 `Token`）；
+第二次讀返回的是同一份表實例（`{nameof(ReferenceEquals)}` 為 true）。
 ]
 """)]
-	public volatile IReadOnlyCollection<str>? _Readable;
+	public volatile IDictionary<str, IMemberInfo>? _Readable;
 
 	[Doc($"""
-#Sum[可寫名清單緩存。]
+#Sum[可寫成員表緩存（本庫持有的那一份）。]
 
 #Descr[
-實測（`PoUser`）：這份清單是 10 個名（跳過只讀的 `Secret`、含只寫的 `Token`），
-與 {nameof(ReadableNames)} 的差別只有一處：把 `Secret` 換成了 `Token`。
+實測（`PoUser`）：這份表是 10 項（跳過只讀的 `Secret`、含只寫的 `Token`），
+與 {nameof(ReadableMembers)} 的差別只有一處：把 `Secret` 換成了 `Token`。
 ]
 """)]
-	public volatile IReadOnlyCollection<str>? _Writable;
+	public volatile IDictionary<str, IMemberInfo>? _Writable;
+
+	[Doc($"""
+#Sum[可讀且可寫成員表緩存（本庫持有的那一份）。]
+
+#Descr[
+實測（`PoUser`）：這份表是 9 項，正好等於 {nameof(InstDict)} 的鍵表。
+]
+""")]
+	public volatile IDictionary<str, IMemberInfo>? _ReadWrite;
 
 	[Doc($"""
 #Sum[無參實例工廠，形狀與官方 {nameof(JsonTypeInfo)}.{nameof(JsonTypeInfo.CreateObject)} 一致；null 表示本型別不可建實例。]
@@ -218,10 +209,7 @@ NativeAOT 下表達式樹不能 Comrile（會拋 {nameof(PlatformNotSupportedExc
 
 #See[{nameof(ITypeInfo.CreateObject)}]
 """)]
-	public Func<obj>? CreateObject{
-		get;
-		set;
-	}
+	public Func<obj>? CreateObject{get;set;}
 
 	[Doc($"""
 #Sum[反射來源沒有官方 {nameof(JsonTypeInfo)}，預設 null；可賦值。]
@@ -232,10 +220,7 @@ NativeAOT 下表達式樹不能 Comrile（會拋 {nameof(PlatformNotSupportedExc
 
 #See[{nameof(ITypeInfo.Json)}]
 """)]
-	public JsonTypeInfo? Json{
-		get;
-		set;
-	}
+	public JsonTypeInfo? Json{get;set;}
 
 	[Doc($"""
 #Sum[本型別能否建立無參實例。]
@@ -263,43 +248,53 @@ NativeAOT 下表達式樹不能 Comrile（會拋 {nameof(PlatformNotSupportedExc
 	public partial obj? MkInst();
 
 	[Doc($"""
-#Sum[可讀成員名清單，順序同 {nameof(Members)}（已去重，不含重複名）。]
+#Sum[可讀成員表，順序同 {nameof(Members)}（已去重，不含重複名）。]
 
 #Descr[
 實測（`PoUser`）：`Secret` 只讀、`Token` 只寫，
-故這裡是 10 個名、含 `Secret` 不含 `Token`；
-第一次讀時現算並緩存，第二次讀返回同一份清單實例，故在循環裏反復讀不會反復計算。
+故這裡是 10 項、含 `Secret` 不含 `Token`；
+第一次讀時現算並緩存，第二次讀返回同一份表實例，故在循環裏反復讀不會反復計算。
 ]
 
-#See[{nameof(ITypeInfo.ReadableNames)}]
+#See[{nameof(ITypeInfo.ReadableMembers)}]
 """)]
-	public IReadOnlyCollection<str> ReadableNames{
+	public IDictionary<str, IMemberInfo> ReadableMembers{
 		get{
 			// 惰性算一次並緩存：成員表構造後不變，故緩存安全（見 _Readable）。
-			return _Readable ??= Members
-				.Where(M => M.CanRead)
-				.Select(M => M.Name)
-				.ToList();
+			return _Readable ??= MkSubset(M => M.CanRead);
 		}
 	}
 
 	[Doc($"""
-#Sum[可寫成員名清單，順序同 {nameof(Members)}（已去重，不含重複名）。]
+#Sum[可寫成員表，順序同 {nameof(Members)}（已去重，不含重複名）。]
 
 #Descr[
-實測（`PoUser`）：這裡也是 10 個名、含 `Token` 不含 `Secret`；
-兩份清單的交集是 9 個「可讀可寫」成員名，正好等於 {nameof(InstDict)} 的鍵表。
+實測（`PoUser`）：這裡也是 10 項、含 `Token` 不含 `Secret`；
+第一次讀時現算並緩存，第二次讀返回同一份表實例。
 ]
 
-#See[{nameof(ITypeInfo.WritableNames)}]
+#See[{nameof(ITypeInfo.WritableMembers)}]
 """)]
-	public IReadOnlyCollection<str> WritableNames{
+	public IDictionary<str, IMemberInfo> WritableMembers{
 		get{
 			// 同上，惰性算一次並緩存（見 _Writable）。
-			return _Writable ??= Members
-				.Where(M => M.CanWrite)
-				.Select(M => M.Name)
-				.ToList();
+			return _Writable ??= MkSubset(M => M.CanWrite);
+		}
+	}
+
+	[Doc($"""
+#Sum[可讀且可寫成員表（列與表單欄位就是這一批），順序同 {nameof(Members)}。]
+
+#Descr[
+實測（`PoUser`）：這裡是 9 項，正好等於 {nameof(InstDict)} 的鍵表。
+]
+
+#See[{nameof(ITypeInfo.ReadWriteMembers)}]
+""")]
+	public IDictionary<str, IMemberInfo> ReadWriteMembers{
+		get{
+			// 同上，惰性算一次並緩存（見 _ReadWrite）。
+			return _ReadWrite ??= MkSubset(M => M.CanRead && M.CanWrite);
 		}
 	}
 
@@ -307,7 +302,7 @@ NativeAOT 下表達式樹不能 Comrile（會拋 {nameof(PlatformNotSupportedExc
 #Sum[按名查成員；未知返回 false。]
 
 #Descr[
-走 {nameof(_ByName)} 那份惰性索引，是 O(1)（見 {nameof(_ByName)}），不掃 {nameof(Members)}。
+就是 {nameof(Members)} 的 TryGetValue，O(1)（保序字典按鍵查是常數時間），不掃全表。
 ]
 
 #See[{nameof(ITypeInfo.TryGetMember)}]
@@ -339,27 +334,18 @@ NativeAOT 下表達式樹不能 Comrile（會拋 {nameof(PlatformNotSupportedExc
 	// `partial` 合併時兩邊都標會報 CS0579。
 
 	[Doc($"""
-#Sum[惰性建按名索引；已建過則直接返回。]
+#Sum[由成員表過濾出一份子集快照，順序同 {nameof(Members)}。]
+
+#Params([[Pick, 判據；拿成員本體判定是否收進子集]])
+
+#Rtn[新的保序字典；鍵是成員名、值是成員本體]
 
 #Descr[
-O(n) 只發生在第一次（建一次 {nameof(Dictionary<,>)}），
-之後 {nameof(TryGetMember)} 與 {nameof(GetMember)} 都是 O(1)。
-
-實測：`{nameof(GetMember)}("Age")` 與 `{nameof(TryGetMember)}("Age", out _)` 返回的
-是同一實例（{nameof(ReferenceEquals)} 為 true），即共用這份索引；
-名字比較用 {nameof(StringComparer)}.{nameof(StringComparer.Ordinal)}，不受當前區域設定影響。
+建一份新的 {nameof(OrderedDictionary<,>)}，依 {nameof(Members)} 的順序把符合判據的成員放進去。
+每次都新建一份，不與成員表共用；三份子集屬性會把它緩存下來。
 ]
 """)]
-	private partial void EnsureByName();
-
-	[Doc($"""
-#Sum[按成員序列出全部成員名，供未命中時的錯誤訊息用。]
-
-#Descr[
-實測（`PoUser`）：11 個名，與成員表同序，首位是 `Id`、末位是 `Note`。
-]
-""")]
-	private partial IEnumerable<str> AllNames();
+	private partial IDictionary<str, IMemberInfo> MkSubset(Func<IMemberInfo, bool> Pick);
 
 	[Doc($"""
 #Sum[型別分類。]

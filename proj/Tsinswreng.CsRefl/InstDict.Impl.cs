@@ -32,7 +32,7 @@ public partial class InstDict{
 		// 兩者放進字典視圖都會讓 IDictionary 的讀寫契約自相矛盾。
 		var KeyList = new List<str>();
 		var KeySet = new HashSet<str>(StringComparer.Ordinal);
-		foreach(var M in TypeInfo.Members){
+		foreach(var M in TypeInfo.Members.Values){
 			if(M.CanRead && M.CanWrite){
 				var N = M.Name;
 				KeyList.Add(N);

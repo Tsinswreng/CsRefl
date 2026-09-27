@@ -21,11 +21,11 @@ public partial class TestTypeInfo{
 
 		T(Info.Members.Count == 11, $"應有 11 個成員，實際 {Info.Members.Count}");
 		for(var I = 0; I < ExpectOrder.Length; I++){
-			var M = Info.Members[I];
+			var M = Info.Members.Values.ElementAt(I);
 			T(M.Name == ExpectOrder[I], $"第 {I} 個成員應是 {ExpectOrder[I]}，實際 {M.Name}");
 		}
 
-		var Age = Info.Members[2];
+		var Age = Info.Members.Values.ElementAt(2);
 		T(Age.Name == "Age", "Age 應在自分類的第 3 位");
 		T(Age.PropertyType == typeof(i32), "Age 型別應是 int");
 		T(Age.OwnerType == typeof(PoUser), "Age 聲明型別應是 PoUser");
@@ -35,41 +35,41 @@ public partial class TestTypeInfo{
 		T(((MemberInfo)Age!).MemberType == MemberTypes.Property, "Age 的官方成員種類應是 Property");
 		T(((Age as JsonPropertyInfo)?.AttributeProvider) is not null, "Age 應給出官方特性提供者");
 
-		var Id = Info.Members[0];
+		var Id = Info.Members.Values.ElementAt(0);
 		T(Id.OwnerType == typeof(PoUserBase), "Id 聲明型別應是基類 PoUserBase（繼承成員在前）");
 
-		var Secret = Info.Members[7];
+		var Secret = Info.Members.Values.ElementAt(7);
 		T(Secret.Name == "Secret", "Secret 應在第 8 位");
 		T(Secret.PropertyType == typeof(str), "Secret 型別應是 string");
 		T(Secret.CanRead && !Secret.CanWrite, "Secret 應只讀不可寫");
 		T(((Secret as JsonPropertyInfo)?.Set) is null, "只讀成員的官方 Set 委託應為 null");
 
-		var Token = Info.Members[9];
+		var Token = Info.Members.Values.ElementAt(9);
 		T(Token.Name == "Token", "Token 應在第 10 位");
 		T(Token.CanWrite && !Token.CanRead, "Token 應只寫不可讀");
 		T(((Token as JsonPropertyInfo)?.Get) is null, "只寫成員的官方 Get 委託應為 null");
 
-		var Note = Info.Members[10];
+		var Note = Info.Members.Values.ElementAt(10);
 		T(Note.Name == "Note", "Note 應在第 11 位");
 		T(Note.CanRead && Note.CanWrite, "Note 應可讀可寫");
 
 		// 官方出口：反射源給 MemberInfo、Json 源給 JsonPropertyInfo，兩者互斥。
-		var First = Info.Members[0];
+		var First = Info.Members.Values.ElementAt(0);
 		if(IsRefl){
 			T((First as MemberInfo) is PropertyInfo, $"反射源的官方成員應是 PropertyInfo，實際 {(First as MemberInfo)?.GetType().Name ?? "null"}");
 			T((First as JsonPropertyInfo) is null, "反射源不應有 JsonPropertyInfo");
 			// [JsonInclude] 字段在反射源是 Field。
-			T(((MemberInfo)Info.Members[10]!).MemberType == MemberTypes.Field, "反射源應把 Note 報成 Field");
+			T(((MemberInfo)Info.Members.Values.ElementAt(10)!).MemberType == MemberTypes.Field, "反射源應把 Note 報成 Field");
 		}
 		else{
 			T((First as JsonPropertyInfo) is not null, "Json 源應給出官方 JsonPropertyInfo");
 			T((First as MemberInfo) is null, "Json 源沒有反射 MemberInfo（JsonPropertyInfo 不是它的子類）");
 			// 官方 JsonPropertyInfo 不暴露 IsProperty，故只能報 Property。
-			T(((MemberInfo)Info.Members[10]!).MemberType == MemberTypes.Property, "Json 源只能把 Note 報成 Property");
+			T(((MemberInfo)Info.Members.Values.ElementAt(10)!).MemberType == MemberTypes.Property, "Json 源只能把 Note 報成 Property");
 		}
 
 		// 靜態成員 / 私有字段 / 索引器都不得進成員表。
-		foreach(var M in Info.Members){
+		foreach(var M in Info.Members.Values){
 			T(M.Name is not ("StaticNote" or "Hidden" or "Item"), $"成員 {M.Name} 不應出現（靜態/私有/索引器被排除）");
 		}
 	}

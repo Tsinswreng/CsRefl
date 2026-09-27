@@ -33,7 +33,7 @@ public partial class TestTypeInfo:ITester{
 	/// 註冊按名查詢用例。
 	public partial void RegisterLookup(ITestNode Node);
 
-	/// 對一個來源驗證名字清單（ReadableNames / WritableNames）。
+	/// 對一個來源驗證成員表與三份子集（Members / ReadableMembers / WritableMembers）。
 	private static partial void CheckReadWriteNames(ITypeInfo Info);
 	/// 對一個來源驗證 TryGet/TrySet 端到端（造一個實例走完整讀寫）。
 	private static partial void CheckReadWriteE2E(ITypeInfo Info);

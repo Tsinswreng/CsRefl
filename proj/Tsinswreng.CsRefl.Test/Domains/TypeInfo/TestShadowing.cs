@@ -20,10 +20,10 @@ public partial class TestTypeInfo{
 
 		T(Info.Members.Count == 3, $"應剩 3 個成員，實際 {Info.Members.Count}");
 		// 成員序：基類的 Name 在前，然後是派生類自己宣告的 Id、Age。
-		T(Info.Members[0].Name == "Name"
-			&& Info.Members[1].Name == "Id"
-			&& Info.Members[2].Name == "Age",
-			$"成員序應是 Name、Id、Age，實際 {string.Join(",", Info.Members.Select(M => M.Name))}");
+		T(Info.Members.Values.ElementAt(0).Name == "Name"
+			&& Info.Members.Values.ElementAt(1).Name == "Id"
+			&& Info.Members.Values.ElementAt(2).Name == "Age",
+			$"成員序應是 Name、Id、Age，實際 {string.Join(",", Info.Members.Keys)}");
 
 		// Id 只出現一次，且是派生類那份宣告。
 		var Id = Info.GetMember("Id");
@@ -34,8 +34,8 @@ public partial class TestTypeInfo{
 		T(Id.TrySet(Ext, 42L) && Ext.Id == 42, "去重後的 Id 應能寫回實例");
 
 		// 名清單不得出現重複鍵。
-		T(Info.ReadableNames.Count == 3, $"可讀名應有 3 個，實際 {Info.ReadableNames.Count}");
-		T(Info.ReadableNames.Distinct().Count() == Info.ReadableNames.Count, "可讀名不得有重複鍵");
+		T(Info.ReadableMembers.Count == 3, $"可讀名應有 3 個，實際 {Info.ReadableMembers.Count}");
+		T(Info.ReadableMembers.Keys.Distinct().Count() == Info.ReadableMembers.Count, "可讀名不得有重複鍵");
 	}
 
 	/// 見聲明處的說明。

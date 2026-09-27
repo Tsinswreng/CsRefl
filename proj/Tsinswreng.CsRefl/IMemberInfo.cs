@@ -30,7 +30,7 @@ public partial interface IMemberInfo{
 #Sum[成員名；就是按名讀寫用的那個鍵。]
 #Descr[
 {{nameof(ITypeInfo.GetMember)}}／{{nameof(ITypeInfo.TryGetMember)}} 的入參就是它；
-{{nameof(ITypeInfo.ReadableNames)}}／{{nameof(ITypeInfo.WritableNames)}} 列出的也是它。
+{{nameof(ITypeInfo.ReadableMembers)}}／{{nameof(ITypeInfo.WritableMembers)}}／{{nameof(ITypeInfo.ReadWriteMembers)}} 的鍵也是它。
 ]
 """)]
 	str Name{get;set;}
@@ -86,7 +86,7 @@ var d = m.OwnerType;   // JsonTypeInfoInfo
 判據是成員自身有沒有公開的讀取器，不是「在不在某張鍵表裏」。
 只寫成員為 false，讀它要經 {{nameof(TryGet)}}，那裏同樣返回 false。
 
-整份名單見 {{nameof(ITypeInfo.ReadableNames)}}。
+整份名單見 {{nameof(ITypeInfo.ReadableMembers)}}。
 ]
 """)]
 	bool CanRead{get;set;}
@@ -97,7 +97,7 @@ var d = m.OwnerType;   // JsonTypeInfoInfo
 判據是成員自身有沒有公開的寫入器，不是「在不在某張鍵表裏」。
 只讀成員為 false，寫它要經 {{nameof(TrySet)}}，那裏同樣返回 false。
 
-整份名單見 {{nameof(ITypeInfo.WritableNames)}}。
+整份名單見 {{nameof(ITypeInfo.WritableMembers)}}。
 ]
 """)]
 	bool CanWrite{get;set;}
