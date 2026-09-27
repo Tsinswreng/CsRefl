@@ -19,7 +19,7 @@ public partial class TestSynthesis{
 		var U = new PoUser{Id = 1, Name = "小明", Age = 26};
 
 		// 視圖是物件的「淺字典外殼」：不複製成員值，讀寫都落在原物件上。
-		var Dict = Src.ToInstDict(U);
+		var Dict = Src.ToInstViewDict(U);
 		T(ReferenceEquals(Dict.Target, U), "視圖背後就是那個物件");
 		T(Dict.TypeInfo.Type == typeof(PoUser), "視圖帶着建它用的那份元資料");
 
@@ -54,17 +54,17 @@ public partial class TestSynthesis{
 		T(Threw, "Add 應拋 NotSupportedException");
 
 		// 只要基類那一部分時顯式給型別：子類新增的成員就不在鍵表裏。
-		var BaseDict = Src.ToInstDict(U, typeof(PoUserBase));
+		var BaseDict = Src.ToInstViewDict(U, typeof(PoUserBase));
 		T(BaseDict.Count == 2, $"基類視圖應只有 2 個鍵，實際 {BaseDict.Count}");
 		T(BaseDict.Keys.SequenceEqual([nameof(PoUserBase.Id), nameof(PoUserBase.Name)]), "基類視圖的鍵應是 Id、Name");
 
 		// 泛型版與非泛型版的差別：泛型版用 T 的靜態型別，非泛型版用執行期型別。
-		T(Src.ToInstDict<PoUser>(U).Count == 9, "ToInstDict<PoUser> 應有 9 個鍵");
+		T(Src.ToInstViewDict<PoUser>(U).Count == 9, "ToInstDict<PoUser> 應有 9 個鍵");
 		PoUserBase B = U;
-		T(Src.ToInstDict<PoUserBase>(B).Count == 2, "ToInstDict<PoUserBase> 按靜態型別應只有 2 個鍵");
+		T(Src.ToInstViewDict<PoUserBase>(B).Count == 2, "ToInstDict<PoUserBase> 按靜態型別應只有 2 個鍵");
 		// 注意那個 (obj)：不寫的話 C# 會挑泛型版 ToInstDict<T>（T 就是 B 的靜態型別 PoUserBase）、
 		// 拿到 2 個鍵；「不傳型別就按執行期型別」只有走 obj 這個非泛型重載才成立。
-		T(Src.ToInstDict((obj)B).Count == 9, "非泛型版 ToInstDict((obj)B) 按執行期型別應是 9 個鍵");
+		T(Src.ToInstViewDict((obj)B).Count == 9, "非泛型版 ToInstDict((obj)B) 按執行期型別應是 9 個鍵");
 
 		return NIL;
 	}
@@ -73,8 +73,8 @@ public partial class TestSynthesis{
 	public partial void RegisterInstDict(ITestNode Node){
 		var reg = Node.MkTestFnRegister(
 			typeof(TestSynthesis),
-			[typeof(IInstDict), typeof(ITypeInfoSrcExtn)],
-			[nameof(ITypeInfoSrcExtn.ToInstDict), nameof(IInstDict.Keys)],
+			[typeof(IInstViewDict), typeof(ITypeInfoSrcExtn)],
+			[nameof(ITypeInfoSrcExtn.ToInstDict), nameof(IInstViewDict.Keys)],
 			"綜合測試:視圖層:"
 		);
 		reg.Register(nameof(DictView), DictView!);

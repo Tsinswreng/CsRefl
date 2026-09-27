@@ -67,7 +67,7 @@ using Tsinswreng.CsCore;
 //能不能仿照JsonNodeDict的思路? 或者分兩種InstDict ,
 //一種是 不讓增減鍵的,
 //一種是能增減鍵的。不讓增減鍵的容易做就先留做好的一版。
-public interface IInstDict:IDictionary<str,obj?>{
+public interface IInstViewDict:IDictionary<str,obj?>{
 	[Doc($"""
 #Sum[視圖背後的物件。]
 

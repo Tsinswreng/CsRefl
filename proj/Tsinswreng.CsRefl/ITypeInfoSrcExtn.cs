@@ -371,7 +371,7 @@ Src.ToInstDict(null!);
 只要基類那部分請用另一個重載（見下）。
 ]
 """)]
-	public static partial IInstDict ToInstDict(this ITypeInfoSrc z, obj? O);
+	public static partial IInstViewDict ToInstViewDict(this ITypeInfoSrc z, obj? O);
 
 	[Doc($$"""
 #Sum[建淺字典視圖，型別可由調用方顯式給（只要基類那部分時用）。]
@@ -398,7 +398,7 @@ foreach(var K in BaseDict.Keys){
 不傳型別就用實例的執行期型別（見上一個重載）。
 ]
 """)]
-	public static partial IInstDict ToInstDict(
+	public static partial IInstViewDict ToInstViewDict(
 		this ITypeInfoSrc z,
 		obj? O,
 		[DAM(ReflTypeInfo.ReflDam)] Type? Type
@@ -429,7 +429,7 @@ var D3 = Src.ToInstDict((obj)B);              // 非泛型版按執行期型別�
 要「按執行期型別」就別用泛型版，用 `{{nameof(ToInstDict)}}(O)`。
 ]
 """)]
-	public static partial IInstDict ToInstDict<T>(this ITypeInfoSrc z, T O);
+	public static partial IInstViewDict ToInstViewDict<T>(this ITypeInfoSrc z, T O);
 
 	[Doc($$"""
 #Sum[把鍵值對寫回物件（型別取 `O.GetType()`）。]

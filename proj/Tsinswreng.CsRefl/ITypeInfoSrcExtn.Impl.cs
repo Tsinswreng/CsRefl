@@ -184,8 +184,8 @@ public static partial class ITypeInfoSrcExtn{
 轉調帶型別的那個重載（型別傳 null，即取 `O.GetType()`）。
 ]
 """)]
-	public static partial IInstDict ToInstDict(this ITypeInfoSrc z, obj? O){
-		return ToInstDict(z, O, null);
+	public static partial IInstViewDict ToInstViewDict(this ITypeInfoSrc z, obj? O){
+		return ToInstViewDict(z, O, null);
 	}
 
 	[Doc($"""
@@ -195,7 +195,7 @@ public static partial class ITypeInfoSrcExtn{
 型別未註冊到來源時拋（訊息指出型別與來源），不留到讀寫時才暴露。
 ]
 """)]
-	public static partial IInstDict ToInstDict(this ITypeInfoSrc z, obj? O, Type? Type){
+	public static partial IInstViewDict ToInstViewDict(this ITypeInfoSrc z, obj? O, Type? Type){
 		ArgumentNullException.ThrowIfNull(z);
 		ArgumentNullException.ThrowIfNull(O);
 		// 動態 GetType() 的 DAM 需要擔保，見 RuntimeType。
@@ -204,19 +204,19 @@ public static partial class ITypeInfoSrcExtn{
 			throw new KeyNotFoundException($"型別 {T.FullName} 未註冊到來源 {z.GetType().Name}，無法建字典視圖。");
 
 		}
-		return new InstDict(O, Info);
+		return new InstViewDict(O, Info);
 	}
 
 	[Doc($"""
 #Sum[見宣告處的說明。]
 
 #Descr[
-轉非泛型版：型別取 `T` 的靜態型別（故 {nameof(InstDict)} 的鍵表以 `typeof(T)` 為準），
+轉非泛型版：型別取 `T` 的靜態型別（故 {nameof(InstViewDict)} 的鍵表以 `typeof(T)` 為準），
 不傳型別的那個重載才按執行期型別走。
 ]
 """)]
-	public static partial IInstDict ToInstDict<T>(this ITypeInfoSrc z, T O){
-		return z.ToInstDict(O, _RuntimeType(typeof(T)));
+	public static partial IInstViewDict ToInstViewDict<T>(this ITypeInfoSrc z, T O){
+		return z.ToInstViewDict(O, _RuntimeType(typeof(T)));
 	}
 
 	[Doc($"""

@@ -55,7 +55,7 @@ using Tsinswreng.CsCore;
 建構子與 {nameof(IDictionary<string, object?>)} 成員的實現見 `InstDict.Impl.cs`。
 ]
 """)]
-public partial class InstDict:IInstDict{
+public partial class InstViewDict:IInstViewDict{
 	[Doc($"""
 #Sum[出現口徑的鍵清單：可讀且可寫的成員名，按成員序。]
 
@@ -115,7 +115,7 @@ public partial class InstDict:IInstDict{
 讀寫都落在這個物件上，視圖本身不持有成員值的副本。
 ]
 
-#See[{nameof(IInstDict.Target)}]
+#See[{nameof(IInstViewDict.Target)}]
 """)]
 	public obj? Target{
 		get;
@@ -133,7 +133,7 @@ public partial class InstDict:IInstDict{
 鍵表與可讀可寫判據都從它現算，故換一份元資料建視圖，鍵集合也跟著變。
 ]
 
-#See[{nameof(IInstDict.TypeInfo)}]
+#See[{nameof(IInstViewDict.TypeInfo)}]
 """)]
 	public ITypeInfo TypeInfo{
 		get;
@@ -219,7 +219,7 @@ Dict[nameof(PoUser.Secret)];             // 但同一時刻讀得到值——鍵
 ```
 ]
 
-#See[{{nameof(IInstDict.ContainsKey)}}]
+#See[{{nameof(IInstViewDict.ContainsKey)}}]
 """)]
 	public partial bool ContainsKey(str Key);
 
@@ -241,7 +241,7 @@ Dict.TryGetValue("NoSuch", out _);                   // false：沒有這個成�
 與 {{nameof(ContainsKey)}} 的答案可以不一樣：後者按鍵表（可讀可寫）判，本方法按成員表判。
 ]
 
-#See[{{nameof(IInstDict.TryGetValue)}}]
+#See[{{nameof(IInstViewDict.TryGetValue)}}]
 """)]
 	public partial bool TryGetValue(str Key, out obj? Value);
 
@@ -260,14 +260,14 @@ Dict.Add("NewKey", 1);
 ```
 ]
 
-#See[{nameof(IInstDict.Add)}]
+#See[{nameof(IInstViewDict.Add)}]
 """)]
 	public partial void Add(str Key, obj? Value);
 
 	[Doc($"""
 #Sum[形狀由型別成員固定，本操作恆拋 {nameof(NotSupportedException)}。]
 
-#See[{nameof(IInstDict.Add)}]
+#See[{nameof(IInstViewDict.Add)}]
 """)]
 	public partial void Add(KeyValuePair<str, obj?> Item);
 
@@ -285,14 +285,14 @@ Dict.Remove(nameof(PoUser.Age));
 ```
 ]
 
-#See[{nameof(IInstDict.Remove)}]
+#See[{nameof(IInstViewDict.Remove)}]
 """)]
 	public partial bool Remove(str Key);
 
 	[Doc($"""
 #Sum[形狀由型別成員固定，本操作恆拋 {nameof(NotSupportedException)}。]
 
-#See[{nameof(IInstDict.Remove)}]
+#See[{nameof(IInstViewDict.Remove)}]
 """)]
 	public partial bool Remove(KeyValuePair<str, obj?> Item);
 
@@ -304,7 +304,7 @@ Dict.Remove(nameof(PoUser.Age));
 真要「全部歸零」得逐個成員改值，形狀本身清不掉。
 ]
 
-#See[{nameof(IInstDict.Clear)}]
+#See[{nameof(IInstViewDict.Clear)}]
 """)]
 	public partial void Clear();
 
@@ -323,7 +323,7 @@ Dict.Contains(new KeyValuePair<str, obj?>(nameof(PoUser.Token), "t")); // false�
 ```
 ]
 
-#See[{nameof(IInstDict.Contains)}]
+#See[{nameof(IInstViewDict.Contains)}]
 """)]
 	public partial bool Contains(KeyValuePair<str, obj?> Item);
 
@@ -346,7 +346,7 @@ Dict.CopyTo(Small, 0);
 ```
 ]
 
-#See[{nameof(IInstDict.CopyTo)}]
+#See[{nameof(IInstViewDict.CopyTo)}]
 """)]
 	public partial void CopyTo(KeyValuePair<str, obj?>[] Array, int ArrayIndex);
 
@@ -359,7 +359,7 @@ Dict.CopyTo(Small, 0);
 每次迭代都現讀物件的值。
 ]
 
-#See[{nameof(IInstDict.GetEnumerator)}]
+#See[{nameof(IInstViewDict.GetEnumerator)}]
 """)]
 	public partial IEnumerator<KeyValuePair<str, obj?>> GetEnumerator();
 
@@ -441,7 +441,7 @@ new InstDict(User, null!);
 順帶：{{nameof(ITypeInfoSrcExtn.ToInstDict)}} 就是「查型別 + new 本類」這兩步的合寫。
 ]
 """)]
-	public partial InstDict(obj Target, ITypeInfo TypeInfo);
+	public partial InstViewDict(obj Target, ITypeInfo TypeInfo);
 }
 
 

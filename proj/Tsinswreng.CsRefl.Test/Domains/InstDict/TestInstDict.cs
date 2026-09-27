@@ -29,7 +29,7 @@ public partial class TestInstDict{
 	}
 
 	/// 見聲明處的說明。
-	private partial IInstDict MakeDict(PoUser User){
-		return _merged.ToInstDict(User);
+	private partial IInstViewDict MakeDict(PoUser User){
+		return _merged.ToInstViewDict(User);
 	}
 }

@@ -17,7 +17,7 @@ public partial class TestInstDict:ITester{
 	/// 造一個標準的測試物件。
 	private static partial PoUser MakeUser();
 	/// 用合成來源為該物件建視圖。
-	private partial IInstDict MakeDict(PoUser User);
+	private partial IInstViewDict MakeDict(PoUser User);
 
 	/// 註冊視圖形狀用例（鍵序/Values/IsReadOnly/Keys）。
 	public partial void RegisterShape(ITestNode Node);

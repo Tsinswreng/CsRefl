@@ -15,7 +15,7 @@ Json 源：{nameof(System.Text.Json.Serialization.Metadata.JsonTypeInfo.Properti
 實測：`PoUser` 的成員表經本工具規整後是
 `Id`、`Name`、`Age`、`Email`、`Married`、`Tags`、`Extra`、`Secret`、`Level`、`Token`、`Note`，
 `Id` 與 `Name` 是基類 `PoUserBase` 宣告的（故排在前兩個位置）；
-{nameof(InstDict)} 的鍵序與 CsSql 的列序都直接吃這個順序，
+{nameof(InstViewDict)} 的鍵序與 CsSql 的列序都直接吃這個順序，
 故兩套來源切換時下游不必改代碼。
 
 實現見 `TypeInfoSorter.Impl.cs`。

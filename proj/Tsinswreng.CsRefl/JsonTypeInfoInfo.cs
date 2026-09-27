@@ -141,7 +141,7 @@ new JsonTypeInfoInfo(null!);
 #Sum[可讀且可寫成員表緩存（本庫持有的那一份）。]
 
 #Descr[
-實測（`PoUser`）：這份表是 9 項，正好等於 {nameof(InstDict)} 的鍵表。
+實測（`PoUser`）：這份表是 9 項，正好等於 {nameof(InstViewDict)} 的鍵表。
 ]
 """)]
 	public volatile IDictionary<str, IMemberInfo>? _ReadWrite;
@@ -265,7 +265,7 @@ true 表示 {nameof(CreateObject)} 交出的是 {nameof(_CreateObject)}（哪怕
 #Sum[可讀且可寫成員表（列與表單欄位就是這一批），順序同 {nameof(Members)}。]
 
 #Descr[
-實測（`PoUser`）：這裡是 9 項，正好等於 {nameof(InstDict)} 的鍵表。
+實測（`PoUser`）：這裡是 9 項，正好等於 {nameof(InstViewDict)} 的鍵表。
 ]
 
 #See[{nameof(ITypeInfo.ReadWriteMembers)}]

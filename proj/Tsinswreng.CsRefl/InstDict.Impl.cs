@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 using Tsinswreng.CsCore;
 
 [Doc($"""
-#Sum[{nameof(InstDict)} 的函數實現。]
+#Sum[{nameof(InstViewDict)} 的函數實現。]
 
 #Descr[
 只放函數實現：字段與訪問器在 `InstDict.cs`。
@@ -14,13 +14,13 @@ using Tsinswreng.CsCore;
 它只是對公開 {nameof(GetEnumerator)} 的一行轉發。
 ]
 """)]
-public partial class InstDict{
+public partial class InstViewDict{
 	[Doc($"""
 #Sum[用一個實例與它的型別元資料建視圖。]
 
-#See[{nameof(InstDict)}]
+#See[{nameof(InstViewDict)}]
 """)]
-	public partial InstDict(obj Target, ITypeInfo TypeInfo){
+	public partial InstViewDict(obj Target, ITypeInfo TypeInfo){
 		ArgumentNullException.ThrowIfNull(Target);
 		ArgumentNullException.ThrowIfNull(TypeInfo);
 		// step 1: 記住視圖背後的物件與型別元資料，後續讀寫都落在這兩者上。
@@ -55,7 +55,7 @@ public partial class InstDict{
 而 `Secret` 與 `Token` 都不在 {nameof(Keys)} 裏。
 ]
 
-#See[{nameof(InstDict)}]
+#See[{nameof(InstViewDict)}]
 """)]
 	public partial obj? this[str Key]{
 		get{
@@ -75,7 +75,7 @@ public partial class InstDict{
 
 #Descr[
 成員不存在或不可讀拋 {nameof(KeyNotFoundException)}（訊息含出現口徑的鍵）。
-判據是成員表而非 {nameof(_KeyList)}：只讀成員也讀得到（見 {nameof(InstDict)} 的口徑說明）。
+判據是成員表而非 {nameof(_KeyList)}：只讀成員也讀得到（見 {nameof(InstViewDict)} 的口徑說明）。
 
 實測（`PoUser`，`Secret = "s"`）：讀 `"Secret"` 返回 "s"；
 讀 `"Token"`（只寫）拋 {nameof(KeyNotFoundException)}，
@@ -154,7 +154,7 @@ null、false、空列表、空字典、boxed 的 `i32` 0、`str` "n"；
 	[Doc($"""
 #Sum[鍵是否存在於本視圖。]
 
-#See[{nameof(InstDict.ContainsKey)}]
+#See[{nameof(InstViewDict.ContainsKey)}]
 """)]
 	public partial bool ContainsKey(str Key){
 		// 走 _KeySet（O(1)），不掃 _KeyList（那是 O(n)，鍵一多就變貴）。
@@ -164,7 +164,7 @@ null、false、空列表、空字典、boxed 的 `i32` 0、`str` "n"；
 	[Doc($"""
 #Sum[取值；按成員表判定，未知成員返回 false（只讀成員也取得到）。]
 
-#See[{nameof(InstDict.TryGetValue)}]
+#See[{nameof(InstViewDict.TryGetValue)}]
 """)]
 	public partial bool TryGetValue(str Key, out obj? Value){
 		if(TypeInfo.TryGetMember(Key, out var M)
@@ -181,7 +181,7 @@ null、false、空列表、空字典、boxed 的 `i32` 0、`str` "n"；
 	[Doc($"""
 #Sum[形狀由型別成員固定，不支持新增鍵。]
 
-#See[{nameof(InstDict.Add)}]
+#See[{nameof(InstViewDict.Add)}]
 """)]
 	public partial void Add(str Key, obj? Value){
 		throw new NotSupportedException("字典視圖的形狀由型別成員固定，不支持新增鍵；請在型別上加可寫成員。");
@@ -190,7 +190,7 @@ null、false、空列表、空字典、boxed 的 `i32` 0、`str` "n"；
 	[Doc($"""
 #Sum[形狀由型別成員固定，不支持新增鍵。]
 
-#See[{nameof(InstDict.Add)}]
+#See[{nameof(InstViewDict.Add)}]
 """)]
 	public partial void Add(KeyValuePair<str, obj?> Item){
 		throw new NotSupportedException("字典視圖的形狀由型別成員固定，不支持新增鍵；請在型別上加可寫成員。");
@@ -199,7 +199,7 @@ null、false、空列表、空字典、boxed 的 `i32` 0、`str` "n"；
 	[Doc($"""
 #Sum[形狀由型別成員固定，不支持刪鍵。]
 
-#See[{nameof(InstDict.Remove)}]
+#See[{nameof(InstViewDict.Remove)}]
 """)]
 	public partial bool Remove(str Key){
 		throw new NotSupportedException("字典視圖的形狀由型別成員固定，不支持刪鍵。");
@@ -208,7 +208,7 @@ null、false、空列表、空字典、boxed 的 `i32` 0、`str` "n"；
 	[Doc($"""
 #Sum[形狀由型別成員固定，不支持刪鍵。]
 
-#See[{nameof(InstDict.Remove)}]
+#See[{nameof(InstViewDict.Remove)}]
 """)]
 	public partial bool Remove(KeyValuePair<str, obj?> Item){
 		throw new NotSupportedException("字典視圖的形狀由型別成員固定，不支持刪鍵。");
@@ -223,7 +223,7 @@ null、false、空列表、空字典、boxed 的 `i32` 0、`str` "n"；
 {nameof(IMemberInfo)}.{nameof(IMemberInfo.TrySet)} 成默認值）。
 ]
 
-#See[{nameof(InstDict.Clear)}]
+#See[{nameof(InstViewDict.Clear)}]
 """)]
 	public partial void Clear(){
 		throw new NotSupportedException("字典視圖的形狀由型別成員固定，不支持清空。");
@@ -232,7 +232,7 @@ null、false、空列表、空字典、boxed 的 `i32` 0、`str` "n"；
 	[Doc($"""
 #Sum[鍵值對是否都在視圖內且相等。]
 
-#See[{nameof(InstDict.Contains)}]
+#See[{nameof(InstViewDict.Contains)}]
 """)]
 	public partial bool Contains(KeyValuePair<str, obj?> Item){
 		return TryGetValue(Item.Key, out var V) && EqualityComparer<obj?>.Default.Equals(V, Item.Value);
@@ -241,7 +241,7 @@ null、false、空列表、空字典、boxed 的 `i32` 0、`str` "n"；
 	[Doc($"""
 #Sum[按鍵序拷貝鍵值對到數組。]
 
-#See[{nameof(InstDict.CopyTo)}]
+#See[{nameof(InstViewDict.CopyTo)}]
 """)]
 	public partial void CopyTo(KeyValuePair<str, obj?>[] Array, int ArrayIndex){
 		// 先驗容量與下標（ICollection 的既有約定），否則失敗時只會裸拋 IndexOutOfRange，
@@ -269,7 +269,7 @@ null、false、空列表、空字典、boxed 的 `i32` 0、`str` "n"；
 每次迭代都現讀物件的值，故迭代期間物件被改動時看到的是改後的值。
 ]
 
-#See[{nameof(InstDict.GetEnumerator)}]
+#See[{nameof(InstViewDict.GetEnumerator)}]
 """)]
 	public partial IEnumerator<KeyValuePair<str, obj?>> GetEnumerator(){
 		foreach(var K in _KeyList){
