@@ -42,6 +42,16 @@ public partial class MergedTypeInfoSrc:ITypeInfoEnumSrc{
 	public readonly IReadOnlyList<ITypeInfoSrc> _Sources;
 
 	[Doc($"""
+#Sum[賦值進來的列舉覆蓋表；非 null 時 {nameof(RegisteredTypes)} 交出它。]
+
+#Descr[
+本類自己沒有表，故賦值只能記在這裡、由 {nameof(RegisteredTypes)} 的取值優先交出。
+它不參與 {nameof(TryGetInfo)}：查詢用哪些來源仍由 {nameof(_Sources)} 決定，賦值改不了查詢結果。
+]
+""")]
+	public IDictionary<Type, ITypeInfo>? _RegisteredTypes;
+
+	[Doc($"""
 #Sum[成員來源都拿得出表時，現算一份並集。]
 
 #Descr[
@@ -59,11 +69,12 @@ public partial class MergedTypeInfoSrc:ITypeInfoEnumSrc{
 """)]
 	public IDictionary<Type, ITypeInfo>? RegisteredTypes{
 		get{
-			return SnapshotTypes();
+			// 有賦值過就交出賦值的那一份；否則現算成員來源的並集（本類自己沒有表）。
+			return _RegisteredTypes ?? SnapshotTypes();
 		}
 		set{
-			// 佔位：本輪只改形狀，實現待寫（本類沒有自己的表，賦值＝覆蓋列舉結果）。
-			throw new NotImplementedException();
+			// 本類沒有自己的表：記下來只影響列舉，查詢的來源優先級不受影響（見 _RegisteredTypes）。
+			_RegisteredTypes = value;
 		}
 	}
 

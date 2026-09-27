@@ -22,7 +22,8 @@ using Tsinswreng.CsCore;
 
 #Descr[
 事實成員皆可賦值：賦值＝換掉那件事實（不合併、不拷貝、不驗證），留給調用方自行取用。
-現有兩個配接器是「現讀官方成員物件」，故它們的賦值實現待寫（見各自的說明）。
+兩個配接器（{{nameof(ReflMemberInfo)}}／{{nameof(JsonMemberInfo)}}）在構造期向官方成員物件取一次事實、
+直接落在自動屬性上，故賦值＝換掉那一次取到的值；官方物件之後再變不會回頭看（要現讀就用它們的 `_Raw`）。
 ]
 """)]
 public partial interface IMemberInfo{

@@ -62,7 +62,9 @@ public partial class TestSynthesis{
 		T(Src.ToInstDict<PoUser>(U).Count == 9, "ToInstDict<PoUser> 應有 9 個鍵");
 		PoUserBase B = U;
 		T(Src.ToInstDict<PoUserBase>(B).Count == 2, "ToInstDict<PoUserBase> 按靜態型別應只有 2 個鍵");
-		T(Src.ToInstDict(B).Count == 9, "非泛型版 ToInstDict(B) 按執行期型別應是 9 個鍵");
+		// 注意那個 (obj)：不寫的話 C# 會挑泛型版 ToInstDict<T>（T 就是 B 的靜態型別 PoUserBase）、
+		// 拿到 2 個鍵；「不傳型別就按執行期型別」只有走 obj 這個非泛型重載才成立。
+		T(Src.ToInstDict((obj)B).Count == 9, "非泛型版 ToInstDict((obj)B) 按執行期型別應是 9 個鍵");
 
 		return NIL;
 	}

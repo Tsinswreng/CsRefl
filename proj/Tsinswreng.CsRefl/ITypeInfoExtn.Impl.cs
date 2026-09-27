@@ -27,8 +27,18 @@ public static partial class ITypeInfoExtn{
 		return M.TryGet(O, out V);
 	}
 
+	[Doc($"""
+#Sum[見宣告處的說明。]
+
+#Descr[
+泛型版與非泛型版同一條口徑：受體（型別元資料）已經帶着型別，故這裡沒有「型別從哪來」的問題；
+差別只是實例以它的靜態型別傳入（裝箱不改變任何讀寫判據）。
+]
+""")]
 	public static partial bool TryGet<T>(this ITypeInfo z, T O, str Name, out obj? V){
-		throw new NotImplementedException();
+		// 用顯式靜態調用轉非泛型版：寫成 z.TryGet(O, ...) 的話，
+		// C# 會挑回本泛型版自己（T 對 T 是恆等轉換，比轉成 obj 更貼）→ 無限遞歸。
+		return ITypeInfoExtn.TryGet(z, (obj?)O, Name, out V);
 	}
 
 	[Doc($"""
@@ -47,8 +57,16 @@ public static partial class ITypeInfoExtn{
 		return M.TrySet(O, V);
 	}
 
+	[Doc($"""
+#Sum[見宣告處的說明。]
+
+#Descr[
+泛型版與非泛型版同一條口徑：判據全部落在成員本體上，值型別不符照樣拋、不吞成 false。
+]
+""")]
 	public static partial bool TrySet<T>(this ITypeInfo z, T O, str Name, obj? V){
-		throw new NotImplementedException();
+		// 同 TryGet<T>：用顯式靜態調用，否則會挑回本泛型版自己。
+		return ITypeInfoExtn.TrySet(z, (obj?)O, Name, V);
 	}
 
 

@@ -19,11 +19,11 @@ public partial class TestSynthesis{
 
 		var U = new PoUser{Id = 1, Name = "小明", Age = 26};
 
-		// 要落庫的列 = 可寫成員名，順序就是成員序，可直接當 SQL 的列序。
+		// 要落庫的列 = 可讀可寫成員名，順序就是成員序，可直接當 SQL 的列序。
 		// 這份清單按實例緩存，故在業務代碼裏反復讀不會反復計算。
 		var Info = Src.GetInfo<PoUser>();
-		var Cols = Info.WritableMembers.Keys.ToList();
-		T(Cols.Count == 9, $"可寫成員應有 9 個，實際 {Cols.Count}");
+		var Cols = Info.ReadWriteMembers.Keys.ToList();
+		T(Cols.Count == 9, $"可讀可寫成員應有 9 個，實際 {Cols.Count}");
 		T(Cols.SequenceEqual([
 			nameof(PoUser.Id), nameof(PoUser.Name), nameof(PoUser.Age), nameof(PoUser.Email),
 			nameof(PoUser.Married), nameof(PoUser.Tags), nameof(PoUser.Extra),

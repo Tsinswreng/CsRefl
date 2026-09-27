@@ -138,7 +138,7 @@ Info.ReadableMembers[nameof(PoUser.Age)].PropertyType;          // typeof(i32)�
 ```csharp
 var Info = Src.GetInfo<PoUser>();
 
-Info.WritableMembers.Count;                                    // 9
+Info.WritableMembers.Count;                                    // 10（只寫的 Token 也算「可寫」）
 Info.WritableMembers.ContainsKey(nameof(PoUser.Secret));       // false：只讀成員不可寫
 Info.WritableMembers.ContainsKey(nameof(PoUser.Token));        // true：只寫成員算「可寫」
 ```

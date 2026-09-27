@@ -45,9 +45,33 @@ public partial class MergedTypeInfoSrc{
 		return false;
 	}
 
+	[Doc($"""
+#Sum[逐來源取表再合成一份並集。]
+
+#See[{nameof(RegisteredTypes)}]
+""")]
 	private partial IDictionary<Type, ITypeInfo>? SnapshotTypes(){
-		// 佔位：本輪只改形狀，實現待寫（逐來源取表、按優先級合成並集）。
-		throw new NotImplementedException();
+		// step 1: 逐條來源問「你的表是甚麼」；任何一條拿不出表，整條鏈就交不出並集。
+		var R = new OrderedDictionary<Type, ITypeInfo>();
+		foreach(var S in _Sources){
+			if(S is not ITypeInfoEnumSrc E){
+				return null;
+			}
+			var Map = E.RegisteredTypes;
+			if(Map is null){
+				return null;
+			}
+			// step 2: 併進同一份新表：排在前面的來源優先，故用 TryAdd（已有的鍵不覆蓋）。
+			// step 3: null 鍵／null 值在這張表裏沒有意義，跳過而不拋（它只是「有甚麼型別」的清單）。
+			foreach(var (T, Info) in Map){
+				if(T is null || Info is null){
+					continue;
+				}
+				R.TryAdd(T, Info);
+			}
+		}
+		// step 4: 這裡現算現給，故成員來源在背後繼續登記時，下一次取值就看得到。
+		return R;
 	}
 }
 

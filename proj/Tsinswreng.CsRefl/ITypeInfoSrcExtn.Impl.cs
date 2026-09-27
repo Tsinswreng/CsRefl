@@ -44,8 +44,16 @@ public static partial class ITypeInfoSrcExtn{
 		throw new KeyNotFoundException($"型別 {Type.FullName} 未註冊到來源 {z.GetType().Name}，取不到型別元資料。");
 	}
 
+	[Doc($"""
+#Sum[見宣告處的說明。]
+
+#Descr[
+轉非泛型版：型別由 `T` 給（{nameof(_RuntimeType)} 只是把 `typeof(T)` 帶上 DAM 註解交出去）。
+]
+""")]
 	public static partial ITypeInfo GetInfo<T>(this ITypeInfoSrc z){
-		throw new NotImplementedException();
+		// 型別編譯期已知，故由 T 取；其餘與 typeof 版同一條路。
+		return z.GetInfo(_RuntimeType(typeof(T)));
 	}
 
 	[Doc($"""
@@ -68,8 +76,16 @@ public static partial class ITypeInfoSrcExtn{
 		throw new KeyNotFoundException($"型別 {Type.FullName} 未註冊到來源 {z.GetType().Name}，無法取成員 {Name}。");
 	}
 
+	[Doc($"""
+#Sum[見宣告處的說明。]
+
+#Descr[
+轉非泛型版：所屬型別由 `T` 給，成員名原樣傳下去。
+]
+""")]
 	public static partial IMemberInfo GetMember<T>(this ITypeInfoSrc z, str Name){
-		throw new NotImplementedException();
+		// 型別編譯期已知，故由 T 取；其餘與 typeof 版同一條路。
+		return z.GetMember(_RuntimeType(typeof(T)), Name);
 	}
 
 	[Doc($"""
@@ -92,8 +108,15 @@ public static partial class ITypeInfoSrcExtn{
 		return Info.TryGetMember(Name, out M);
 	}
 
+	[Doc($"""
+#Sum[見宣告處的說明。]
+
+#Descr[
+轉非泛型版：所屬型別由 `T` 給，成員名與出參原樣傳下去（「未知」一律用 false 表示）。
+]
+""")]
 	public static partial bool TryGetMember<T>(this ITypeInfoSrc z, str Name, out IMemberInfo? M){
-		throw new NotImplementedException();
+		return z.TryGetMember(_RuntimeType(typeof(T)), Name, out M);
 	}
 
 	[Doc($"""
@@ -115,8 +138,15 @@ public static partial class ITypeInfoSrcExtn{
 		return M.TryGet(O, out R);
 	}
 
+	[Doc($"""
+#Sum[見宣告處的說明。]
+
+#Descr[
+轉非泛型版：型別取 `T` 的靜態型別（不是實例的執行期型別），其餘三步（查型別、查成員、讀值）照舊。
+]
+""")]
 	public static partial bool TryGet<T>(this ITypeInfoSrc z, T O, str Name, out obj? V){
-		throw new NotImplementedException();
+		return z.TryGet(_RuntimeType(typeof(T)), O, Name, out V);
 	}
 
 	[Doc($"""
@@ -136,8 +166,15 @@ public static partial class ITypeInfoSrcExtn{
 		return M.TrySet(O, V);
 	}
 
+	[Doc($"""
+#Sum[見宣告處的說明。]
+
+#Descr[
+轉非泛型版：型別取 `T` 的靜態型別，其餘與 typeof 版同一條路（寫值判據仍在成員本體上）。
+]
+""")]
 	public static partial bool TrySet<T>(this ITypeInfoSrc z, T O, str Name, obj? V){
-		throw new NotImplementedException();
+		return z.TrySet(_RuntimeType(typeof(T)), O, Name, V);
 	}
 
 	[Doc($"""
@@ -170,8 +207,16 @@ public static partial class ITypeInfoSrcExtn{
 		return new InstDict(O, Info);
 	}
 
+	[Doc($"""
+#Sum[見宣告處的說明。]
+
+#Descr[
+轉非泛型版：型別取 `T` 的靜態型別（故 {nameof(InstDict)} 的鍵表以 `typeof(T)` 為準），
+不傳型別的那個重載才按執行期型別走。
+]
+""")]
 	public static partial IInstDict ToInstDict<T>(this ITypeInfoSrc z, T O){
-		throw new NotImplementedException();
+		return z.ToInstDict(O, _RuntimeType(typeof(T)));
 	}
 
 	[Doc($"""
@@ -219,15 +264,30 @@ public static partial class ITypeInfoSrcExtn{
 				continue;
 			}
 			// step 4: 寫入；值型別不符時拋（那是調用方的 bug，不是「不可寫」）。
-			if(!M.TrySet(O, V)){
-				throw new InvalidOperationException($"寫入成員 {T.FullName}.{K} 失敗（值型別不符）。");
+			// 原始異常由成員本體拋（反射側 ArgumentException、官方委託側 InvalidCastException），
+			// 這裡統一歸成「寫回失敗」這一種，免得調用方要分別認兩套異常型別。
+			try{
+				if(!M.TrySet(O, V)){
+					throw new InvalidOperationException($"寫入成員 {T.FullName}.{K} 失敗（值型別不符）。");
+				}
+			}catch(InvalidOperationException){
+				throw;
+			}catch(Exception E) when(E is ArgumentException or InvalidCastException){
+				throw new InvalidOperationException($"寫入成員 {T.FullName}.{K} 失敗（值型別不符）。", E);
 			}
 		}
 		return new ResAssignFromDict();
 	}
 
+	[Doc($"""
+#Sum[見宣告處的說明。]
+
+#Descr[
+轉非泛型版：型別取 `T` 的靜態型別，故只認 `typeof(T)` 那張成員表。
+]
+""")]
 	public static partial ResAssignFromDict AssignFromDict<T>(this ITypeInfoSrc z, T O, IEnumerable<KeyValuePair<str, obj?>> Dict){
-		throw new NotImplementedException();
+		return z.AssignFromDict(O, Dict, _RuntimeType(typeof(T)));
 	}
 
 }

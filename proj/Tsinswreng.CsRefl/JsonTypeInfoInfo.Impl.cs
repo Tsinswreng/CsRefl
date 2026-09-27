@@ -45,16 +45,16 @@ public partial class JsonTypeInfoInfo{
 #Sum[見宣告處的說明。]
 
 #Descr[
-實測：`typeof(PoUser)` 建得出實例；沒有官方工廠的型別拋 {nameof(NotSupportedException)}，訊息含型別全名。
+判據與 {nameof(CanMkInst)} 同一條：本配接器的 {nameof(CreateObject)} 是否為 null
+（沒賦值過時它就是官方那條委託）。
 ]
 """)]
 	public partial obj? MkInst(){
-		// 錯誤訊息與 CanMkInst 用同一個判據：官方 CreateObject 是否為 null。
-		var J = Json!;
-		var F = J.CreateObject;
+		// 取本配接器的那個屬性（可能被賦值覆蓋過），而不是直接讀官方本體。
+		var F = CreateObject;
 		if(F is null){
 			throw new NotSupportedException(
-				$"型別 {J.Type.FullName} 的官方元資料沒有 CreateObject，無法建立實例。"
+				$"型別 {Type.FullName} 沒有可用的 {nameof(CreateObject)}（官方元資料沒給，或已被賦值成 null），無法建立實例。"
 			);
 		}
 		return F();
@@ -106,15 +106,39 @@ public partial class JsonTypeInfoInfo{
 		);
 	}
 
+	[Doc($"""
+#Sum[按名取成員的宣告型別。]
+
+#See[{nameof(ITypeInfo.TryGetMemberType)}]
+""")]
 	public partial bool TryGetMemberType(str Name, out Type? T){
-		throw new NotImplementedException();
+		T = null;
+		// step 1: 按名查成員表（本身就是保序字典，O(1)）；名字為 null 時直接 false。
+		if(Name is null || !Members.TryGetValue(Name, out var M)){
+			return false;
+		}
+		// step 2: 型別由成員本體給（兩套來源的成員契約同一條口徑）。
+		T = M.PropertyType;
+		return true;
 	}
 
+	[Doc($"""
+#Sum[按名問成員能不能讀。]
+
+#See[{nameof(ITypeInfo.CanRead)}]
+""")]
 	public partial bool CanRead(str Name){
-		throw new NotImplementedException();
+		// 成員不存在（含名字為 null）就是「不能讀」；能力判據在成員本體上。
+		return Name is not null && Members.TryGetValue(Name, out var M) && M.CanRead;
 	}
 
+	[Doc($"""
+#Sum[按名問成員能不能寫。]
+
+#See[{nameof(ITypeInfo.CanWrite)}]
+""")]
 	public partial bool CanWrite(str Name){
-		throw new NotImplementedException();
+		// 成員不存在（含名字為 null）就是「不能寫」；能力判據在成員本體上。
+		return Name is not null && Members.TryGetValue(Name, out var M) && M.CanWrite;
 	}
 }

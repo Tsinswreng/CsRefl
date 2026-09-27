@@ -422,7 +422,8 @@ var User = new PoUser{ Id = 1, Name = "小明", Age = 26 };
 var D1 = Src.ToInstDict<PoUser>(User);        // 鍵 9 個（PoUser 的可讀可寫成員）
 PoUserBase B = User;
 var D2 = Src.ToInstDict<PoUserBase>(B);       // 鍵只有 Id、Name 兩個——按靜態型別走
-var D3 = Src.ToInstDict(B);                   // 非泛型版按執行期型別：仍是 9 個鍵
+var D3 = Src.ToInstDict((obj)B);              // 非泛型版按執行期型別：仍是 9 個鍵
+// 注意那個 (obj)：不寫的話 C# 會挑上面的泛型版（T 直接等於 B 的靜態型別），拿到的是 2 個鍵。
 ```
 
 要「按執行期型別」就別用泛型版，用 `{{nameof(ToInstDict)}}(O)`。

@@ -25,25 +25,27 @@ public partial class TestTypeInfo{
 		var T = Assert.IsTrue;
 		var Level = Info.GetMember("Level");
 
-		T(((Level as JsonPropertyInfo)?.AttributeProvider) is not null, "每個成員都應給出官方特性提供者");
+		// 特性提供者本身就是 IMemberInfo 的成員，直接用，不必去碰官方物件本體。
+		T(Level.AttributeProvider is not null, "每個成員都應給出官方特性提供者");
 
-		var Attr = AttrProvider.GetCustomAttribute<MyDemoAttr>((Level as JsonPropertyInfo)?.AttributeProvider ?? (Level as MemberInfo));
+		var Attr = AttrProvider.GetCustomAttribute<MyDemoAttr>(Level.AttributeProvider);
 		T(Attr is not null, $"{(IsRefl ? "反射" : "Json")}源應能取到 Level 上的 MyDemoAttr");
 		T(Attr!.Tag == "優等級", $"特性的 Tag 應是 優等級，實際 {Attr.Tag}");
 		T(Attr.Rank == 2, $"特性的 Rank 應是 2，實際 {Attr.Rank}");
 
 		// 官方提供者的用法也照官方三態：判有無、取全部、取不存在。
-		T(((Level as JsonPropertyInfo)?.AttributeProvider)!.IsDefined(typeof(MyDemoAttr), false), "IsDefined 應為 true");
-		T(((Level as JsonPropertyInfo)?.AttributeProvider)!.GetCustomAttributes(typeof(MyDemoAttr), false).Length == 1,
+		T(Level.AttributeProvider!.IsDefined(typeof(MyDemoAttr), false), "IsDefined 應為 true");
+		T(Level.AttributeProvider!.GetCustomAttributes(typeof(MyDemoAttr), false).Length == 1,
 			"應恰好取到 1 個 MyDemoAttr");
-		T(AttrProvider.GetCustomAttribute<ObsoleteAttribute>((Level as JsonPropertyInfo)?.AttributeProvider ?? (Level as MemberInfo)) is null, "不存在的特性應取到 null");
-		T(AttrProvider.GetCustomAttribute<MyDemoAttr>((Info.GetMember("Age") as JsonPropertyInfo)?.AttributeProvider ?? (Info.GetMember("Age") as MemberInfo)) is null,
+		T(AttrProvider.GetCustomAttribute<ObsoleteAttribute>(Level.AttributeProvider) is null, "不存在的特性應取到 null");
+		T(AttrProvider.GetCustomAttribute<MyDemoAttr>(Info.GetMember("Age").AttributeProvider) is null,
 			"沒標特性的成員應取到 null");
 
-		// 反射源還可從官方成員本體直接拿（同一份提供者）。
+		// 反射源的官方物件本體就是特性提供者自身（Json 側是官方 JsonPropertyInfo.AttributeProvider）。
 		if(IsRefl){
-			T((Level as MemberInfo) is PropertyInfo, "反射源的官方成員應是 PropertyInfo");
-			T(ReferenceEquals(((Level as JsonPropertyInfo)?.AttributeProvider), (Level as MemberInfo)), "反射源的特性提供者就是官方成員自身");
+			var RawLevel = ((ReflMemberInfo)Level)._Raw;
+			T(RawLevel is PropertyInfo, "反射源的官方成員應是 PropertyInfo");
+			T(ReferenceEquals(Level.AttributeProvider, RawLevel), "反射源的特性提供者就是官方成員自身");
 		}
 	}
 

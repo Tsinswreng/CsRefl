@@ -102,16 +102,40 @@ public partial class ReflTypeInfo{
 		);
 	}
 
+	[Doc($"""
+#Sum[按名取成員的宣告型別。]
+
+#See[{nameof(ITypeInfo.TryGetMemberType)}]
+""")]
 	public partial bool TryGetMemberType(str Name, out Type? T){
-		throw new NotImplementedException();
+		T = null;
+		// step 1: 按名查成員表（本身就是保序字典，O(1)）；名字為 null 時直接 false。
+		if(Name is null || !Members.TryGetValue(Name, out var M)){
+			return false;
+		}
+		// step 2: 型別由成員本體給（兩套來源的成員契約同一條口徑）。
+		T = M.PropertyType;
+		return true;
 	}
 
+	[Doc($"""
+#Sum[按名問成員能不能讀。]
+
+#See[{nameof(ITypeInfo.CanRead)}]
+""")]
 	public partial bool CanRead(str Name){
-		throw new NotImplementedException();
+		// 成員不存在（含名字為 null）就是「不能讀」；能力判據在成員本體上。
+		return Name is not null && Members.TryGetValue(Name, out var M) && M.CanRead;
 	}
 
+	[Doc($"""
+#Sum[按名問成員能不能寫。]
+
+#See[{nameof(ITypeInfo.CanWrite)}]
+""")]
 	public partial bool CanWrite(str Name){
-		throw new NotImplementedException();
+		// 成員不存在（含名字為 null）就是「不能寫」；能力判據在成員本體上。
+		return Name is not null && Members.TryGetValue(Name, out var M) && M.CanWrite;
 	}
 
 	[Doc($"""

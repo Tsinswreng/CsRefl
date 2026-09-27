@@ -147,29 +147,47 @@ new JsonTypeInfoInfo(null!);
 	public volatile IDictionary<str, IMemberInfo>? _ReadWrite;
 
 	[Doc($"""
-#Sum[無參實例工廠；每次現讀官方本體那條委託。]
+#Sum[無參實例工廠；沒賦值過時現讀官方本體那條委託。]
 
 #Descr[
-這裡刻意是「現讀」而不是構造期快照：官方 {nameof(JsonTypeInfo)}.{nameof(JsonTypeInfo.CreateObject)}
+沒賦值過時刻意是「現讀」而不是構造期快照：官方 {nameof(JsonTypeInfo)}.{nameof(JsonTypeInfo.CreateObject)}
 是可寫的，官方本體被換掉時門面要跟著變，才有資格叫薄配接器。
 
-實測：包裝完成後把官方 {nameof(JsonTypeInfo.CreateObject)} 換成別的委託，
-本屬性的取值立刻跟著變（與換上去的那個委託 `{nameof(ReferenceEquals)}` 為 true）。
-
-賦值＝覆蓋這條委託；本輪只加形狀，實現待寫。
+賦值＝記住一條覆蓋委託，之後本屬性就交出它、不再現讀官方，也不去動官方那個共享實例。
+null 本身是合法取值（表示本型別沒有無參工廠），故另用 {nameof(_HasCreateObject)} 區分「賦值過」與「沒賦值過」。
 ]
 
 #See[{nameof(ITypeInfo.CreateObject)}]
 """)]
 	public Func<obj>? CreateObject{
 		get{
-			return Json?.CreateObject;
+			// 賦值過就以覆蓋值為準；沒賦值過才現讀官方本體。
+			return _HasCreateObject ? _CreateObject : Json?.CreateObject;
 		}
 		set{
-			// 佔位：本輪只加形狀，實現待寫（本屬性是現讀官方本體那條委託，覆蓋語義待定）。
-			throw new NotImplementedException();
+			// 賦值＝記下覆蓋值（見本屬性的說明）；不寫回官方本體，免得改到別處也在用的那個官方實例。
+			_CreateObject = value;
+			_HasCreateObject = true;
 		}
 	}
+
+	[Doc($"""
+#Sum[{nameof(CreateObject)} 的覆蓋值；沒賦值過時無意義。]
+
+#Descr[
+與 {nameof(_HasCreateObject)} 配對使用：因為 null 是合法取值，單看本欄位分不出「沒賦值」與「賦了 null」。
+]
+""")]
+	public Func<obj>? _CreateObject;
+
+	[Doc($"""
+#Sum[{nameof(CreateObject)} 有沒有被賦值過。]
+
+#Descr[
+true 表示 {nameof(CreateObject)} 交出的是 {nameof(_CreateObject)}（哪怕是 null），false 表示現讀官方本體。
+]
+""")]
+	public bool _HasCreateObject;
 
 	[Doc($"""
 #Sum[官方型別元資料本體；構造期賦值，可再賦值。]

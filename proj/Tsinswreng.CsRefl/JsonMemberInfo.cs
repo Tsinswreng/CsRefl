@@ -9,6 +9,9 @@ using Tsinswreng.CsCore;
 
 #Descr[
 源生成給出的成員是官方 {nameof(JsonPropertyInfo)}，本類把它統一成門面的 {nameof(IMemberInfo)}。
+
+成員事實（名、型別、宿主、可讀可寫、特性提供者）在構造期向官方成員物件取一次，直接落在自動屬性上；
+之後官方物件再變也不回頭看——要現讀官方那一份，就用 {nameof(_Raw)}。
 ]
 """)]
 public partial class JsonMemberInfo:IMemberInfo{
@@ -30,99 +33,47 @@ public partial class JsonMemberInfo:IMemberInfo{
 	public partial JsonMemberInfo(JsonPropertyInfo Json);
 
 	[Doc($"""
-#Sum[成員名，取自官方成員物件。]
+#Sum[成員名，構造期取自官方成員物件。]
 
 #See[{nameof(IMemberInfo.Name)}]
 """)]
-	public str Name{
-		get{
-			return _Raw.Name;
-		}
-		set{
-			// 佔位：本輪只加形狀，實現待寫（本配接器是現讀官方物件，覆蓋語義待定）。
-			throw new NotImplementedException();
-		}
-	}
+	public str Name{get;set;}
 
 	[Doc($"""
-#Sum[成員型別，取自官方 {nameof(JsonPropertyInfo)}.{nameof(JsonPropertyInfo.PropertyType)}。]
+#Sum[成員型別，構造期取自官方 {nameof(JsonPropertyInfo)}.{nameof(JsonPropertyInfo.PropertyType)}。]
 
 #See[{nameof(IMemberInfo.PropertyType)}]
 """)]
-	public Type PropertyType{
-		get{
-			return _Raw.PropertyType;
-		}
-		set{
-			// 佔位：本輪只加形狀，實現待寫（本配接器是現讀官方物件，覆蓋語義待定）。
-			throw new NotImplementedException();
-		}
-	}
+	public Type PropertyType{get;set;}
 
 	[Doc($"""
-#Sum[成員宣告所在的型別，取自官方成員物件。]
+#Sum[成員宣告所在的型別，構造期取自官方成員物件。]
 
 #See[{nameof(IMemberInfo.OwnerType)}]
 """)]
-	public Type OwnerType{
-		get{
-			return _Raw.DeclaringType;
-		}
-		set{
-			// 佔位：本輪只加形狀，實現待寫（本配接器是現讀官方物件，覆蓋語義待定）。
-			throw new NotImplementedException();
-		}
-	}
+	public Type OwnerType{get;set;}
 
 	[Doc($"""
-#Sum[看官方的讀取委託 {nameof(JsonPropertyInfo)}.{nameof(JsonPropertyInfo.Get)} 是否非 null。]
+#Sum[構造期看官方的讀取委託 {nameof(JsonPropertyInfo)}.{nameof(JsonPropertyInfo.Get)} 是否非 null。]
 
 #See[{nameof(IMemberInfo.CanRead)}]
 """)]
-	public bool CanRead{
-		get{
-			return _Raw.Get is not null;
-		}
-		set{
-			// 佔位：本輪只加形狀，實現待寫（本配接器是現讀官方物件，覆蓋語義待定）。
-			throw new NotImplementedException();
-		}
-	}
+	public bool CanRead{get;set;}
 
 	[Doc($"""
-#Sum[看官方的寫入委託 {nameof(JsonPropertyInfo)}.{nameof(JsonPropertyInfo.Set)} 是否非 null。]
+#Sum[構造期看官方的寫入委託 {nameof(JsonPropertyInfo)}.{nameof(JsonPropertyInfo.Set)} 是否非 null。]
 
 #See[{nameof(IMemberInfo.CanWrite)}]
 """)]
-	public bool CanWrite{
-		get{
-			return _Raw.Set is not null;
-		}
-		set{
-			// 佔位：本輪只加形狀，實現待寫（本配接器是現讀官方物件，覆蓋語義待定）。
-			throw new NotImplementedException();
-		}
-	}
+	public bool CanWrite{get;set;}
 
 	[Doc($"""
-#Sum[取官方成員物件自帶的特性提供者。]
+#Sum[構造期取官方成員物件自帶的特性提供者。]
 
 #See[{nameof(IMemberInfo.AttributeProvider)}]
 """)]
-	public ICustomAttributeProvider? AttributeProvider{
-		get{
-			return _Raw.AttributeProvider;
-		}
-		set{
-			// 佔位：本輪只加形狀，實現待寫（本配接器是現讀官方物件，覆蓋語義待定）。
-			throw new NotImplementedException();
-		}
-	}
+	public ICustomAttributeProvider? AttributeProvider{get;set;}
 
 	public partial bool TryGet(obj? O, out obj? V);
 	public partial bool TrySet(obj? O, obj? V);
 }
-
-
-
-

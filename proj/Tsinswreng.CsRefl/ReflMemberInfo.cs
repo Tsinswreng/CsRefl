@@ -9,6 +9,9 @@ using Tsinswreng.CsCore;
 #Descr[
 屬性走官方 {nameof(PropertyInfo)} 的成員事實、字段走官方 {nameof(FieldInfo)} 的成員事實，
 兩者都經本類統一成門面的 {nameof(IMemberInfo)}。
+
+成員事實（名、型別、宿主、可讀可寫、特性提供者）在構造期向官方成員物件取一次，直接落在自動屬性上；
+之後官方物件再變也不回頭看——要現讀官方那一份，就用 {nameof(_Raw)}。
 ]
 """)]
 public partial class ReflMemberInfo:IMemberInfo{
@@ -24,116 +27,52 @@ public partial class ReflMemberInfo:IMemberInfo{
 	[Doc($"""
 #Sum[用官方成員物件建配接器。]
 
-#Params([[Member, 官方成員物件；不允許 null]])
+#Params([[Member, 官方成員物件；不允許 null，且只接 {nameof(PropertyInfo)} 與 {nameof(FieldInfo)}]])
 """)]
 	public partial ReflMemberInfo(MemberInfo Member);
 
 	[Doc($"""
-#Sum[成員名，取自官方成員物件。]
+#Sum[成員名，構造期取自官方成員物件。]
 
 #See[{nameof(IMemberInfo.Name)}]
 """)]
-	public str Name{
-		get{
-			return _Raw.Name;
-		}
-		set{
-			// 佔位：本輪只加形狀，實現待寫（本配接器是現讀官方物件，覆蓋語義待定）。
-			throw new NotImplementedException();
-		}
-	}
+	public str Name{get;set;}
 
 	[Doc($"""
-#Sum[屬性取官方 {nameof(PropertyInfo)}.{nameof(PropertyInfo.PropertyType)}，字段取官方 {nameof(FieldInfo)}.{nameof(FieldInfo.FieldType)}。]
+#Sum[成員型別，構造期取官方 {nameof(PropertyInfo)}.{nameof(PropertyInfo.PropertyType)} 或 {nameof(FieldInfo)}.{nameof(FieldInfo.FieldType)}。]
 
 #See[{nameof(IMemberInfo.PropertyType)}]
 """)]
-	public Type PropertyType{
-		get{
-			if(_Raw is PropertyInfo prop){
-				return prop.PropertyType;
-			}
-			if(_Raw is FieldInfo fld){
-				return fld.FieldType;
-			}
-			throw new NotSupportedException($"本配接器只接 {nameof(PropertyInfo)} 與 {nameof(FieldInfo)}。");
-		}
-		set{
-			// 佔位：本輪只加形狀，實現待寫（本配接器是現讀官方物件，覆蓋語義待定）。
-			throw new NotImplementedException();
-		}
-	}
+	public Type PropertyType{get;set;}
 
 	[Doc($"""
-#Sum[成員宣告所在的型別，取自官方成員物件。]
+#Sum[成員宣告所在的型別，構造期取自官方成員物件。]
 
 #See[{nameof(IMemberInfo.OwnerType)}]
 """)]
-	public Type OwnerType{
-		get{
-			return _Raw.DeclaringType!;
-		}
-		set{
-			// 佔位：本輪只加形狀，實現待寫（本配接器是現讀官方物件，覆蓋語義待定）。
-			throw new NotImplementedException();
-		}
-	}
+	public Type OwnerType{get;set;}
 
 	[Doc($"""
-#Sum[屬性看官方 {nameof(PropertyInfo)}.{nameof(PropertyInfo.GetGetMethod)} 是否非 null；字段恆為 true。]
+#Sum[構造期看官方 {nameof(PropertyInfo)}.{nameof(PropertyInfo.GetGetMethod)} 是否非 null；字段恆為 true。]
 
 #See[{nameof(IMemberInfo.CanRead)}]
 """)]
-	public bool CanRead{
-		get{
-			if(_Raw is PropertyInfo prop){
-				return prop.GetGetMethod() is not null;
-			}
-			return _Raw is FieldInfo;
-		}
-		set{
-			// 佔位：本輪只加形狀，實現待寫（本配接器是現讀官方物件，覆蓋語義待定）。
-			throw new NotImplementedException();
-		}
-	}
+	public bool CanRead{get;set;}
 
 	[Doc($"""
-#Sum[屬性看官方 {nameof(PropertyInfo)}.{nameof(PropertyInfo.GetSetMethod)} 是否非 null；字段恆為 true。]
+#Sum[構造期看官方 {nameof(PropertyInfo)}.{nameof(PropertyInfo.GetSetMethod)} 是否非 null；字段恆為 true。]
 
 #See[{nameof(IMemberInfo.CanWrite)}]
 """)]
-	public bool CanWrite{
-		get{
-			if(_Raw is PropertyInfo prop){
-				return prop.GetSetMethod() is not null;
-			}
-			return _Raw is FieldInfo;
-		}
-		set{
-			// 佔位：本輪只加形狀，實現待寫（本配接器是現讀官方物件，覆蓋語義待定）。
-			throw new NotImplementedException();
-		}
-	}
+	public bool CanWrite{get;set;}
 
 	[Doc($"""
 #Sum[官方成員物件本身就是官方特性提供者。]
 
 #See[{nameof(IMemberInfo.AttributeProvider)}]
 """)]
-	public ICustomAttributeProvider? AttributeProvider{
-		get{
-			return _Raw;
-		}
-		set{
-			// 佔位：本輪只加形狀，實現待寫（本配接器是現讀官方物件，覆蓋語義待定）。
-			throw new NotImplementedException();
-		}
-	}
+	public ICustomAttributeProvider? AttributeProvider{get;set;}
 
 	public partial bool TryGet(obj? O, out obj? V);
 	public partial bool TrySet(obj? O, obj? V);
 }
-
-
-
-

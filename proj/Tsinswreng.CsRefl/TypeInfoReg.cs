@@ -64,8 +64,18 @@ public partial class TypeInfoReg:ITypeInfoReg{
 			return _Map;
 		}
 		set{
-			// 佔位：本輪只改形狀，實現待寫（整張替換；照 ITypeInfoReg 的約定擋重複鍵）。
-			throw new NotImplementedException();
+			// 賦值＝整張換掉：`_Map` 是 readonly 欄位、換不掉它的實例，故清空後再把給的那份逐項塞進去。
+			// 不與現有內容合併：以賦值的那份為準。
+			_Map.Clear();
+			if(value is null){
+				return;
+			}
+			foreach(var (T, Info) in value){
+				// 空鍵／空值在「型別 → 元資料」表裏沒有意義，擋在賦值期；重複鍵由字典本身保證不會有。
+				ArgumentNullException.ThrowIfNull(T);
+				ArgumentNullException.ThrowIfNull(Info);
+				_Map[T] = Info;
+			}
 		}
 	}
 
